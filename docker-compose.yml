@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vyro
+      POSTGRES_PASSWORD: vyro
+      POSTGRES_DB: vyro_growth
+    ports:
+      - "5432:5432"
+    volumes:
+      - vyro_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vyro -d vyro_growth"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://vyro:vyro@postgres:5432/vyro_growth
+      OUTBOUND_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  vyro_postgres:
