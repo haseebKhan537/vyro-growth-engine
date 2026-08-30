@@ -16,6 +16,10 @@ from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
 )
+from vyro_growth.api.monitoring import (
+    MonitoringStatusResponse,
+    build_monitoring_status_response,
+)
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
     build_latest_optimizer_response,
@@ -79,6 +83,16 @@ def dashboard_safety(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_dashboard_summary_response(db, active_settings).safety
+
+
+@app.get("/internal/monitoring/status", tags=["internal"])
+def monitoring_status(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> MonitoringStatusResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_monitoring_status_response(db, active_settings)
 
 
 @app.post("/internal/optimizer/run", tags=["internal"])

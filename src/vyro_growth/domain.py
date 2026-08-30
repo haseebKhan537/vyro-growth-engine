@@ -359,6 +359,25 @@ class RecommendationApprovalStatus(StrEnum):
     PENDING_OPERATOR_REVIEW = "pending_operator_review"
 
 
+class FindingSeverity(StrEnum):
+    BLOCKED = "blocked"
+    WARNING = "warning"
+    INFO = "info"
+
+
+class FindingCode(StrEnum):
+    OUTBOUND_ENABLED = "outbound_enabled"
+    LIVE_PROVIDER_ENABLED = "live_provider_enabled"
+    LIVE_OUTBOUND_ARTIFACT = "live_outbound_artifact"
+    CONFIG_NOT_READY = "config_not_ready"
+    DATABASE_UNAVAILABLE = "database_unavailable"
+    OPERATOR_HALT_UNAVAILABLE = "operator_halt_unavailable"
+    RECENT_FAILURES = "recent_failures"
+    PENDING_OPERATOR_REVIEW = "pending_operator_review"
+    OPERATOR_HALT_ACTIVE = "operator_halt_active"
+    SAFE_DEFAULTS = "safe_defaults"
+
+
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(
     {
         LeadStage.MEETING_BOOKED,

@@ -449,6 +449,36 @@ docker compose --profile ops run --rm migrate
 
 See `docs/DEPLOYMENT.md` for required environment variables, migration order, worker/scheduler assumptions, backup/restore, and rollback. `OUTBOUND_ENABLED` and every live-provider flag remain false by default. Persistent operator halt is unchanged.
 
+## Phase 13 — Observability and audit monitoring foundation
+
+Inspect job/run health, sanitized failures, safety flags, Phase 12 readiness, and pending operator-review counts without enabling outreach or live providers.
+
+CLI:
+
+```bash
+vyro-growth system-status
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/monitoring/status \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The snapshot includes:
+
+- latest run status by phase and deployable job name
+- recent failures with redacted error text
+- safety flags: `OUTBOUND_ENABLED`, operator halt, live-provider flags, live artifact counts
+- Phase 12 readiness/config state and `ready_for_manual_rollout`
+- pending review counts for drafts, enrollment plans, booking plans, voice plans, and optimizer recommendations
+- findings with severity `blocked`, `warning`, or `info`
+
+Responses are counts, statuses, and sanitized messages only. They do not include message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI. The service does not write pipeline rows, send email, place calls, book meetings, or call live providers. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+See `docs/OPERATOR_HEALTH.md` for the pre-rollout checklist.
+
 ## Phase 1
 
 Production foundation:
