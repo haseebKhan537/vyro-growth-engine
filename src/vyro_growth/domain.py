@@ -279,6 +279,55 @@ class BookingSkipReason(StrEnum):
     LIVE_GOOGLE_NOT_IMPLEMENTED = "live_google_not_implemented"
 
 
+class VoiceQualificationRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class VoicePlanStatus(StrEnum):
+    PLANNED = "planned"
+    SKIPPED = "skipped"
+    SUPPRESSED = "suppressed"
+    BLOCKED = "blocked"
+
+
+class VoiceConsentSource(StrEnum):
+    INBOUND_REPLY = "inbound_reply"
+    OPERATOR_REQUEST = "operator_request"
+    MEETING_PERMISSION = "meeting_permission"
+
+
+class VoiceConsentChannel(StrEnum):
+    EMAIL = "email"
+    INBOUND_CALL = "inbound_call"
+    OPERATOR = "operator"
+    BOOKING = "booking"
+
+
+class VoiceSkipReason(StrEnum):
+    MISSING_CONSENT_PROOF = "missing_consent_proof"
+    INVALID_CONSENT_PROOF = "invalid_consent_proof"
+    INELIGIBLE_CONSENT_CONTEXT = "ineligible_consent_context"
+    MISSING_BUSINESS_PHONE = "missing_business_phone"
+    SUSPECTED_PHI = "suspected_phi"
+    SUPPRESSED = "suppressed"
+    SUPPRESSION_CHECK_UNAVAILABLE = "suppression_check_unavailable"
+    MALFORMED_PROVIDER_OUTPUT = "malformed_provider_output"
+    PROVIDER_RETRYABLE_ERROR = "provider_retryable_error"
+    PROVIDER_NON_RETRYABLE_ERROR = "provider_non_retryable_error"
+    PROVIDER_NOT_ACCEPTED = "provider_not_accepted"
+    LIVE_CALL_REJECTED = "live_call_rejected"
+    VOICE_LIVE_DISABLED = "voice_live_disabled"
+    GLOBAL_OUTBOUND_DISABLED = "global_outbound_disabled"
+    OPERATOR_GLOBAL_HALT = "operator_global_halt"
+    OPERATOR_HALT_UNAVAILABLE = "operator_halt_unavailable"
+    TARGET_UNIDENTIFIED = "target_unidentified"
+    LIVE_VOICE_NOT_IMPLEMENTED = "live_voice_not_implemented"
+    COLD_CALL_FORBIDDEN = "cold_call_forbidden"
+
+
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(
     {
         LeadStage.MEETING_BOOKED,

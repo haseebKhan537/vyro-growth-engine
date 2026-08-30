@@ -100,6 +100,18 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Lead updates, if any, must use `ALLOWED_TRANSITIONS` and must not enter `meeting_booked`.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 
+## Voice qualification integrity
+- Phase 9 plans dry-run consent-based voice qualification only. It does not place phone calls.
+- Accept only explicit permission/consent contexts: a stored inbound reply requesting or approving a call, an operator-created request with consent proof, or a stored meeting/booking context that includes permission to call.
+- Consent proof is required before a plan can be created. Persist source, timestamp, channel, evidence/reference id if available, and the permitted business phone. Missing proof is skipped or blocked with an audited reason.
+- Do not implement indiscriminate cold AI robocalling. Phone automation is only for consent/inbound/permission-based contexts.
+- Store only safe B2B qualification facts. Never invent prospect facts. If suspected PHI appears in an input payload, skip or block and audit the reason without persisting the PHI.
+- Honor email, domain, organization, and phone suppressions. Fail closed if a suppression lookup cannot be completed.
+- The default provider is a stub. `build_voice_qualification_provider()` never returns the live adapter. `VOICE_LIVE_ENABLED=false` by default. CI and local tests do not require a live key.
+- The guarded live adapter still requires outbound enablement, documented consent, and a lifted operator halt. Phase 9 does not open a default HTTP session; a future owner-approved step must inject a live client.
+- Do not send email, generate sendable autonomous replies, create calendar events, create Google Meet links, book meetings, or enroll live campaigns.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

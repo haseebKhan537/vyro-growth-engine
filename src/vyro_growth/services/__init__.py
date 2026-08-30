@@ -59,6 +59,13 @@ from vyro_growth.services.reply_classification import (
     ReplyClassificationJobResult,
     ReplyClassificationService,
 )
+from vyro_growth.services.voice_qualification import (
+    VoiceConsentInput,
+    VoiceItemResult,
+    VoiceQualificationJobResult,
+    VoiceQualificationService,
+    VoiceQualificationServiceError,
+)
 from vyro_growth.services.website_enrichment import (
     WebsiteEnrichmentError,
     WebsiteEnrichmentResult,
@@ -98,6 +105,11 @@ __all__ = [
     "ReplyClassificationJobResult",
     "ReplyClassificationService",
     "ScoringResult",
+    "VoiceConsentInput",
+    "VoiceItemResult",
+    "VoiceQualificationJobResult",
+    "VoiceQualificationService",
+    "VoiceQualificationServiceError",
     "StaticHaltReader",
     "WebsiteEnrichmentError",
     "WebsiteEnrichmentResult",

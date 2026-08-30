@@ -7,12 +7,17 @@ from uuid import UUID
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
 from vyro_growth.config import get_settings
 from vyro_growth.database import SessionLocal
+from vyro_growth.domain import VoiceConsentChannel, VoiceConsentSource
 from vyro_growth.providers.calendar_booking import build_booking_calendar_provider
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 from vyro_growth.providers.personalization import build_personalization_provider
 from vyro_growth.providers.reply_classification import build_reply_classifier
 from vyro_growth.providers.smartlead import build_smartlead_provider
+from vyro_growth.providers.voice_qualification import (
+    build_voice_qualification_provider,
+    parse_consent_timestamp,
+)
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
 from vyro_growth.services.booking_plan import BookingPlanService
@@ -21,6 +26,10 @@ from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.personalization import PersonalizationService
 from vyro_growth.services.reply_classification import ReplyClassificationService
+from vyro_growth.services.voice_qualification import (
+    VoiceConsentInput,
+    VoiceQualificationService,
+)
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentService
 
 
@@ -164,6 +173,43 @@ def build_parser() -> argparse.ArgumentParser:
         default=50,
         help="Maximum meeting-request classifications to plan when no id is provided",
     )
+
+    voice = subparsers.add_parser(
+        "plan-voice-qualification",
+        help="Create a dry-run consent-based voice qualification plan without placing calls",
+    )
+    voice.add_argument("--lead-id", help="Existing lead UUID")
+    voice.add_argument("--message-id", help="Stored inbound reply UUID that requested a call")
+    voice.add_argument("--meeting-id", help="Stored meeting UUID with permission to call")
+    voice.add_argument("--booking-plan-id", help="Stored booking plan UUID with permission to call")
+    voice.add_argument(
+        "--operator-request",
+        action="store_true",
+        help="Plan from an explicit operator voice request with consent proof",
+    )
+    voice.add_argument(
+        "--request-key",
+        help="Idempotency key for an operator voice request (default: operator)",
+    )
+    voice.add_argument(
+        "--consent-source",
+        help="Consent source (inbound_reply/operator_request/meeting_permission)",
+    )
+    voice.add_argument(
+        "--consent-channel",
+        help="Consent channel (email/inbound_call/operator/booking)",
+    )
+    voice.add_argument("--consent-timestamp", help="Consent timestamp (ISO-8601)")
+    voice.add_argument("--consent-evidence-id", help="Consent evidence or reference id")
+    voice.add_argument("--permitted-phone", help="Permitted business phone for the consent proof")
+    voice.add_argument("--state", help="Limit batch planning to a two-letter state code")
+    voice.add_argument("--city", help="Limit batch planning to a city")
+    voice.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum inbound call-request messages to plan when no id is provided",
+    )
     return parser
 
 
@@ -220,6 +266,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "plan-booking":
         return _run_plan_booking(parser, args)
+
+    if args.command == "plan-voice-qualification":
+        return _run_plan_voice_qualification(parser, args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -470,6 +519,96 @@ def _requested_window(start: str | None, end: str | None) -> dict[str, object] |
     if end:
         window["ends_at"] = end
     return window
+
+
+def _run_plan_voice_qualification(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    selected = [
+        bool(args.lead_id),
+        bool(args.message_id),
+        bool(args.meeting_id),
+        bool(args.booking_plan_id),
+    ]
+    if sum(1 for item in selected if item) > 1 and not args.lead_id:
+        parser.error("Provide one of --lead-id, --message-id, --meeting-id, or --booking-plan-id")
+    if args.operator_request and not args.lead_id:
+        parser.error("--operator-request requires --lead-id")
+    consent = _voice_consent_input(args)
+    service = VoiceQualificationService(build_voice_qualification_provider())
+    with SessionLocal() as db:
+        if args.message_id and not args.lead_id:
+            result = service.plan_message(db, UUID(args.message_id))
+        elif args.meeting_id and not args.lead_id:
+            result = service.plan_meeting(db, UUID(args.meeting_id), consent=consent)
+        elif args.lead_id:
+            result = service.plan_lead(
+                db,
+                UUID(args.lead_id),
+                message_id=UUID(args.message_id) if args.message_id else None,
+                meeting_id=UUID(args.meeting_id) if args.meeting_id else None,
+                booking_plan_id=UUID(args.booking_plan_id) if args.booking_plan_id else None,
+                operator_request=args.operator_request,
+                request_key=args.request_key,
+                consent=consent,
+            )
+        else:
+            result = service.plan_batch(
+                db,
+                limit=args.limit,
+                state=args.state,
+                city=args.city,
+            )
+    print(
+        "Voice qualification:",
+        f"id={result.voice_qualification_run_id}",
+        f"planned={result.planned_count}",
+        f"skipped={result.skipped_count}",
+        f"suppressed={result.suppressed_count}",
+        f"blocked={result.blocked_count}",
+        f"reused={result.reused_count}",
+        f"status={result.status.value}",
+    )
+    return 0
+
+
+def _voice_consent_input(args: argparse.Namespace) -> VoiceConsentInput | None:
+    source = _voice_source(args.consent_source)
+    channel = _voice_channel(args.consent_channel)
+    consented_at = parse_consent_timestamp(args.consent_timestamp)
+    permitted_phone = args.permitted_phone
+    evidence_id = args.consent_evidence_id
+    if (
+        source is None
+        and channel is None
+        and consented_at is None
+        and not permitted_phone
+        and not evidence_id
+    ):
+        return None
+    return VoiceConsentInput(
+        source=source,
+        channel=channel,
+        consented_at=consented_at,
+        permitted_phone=permitted_phone,
+        evidence_reference_id=evidence_id,
+    )
+
+
+def _voice_source(value: str | None) -> VoiceConsentSource | None:
+    if not value:
+        return None
+    try:
+        return VoiceConsentSource(value)
+    except ValueError:
+        return None
+
+
+def _voice_channel(value: str | None) -> VoiceConsentChannel | None:
+    if not value:
+        return None
+    try:
+        return VoiceConsentChannel(value)
+    except ValueError:
+        return None
 
 
 if __name__ == "__main__":

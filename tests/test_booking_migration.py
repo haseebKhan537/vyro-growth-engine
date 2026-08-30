@@ -37,4 +37,4 @@ def test_migration_009_follows_reply_classifications() -> None:
     revision = script.get_revision("009_booking_plans")
     assert revision is not None
     assert revision.down_revision == "008_reply_classifications"
-    assert script.get_current_head() == "009_booking_plans"
+    assert script.get_current_head() == "010_voice_qualification"

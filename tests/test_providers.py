@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings
+from vyro_growth.domain import VoiceConsentChannel, VoiceConsentSource
 from vyro_growth.models import Suppression
 from vyro_growth.providers.calendar_booking import (
     BookingPlanPayload,
@@ -18,6 +20,7 @@ from vyro_growth.providers.guarded import (
     GuardedGoogleCalendarProvider,
     GuardedSmartleadProvider,
     GuardedVoiceProvider,
+    GuardedVoiceQualificationProvider,
 )
 from vyro_growth.providers.smartlead import (
     LiveSmartleadDisabledError,
@@ -25,6 +28,12 @@ from vyro_growth.providers.smartlead import (
     StubSmartleadProvider,
 )
 from vyro_growth.providers.stubs import StubCalendarProvider, StubEmailProvider, StubVoiceProvider
+from vyro_growth.providers.voice_qualification import (
+    LiveVoiceDisabledError,
+    StubVoiceQualificationProvider,
+    VoiceConsentProof,
+    VoiceQualificationRequest,
+)
 from vyro_growth.services.operator_halt import set_operator_halt
 from vyro_growth.services.outbound_guard import OutboundBlockedError, OutboundGuard
 
@@ -220,4 +229,48 @@ def test_guarded_smartlead_blocks_when_outbound_disabled(db_session: Session) ->
     )
     with pytest.raises(OutboundBlockedError, match="global_outbound_disabled"):
         provider.plan_enrollment(_smartlead_payload())
+    assert inner.requests == []
+
+
+def _voice_request() -> VoiceQualificationRequest:
+    return VoiceQualificationRequest(
+        lead_id=uuid4(),
+        organization_id=uuid4(),
+        idempotency_key="key",
+        request_key="ops-1",
+        consent=VoiceConsentProof(
+            source=VoiceConsentSource.OPERATOR_REQUEST,
+            channel=VoiceConsentChannel.OPERATOR,
+            consented_at=datetime(2026, 8, 30, 15, 0, tzinfo=UTC),
+            permitted_phone="5551112222",
+        ),
+        organization_name="Clinic",
+    )
+
+
+def test_guarded_voice_qualification_blocks_when_live_disabled(db_session: Session) -> None:
+    inner = StubVoiceQualificationProvider()
+    settings = Settings(outbound_enabled=True, voice_live_enabled=False)
+    provider = GuardedVoiceQualificationProvider(
+        inner,
+        _cleared_guard(db_session),
+        db_session,
+        settings,
+    )
+    with pytest.raises(LiveVoiceDisabledError, match="voice_live_disabled"):
+        provider.plan_qualification(_voice_request())
+    assert inner.requests == []
+
+
+def test_guarded_voice_qualification_blocks_when_outbound_disabled(db_session: Session) -> None:
+    inner = StubVoiceQualificationProvider()
+    settings = Settings(outbound_enabled=False, voice_live_enabled=True)
+    provider = GuardedVoiceQualificationProvider(
+        inner,
+        OutboundGuard(settings),
+        db_session,
+        settings,
+    )
+    with pytest.raises(OutboundBlockedError, match="global_outbound_disabled"):
+        provider.plan_qualification(_voice_request())
     assert inner.requests == []
