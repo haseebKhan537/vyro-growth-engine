@@ -28,9 +28,9 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `/ready` reports config issues and database availability. It must not call live providers or return secrets.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, and `GET /internal/dashboard/safety` are internal operator routes, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, and `GET /internal/monitoring/status` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
-- Dashboard routes are read-only. CLI (`vyro-growth dashboard-summary`) does not use the HTTP key and does not write pipeline state.
+- Dashboard and monitoring routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`) does not use the HTTP key and does not write pipeline state.
 - These routes require explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
 - Outside development, a missing or blank `INTERNAL_API_KEY` fails closed. A missing or invalid request key is rejected.
 - In development, an empty configured key is allowed for local use. If a key is configured, the request must match it.
@@ -142,6 +142,13 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Keep `OUTBOUND_ENABLED=false` and all live-provider flags disabled in `.env.example`, Dockerfile, and Compose defaults.
 - Health and readiness checks must not call Smartlead, Apollo, OpenAI, Google Calendar, voice providers, or other paid/external services.
 - Persistent operator halt semantics are unchanged. Deployment tooling must not lift the halt.
+
+## Monitoring integrity
+- Phase 13 operator status is read-only. It does not send email, generate replies, place calls, book meetings, create calendar events or Meet links, enroll campaigns, or call live paid/external providers.
+- Report counts, run statuses, timestamps, safety flags, readiness/config state, and sanitized failures only. Do not return message bodies, personalization copy, emails, phones, evidence snippets, voice facts, API keys, or other prospect/PHI fields.
+- Stored error messages must be redacted before they appear in CLI or HTTP output. If PHI-like tokens remain, replace the message with a safe placeholder.
+- Do not invent prospect facts to fill empty metrics. Missing pipeline state is reported as zero or `not_started`.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is displayed and must not be lifted by monitoring reads.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

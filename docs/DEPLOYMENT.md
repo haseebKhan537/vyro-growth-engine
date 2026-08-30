@@ -169,7 +169,7 @@ This repository does not enable cloud snapshot automation or off-site replicatio
 1. Halt traffic to the API/worker processes. Leave `OUTBOUND_ENABLED=false`.
 2. Restore the previous application image or git revision.
 3. If a migration must be reversed and the revision is backward-compatible, `alembic downgrade -1` one step at a time. Prefer restore-from-backup when a revision is not safely reversible.
-4. Confirm `/health`, `/ready`, and `vyro-growth check-config`.
+4. Confirm `/health`, `/ready`, `vyro-growth check-config`, and `vyro-growth system-status`.
 5. Persistent operator halt should remain halted unless the owner explicitly lifts it.
 
 Do not roll forward by enabling live providers.
@@ -182,7 +182,8 @@ Do not roll forward by enabling live providers.
 4. `alembic upgrade head`
 5. Start the API (`uvicorn vyro_growth.main:app --host 0.0.0.0 --port 8000` or `docker compose up --build api`).
 6. Probe `/health` and `/ready`.
-7. Start worker checks or cron-invoked CLI jobs as needed.
+7. Run `vyro-growth system-status` and review findings before any manual rollout. See `docs/OPERATOR_HEALTH.md`.
+8. Start worker checks or cron-invoked CLI jobs as needed.
 
 Production start fails closed when `INTERNAL_API_KEY` or `DATABASE_URL` is missing, or when a live-provider flag is true without its key.
 

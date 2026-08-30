@@ -10,6 +10,8 @@ from vyro_growth.domain import (
     BookingPlanRunStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
+    FindingCode,
+    FindingSeverity,
     OptimizerRunStatus,
     OutreachPlanRunStatus,
     PersonalizationReadiness,
@@ -46,6 +48,15 @@ from vyro_growth.services.lead_scoring import (
     PersistedScoreResult,
     ScoreBand,
     ScoringResult,
+)
+from vyro_growth.services.monitoring import (
+    ActivityActionCount,
+    LatestJobStatus,
+    MonitoringReadiness,
+    MonitoringSafety,
+    MonitoringSnapshot,
+    OperationalFinding,
+    PendingReviewCounts,
 )
 from vyro_growth.services.outreach_enrollment import OutreachPlanResult
 from vyro_growth.services.personalization import PersonalizationJobResult
@@ -863,6 +874,108 @@ def test_cli_main_runs_dashboard_summary(
     assert "planned=1" in output
     assert "calls_placed=0" in output
     assert "phi_fields_present=False" in output
+
+
+def test_parser_accepts_system_status() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["system-status"])
+
+    assert args.command == "system-status"
+
+
+def test_cli_main_runs_system_status(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    snapshot = MonitoringSnapshot(
+        generated_at=datetime.now(tz=UTC),
+        read_only=True,
+        overall_severity=FindingSeverity.INFO,
+        latest_runs=(
+            LatestJobStatus(
+                phase="discovery",
+                job_name="discover_nppes_practices",
+                implemented=True,
+                status="completed",
+                started_at=None,
+                finished_at=None,
+                run_id=uuid4(),
+            ),
+        ),
+        recent_failures=(),
+        safety=MonitoringSafety(
+            outbound_enabled=False,
+            outbound_halted_settings=False,
+            operator_halt_status="halted",
+            operator_halt_reason="incident",
+            live_providers_enabled=False,
+            live_providers={"smartlead": False, "voice": False},
+            live_calendar_events=0,
+            live_meet_links=0,
+            live_phone_calls=0,
+            live_send_attempted_enrollments=0,
+            outbound_attempted_classifications=0,
+            booking_events_created=0,
+            booking_meet_links_created=0,
+            voice_calls_placed=0,
+            phi_fields_present=False,
+        ),
+        readiness=MonitoringReadiness(
+            status="ready",
+            environment="development",
+            database="ok",
+            config_ok=True,
+            config_issues=(),
+            outbound_enabled=False,
+            live_providers_enabled=False,
+            live_providers={"smartlead": False},
+            ready_for_manual_rollout=True,
+        ),
+        pending_review=PendingReviewCounts(
+            personalization_drafts=1,
+            enrollment_plans=2,
+            booking_plans=0,
+            voice_plans=0,
+            optimizer_recommendations=1,
+        ),
+        activity_summary=(ActivityActionCount(action="seeded", count=1),),
+        findings=(
+            OperationalFinding(
+                FindingSeverity.INFO,
+                FindingCode.SAFE_DEFAULTS,
+                "Outbound and live-provider flags remain disabled.",
+            ),
+        ),
+    )
+
+    class DummyService:
+        def snapshot(self, _db: object, _settings: object) -> MonitoringSnapshot:
+            return snapshot
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.OperatorMonitoringService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["system-status"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "overall=info" in output
+    assert "outbound_enabled=False" in output
+    assert "operator_halt=halted" in output
+    assert "ready_for_manual_rollout=True" in output
+    assert "drafts=1" in output
+    assert "optimizer=1" in output
+    assert "job=discover_nppes_practices" in output
+    assert "code=safe_defaults" in output
+    assert "action=seeded" in output
 
 
 def test_parser_accepts_recommend_growth() -> None:

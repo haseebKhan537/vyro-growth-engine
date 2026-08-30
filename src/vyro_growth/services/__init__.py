@@ -33,6 +33,10 @@ from vyro_growth.services.lead_scoring import (
     ScoringResult,
     score_snapshot,
 )
+from vyro_growth.services.monitoring import (
+    MonitoringSnapshot,
+    OperatorMonitoringService,
+)
 from vyro_growth.services.operator_halt import (
     DatabaseHaltReader,
     HaltReader,
@@ -109,6 +113,8 @@ __all__ = [
     "HaltStatus",
     "LeadScoringError",
     "LeadScoringService",
+    "MonitoringSnapshot",
+    "OperatorMonitoringService",
     "NppesDiscoveryService",
     "OutboundAction",
     "OutboundBlockedError",

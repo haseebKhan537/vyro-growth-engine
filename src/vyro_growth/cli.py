@@ -31,6 +31,7 @@ from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
 from vyro_growth.services.lead_scoring import LeadScoringService
+from vyro_growth.services.monitoring import MonitoringSnapshot, OperatorMonitoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.personalization import PersonalizationService
 from vyro_growth.services.reply_classification import ReplyClassificationService
@@ -225,6 +226,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print a read-only pipeline and safety summary (no outbound side effects)",
     )
     subparsers.add_parser(
+        "system-status",
+        help=(
+            "Print a read-only operator monitoring snapshot: run health, sanitized "
+            "failures, safety, readiness, and pending review counts"
+        ),
+    )
+    subparsers.add_parser(
         "recommend-growth",
         help=(
             "Generate dry-run growth optimizer recommendations for operator review "
@@ -311,6 +319,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "dashboard-summary":
         return _run_dashboard_summary()
+
+    if args.command == "system-status":
+        return _run_system_status()
 
     if args.command == "recommend-growth":
         return _run_recommend_growth()
@@ -746,6 +757,76 @@ def _print_dashboard_summary(summary: DashboardSummary) -> None:
             f"status={run.status}",
             f"run_id={run.run_id or '-'}",
         )
+
+
+def _run_system_status() -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        snapshot = OperatorMonitoringService().snapshot(db, settings)
+    _print_system_status(snapshot)
+    return 0
+
+
+def _print_system_status(snapshot: MonitoringSnapshot) -> None:
+    safety = snapshot.safety
+    readiness = snapshot.readiness
+    pending = snapshot.pending_review
+    print(
+        "System status:",
+        f"overall={snapshot.overall_severity.value}",
+        f"read_only={snapshot.read_only}",
+        f"ready_for_manual_rollout={readiness.ready_for_manual_rollout}",
+    )
+    print(
+        "Safety:",
+        f"outbound_enabled={safety.outbound_enabled}",
+        f"operator_halt={safety.operator_halt_status}",
+        f"live_providers_enabled={safety.live_providers_enabled}",
+        f"live_calendar_events={safety.live_calendar_events}",
+        f"live_meet_links={safety.live_meet_links}",
+        f"live_phone_calls={safety.live_phone_calls}",
+        f"phi_fields_present={safety.phi_fields_present}",
+    )
+    print(
+        "Readiness:",
+        f"status={readiness.status}",
+        f"environment={readiness.environment}",
+        f"database={readiness.database}",
+        f"config_ok={readiness.config_ok}",
+    )
+    print(
+        "Pending review:",
+        f"drafts={pending.personalization_drafts}",
+        f"enrollments={pending.enrollment_plans}",
+        f"bookings={pending.booking_plans}",
+        f"voice={pending.voice_plans}",
+        f"optimizer={pending.optimizer_recommendations}",
+        f"total={pending.total}",
+    )
+    for run in snapshot.latest_runs:
+        print(
+            "Latest run:",
+            f"phase={run.phase}",
+            f"job={run.job_name or '-'}",
+            f"status={run.status}",
+            f"run_id={run.run_id or '-'}",
+        )
+    for failure in snapshot.recent_failures:
+        print(
+            "Failure:",
+            f"phase={failure.phase}",
+            f"status={failure.status}",
+            f"error={failure.error_message or '-'}",
+        )
+    for finding in snapshot.findings:
+        print(
+            "Finding:",
+            f"severity={finding.severity.value}",
+            f"code={finding.code.value}",
+            f"message={finding.message}",
+        )
+    for item in snapshot.activity_summary:
+        print("Activity:", f"action={item.action}", f"count={item.count}")
 
 
 def _run_recommend_growth() -> int:

@@ -141,7 +141,7 @@ Future optimizer work (not in this phase):
 - meeting/client conversion feedback
 - operator-approved apply/rollback of a recommendation
 
-## Phase 12 — Production deployment foundation (current)
+## Phase 12 — Production deployment foundation
 Deployable and operable without live outbound or paid-provider traffic.
 - production-safe Dockerfile and Compose ops profiles
 - fail-closed runtime validation for missing internal/security settings
@@ -153,11 +153,25 @@ Deployable and operable without live outbound or paid-provider traffic.
 Future deployment work (not in this phase):
 - managed PostgreSQL/Supabase provisioning
 - secret-manager wiring beyond environment variables
-- monitoring and alerting
 - automated off-site backups
 - staged outbound rollout after explicit owner approval
 
-## Phase 13 — Additional acquisition channels
+## Phase 13 — Observability and audit monitoring foundation (current)
+Operator-visible health over existing runs and activities. No live outbound.
+- structured operational summaries of latest job/run status by phase
+- sanitized recent failures and activity action counts
+- safety status: operator halt, `OUTBOUND_ENABLED`, live-provider flags
+- Phase 12 readiness/config status and pending operator-review counts
+- findings with severity `blocked`, `warning`, or `info`
+- CLI `system-status` and internal `GET /internal/monitoring/status`
+- operator health-check docs before any manual rollout
+
+Future observability work (not in this phase):
+- paging/alerting integrations
+- long-retention metrics backends
+- public status pages
+
+## Phase 14 — Additional acquisition channels
 - Google Ads
 - SEO content/landing pages
 - referral/partner campaigns

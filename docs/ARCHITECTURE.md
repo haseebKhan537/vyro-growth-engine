@@ -6,7 +6,7 @@ Vyro Growth Engine is an event-driven sales automation platform. Core business r
 ## Major components
 
 ### API
-FastAPI exposes health, readiness, operator controls, webhook endpoints, and internal dashboard summaries. `GET /health` is liveness-only. `GET /ready` checks database connectivity and runtime config and does not call live providers. Internal operator routes such as `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, and `GET /internal/dashboard/safety` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing. Dashboard routes are read-only. Outside development, a missing `INTERNAL_API_KEY` or `DATABASE_URL` also fails process start.
+FastAPI exposes health, readiness, operator controls, webhook endpoints, internal dashboard summaries, and operator monitoring. `GET /health` is liveness-only. `GET /ready` checks database connectivity and runtime config and does not call live providers. Internal operator routes such as `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, and `GET /internal/monitoring/status` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing. Dashboard and monitoring routes are read-only. Outside development, a missing `INTERNAL_API_KEY` or `DATABASE_URL` also fails process start.
 
 ### Database
 PostgreSQL is the system of record for organizations, contacts, leads, evidence, enrichment runs, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
@@ -139,6 +139,15 @@ Deployment is configuration, containers, probes, and runbooks only. It does not 
 2. `GET /health` reports process liveness, `OUTBOUND_ENABLED`, and whether any live-provider flag is on. `GET /ready` adds a `SELECT 1` database check and config issues.
 3. The API image runs as a non-root user, defaults every live-provider flag to false, and probes `/health`. Compose `ops` profiles run `alembic upgrade head` and a worker catalog check without executing outbound jobs.
 4. Operators follow `docs/DEPLOYMENT.md` for migration order, worker/cron assumptions, backup/restore, and rollback. Persistent operator halt is unchanged.
+
+### Phase 13: observability and audit monitoring foundation
+Monitoring is read-only operational visibility. It does not send email, enroll campaigns, book meetings, place calls, or call live providers.
+
+1. Operator requests `GET /internal/monitoring/status` or `vyro-growth system-status`. The HTTP path uses the same `INTERNAL_API_KEY` gate as discovery and the dashboard. CLI does not.
+2. `OperatorMonitoringService` reads existing run, activity, safety, and Phase 12 readiness tables. It does not write pipeline rows.
+3. Output includes latest run status by phase, sanitized recent failures, safety flags, readiness/config state, pending operator-review counts, activity action counts, and findings (`blocked`, `warning`, `info`).
+4. Responses never include message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI. Error text is redacted before it leaves the service.
+5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
 
 ### Event flow
 1. Practice discovered.
