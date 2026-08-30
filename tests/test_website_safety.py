@@ -15,7 +15,7 @@ from vyro_growth.providers.website import (
 
 
 def _public_resolver(_host: str) -> tuple[str, ...]:
-    return ("203.0.113.10",)
+    return ("8.8.8.8",)
 
 
 def test_assert_public_http_url_accepts_https_public_host() -> None:

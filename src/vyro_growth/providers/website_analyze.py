@@ -51,7 +51,7 @@ GROUP_RE = re.compile(
     r"([A-Z][A-Za-z0-9&.,' -]{2,80})\b"
 )
 CITY_STATE_RE = re.compile(
-    r"\b([A-Za-z][A-Za-z .'-]{1,40}),\s*([A-Z]{2})\b"
+    r"\b([A-Z][A-Za-z.'-]{1,24}(?:\s+[A-Z][A-Za-z.'-]{1,24}){0,2}),\s*([A-Z]{2})\b"
 )
 CREDENTIAL_LI_RE = re.compile(
     r"<li\b[^>]*>[\s\S]{0,200}?\b(?:M\.?D\.?|D\.?O\.?|N\.?P\.?|P\.?A\.?C?\.?)\b[\s\S]{0,80}?</li>",
@@ -151,20 +151,15 @@ def _city_location_match(
 ) -> bool:
     if not city:
         return False
-    city_l = city.lower()
-    for found_city, found_state in CITY_STATE_RE.findall(text):
-        if found_city.lower() != city_l:
-            continue
-        if state is None or found_state.upper() == state.upper():
-            return True
-    if city_l in name_tokens:
+    if state:
+        for alias in (state, *_state_aliases(state)):
+            pattern = rf"\b{re.escape(city)}\s*,\s*{re.escape(alias)}\b"
+            if re.search(pattern, text, flags=re.IGNORECASE):
+                return True
         return False
-    if city_l not in text.lower():
+    if city.lower() in name_tokens:
         return False
-    return bool(state is None or any(
-        re.search(rf"\b{re.escape(alias)}\b", text, flags=re.IGNORECASE)
-        for alias in _state_aliases(state)
-    ))
+    return bool(re.search(rf"\b{re.escape(city)}\b", text, flags=re.IGNORECASE))
 
 
 def _contains_token_set(haystack: str, tokens: tuple[str, ...]) -> bool:
@@ -259,7 +254,9 @@ def score_page(organization: OrganizationMatchInput, page: PublicPage) -> PageMa
         confidence = min(confidence, 1.0)
 
     needle = organization.name if exact_name else (organization.city or tokens[0] if tokens else "")
-    snippet = snippet_around(text, needle) if needle else clip_text(text, EVIDENCE_SNIPPET_MAX_LENGTH)
+    snippet = (
+        snippet_around(text, needle) if needle else clip_text(text, EVIDENCE_SNIPPET_MAX_LENGTH)
+    )
     return PageMatchScore(
         url=page.url,
         name_exact=exact_name,
@@ -479,7 +476,7 @@ def extract_business_facts(page: PublicPage) -> tuple[ExtractedFact, ...]:
         email_match = EMAIL_RE.search(text)
         if email_match is not None:
             email = email_match.group(0).lower()
-    if email and not email.split("@", 1)[0] in IGNORED_EMAIL_PREFIXES:
+    if email and email.split("@", 1)[0] not in IGNORED_EMAIL_PREFIXES:
         facts.append(
             _fact(
                 WebsiteFactType.BUSINESS_EMAIL,

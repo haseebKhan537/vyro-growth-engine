@@ -25,7 +25,7 @@ def _fetcher(handlers: list[Any], **kwargs: object) -> HttpPublicPageFetcher:
     client = httpx.Client(transport=MockTransport(handlers))
     return HttpPublicPageFetcher(
         client=client,
-        resolver=lambda _host: ("203.0.113.10",),
+        resolver=lambda _host: ("8.8.8.8",),
         sleeper=lambda _seconds: None,
         rate_limit_seconds=0.0,
         **kwargs,  # type: ignore[arg-type]

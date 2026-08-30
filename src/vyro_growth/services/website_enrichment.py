@@ -219,7 +219,7 @@ class WebsiteEnrichmentService:
             specialty=organization.specialty,
         )
         decision = decide_website_match(match_input, tuple(pages))
-        facts = ()
+        facts: tuple[ExtractedFact, ...] = ()
         if decision.status is WebsiteMatchStatus.VERIFIED and decision.official_website:
             winner = next(
                 (page for page in pages if page.url == decision.official_website),

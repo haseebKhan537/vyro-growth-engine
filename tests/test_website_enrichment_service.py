@@ -86,7 +86,8 @@ def test_verified_enrichment_sets_website_and_evidence(db_session: Session) -> N
     for row in evidence:
         assert row.source_url
         assert row.confidence is not None
-        assert row.evidence_snippet is not None or row.claim_type == WebsiteFactType.WEBSITE_MATCH.value
+        match_claim = WebsiteFactType.WEBSITE_MATCH.value
+        assert row.evidence_snippet is not None or row.claim_type == match_claim
         assert row.metadata_json.get("fabricated") is False
         assert row.enrichment_run_id == result.enrichment_run_id
 

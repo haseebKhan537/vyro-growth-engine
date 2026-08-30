@@ -300,8 +300,10 @@ def normalize_url(url: str) -> str:
     host = (parsed.hostname or "").lower()
     if host.startswith("www."):
         host = host[4:]
-    path = parsed.path or "/"
-    if path != "/" and path.endswith("/"):
+    path = parsed.path or ""
+    if path == "/":
+        path = ""
+    elif path.endswith("/"):
         path = path.rstrip("/")
     netloc = host
     if parsed.port and parsed.port not in {80, 443}:
@@ -349,8 +351,9 @@ def default_host_resolver(host: str) -> tuple[str, ...]:
     addresses: list[str] = []
     for item in answers:
         address = item[4][0]
-        if address not in addresses:
-            addresses.append(address)
+        if not isinstance(address, str) or address in addresses:
+            continue
+        addresses.append(address)
     return tuple(addresses)
 
 

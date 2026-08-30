@@ -5,9 +5,8 @@ from uuid import uuid4
 import pytest
 
 from vyro_growth.cli import build_parser, main
-from vyro_growth.domain import DiscoveryRunStatus
+from vyro_growth.domain import DiscoveryRunStatus, EnrichmentRunStatus, WebsiteMatchStatus
 from vyro_growth.services.discovery import DiscoveryRunResult
-from vyro_growth.domain import EnrichmentRunStatus, WebsiteMatchStatus
 from vyro_growth.services.lead_scoring import (
     MODEL_VERSION,
     PersistedScoreResult,

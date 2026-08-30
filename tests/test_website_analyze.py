@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from vyro_growth.domain import WebsiteFactType, WebsiteMatchStatus
-from vyro_growth.providers.website import OrganizationMatchInput
-from vyro_growth.providers.website_analyze import decide_website_match, extract_business_facts
 from tests.fixtures.website_pages import (
     DIRECTORY_HTML,
     NAME_ONLY_HTML,
@@ -15,6 +12,9 @@ from tests.fixtures.website_pages import (
     WRONG_CITY_HTML,
     page,
 )
+from vyro_growth.domain import WebsiteFactType, WebsiteMatchStatus
+from vyro_growth.providers.website import OrganizationMatchInput
+from vyro_growth.providers.website_analyze import decide_website_match, extract_business_facts
 
 ORG = OrganizationMatchInput(
     name="AUSTIN FAMILY MEDICINE PLLC",
