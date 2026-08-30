@@ -60,7 +60,7 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - operator halt / `OUTBOUND_ENABLED` enforcement before any live outbound-like action
 - cadence engine, bounce/unsubscribe webhooks, and live campaign enrollment remain future work
 
-## Phase 7 — Reply classification foundation (current)
+## Phase 7 — Reply classification foundation
 Dry-run inbound classification only. No autonomous replies, booking, or calls.
 - reply classifier provider interface plus deterministic rule stub
 - guarded OpenAI boundary disabled by default and unused in CI
@@ -77,10 +77,18 @@ Future reply-agent work (not in this phase):
 - escalation rules
 - pricing/information/objection handling that sends mail
 
-## Phase 8 — Calendar and Google Meet setter
-- Google Calendar availability
-- proposed time windows
-- scheduling state machine
+## Phase 8 — Calendar and Google Meet booking foundation (current)
+Dry-run booking plans only. No calendar events, Google Meet links, email, or calls.
+- booking/calendar provider interface plus deterministic stub
+- guarded Google Calendar / Meet adapter boundary, disabled by default and unused in CI
+- persisted booking plans with proposed slots, requested window, and idempotency
+- accept only stored `meeting_request` replies or operator-created booking requests
+- conservative lead transitions using `ALLOWED_TRANSITIONS`; never `meeting_booked`
+- suppression, `OUTBOUND_ENABLED=false`, and persistent operator halt preserved
+- CLI `plan-booking` and worker job `plan_booking_slots`
+
+Future setter work (not in this phase):
+- live Google Calendar availability
 - recheck before booking
 - Google Meet creation
 - attendee invitation

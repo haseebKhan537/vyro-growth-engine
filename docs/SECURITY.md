@@ -89,6 +89,17 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - The OpenAI reply classifier is a guarded boundary. Default `OPENAI_REPLY_CLASSIFICATION_ENABLED=false`. CI and local tests use the rule stub and do not require a live key. Never commit API keys.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged; classification must not lift the halt.
 
+## Booking plan integrity
+- Phase 8 plans dry-run meeting drafts only. It does not create Google Calendar events or Google Meet links.
+- Accept only stored `meeting_request` reply classifications or explicit operator-created booking requests. Do not infer consent from generic interest.
+- Use only stored public/business identifiers and requested windows supplied by the operator or stored request. Do not invent prospect availability, emails, phones, or practice facts.
+- Honor email, domain, and organization-level suppressions. Fail closed if a suppression lookup cannot be completed.
+- The default provider is a stub. `build_booking_calendar_provider()` never returns the live adapter. `GOOGLE_CALENDAR_LIVE_ENABLED=false` by default. CI and local tests do not require a live key.
+- The guarded live adapter still requires outbound enablement and a lifted operator halt. Phase 8 does not open a default HTTP session; a future owner-approved step must inject a live client.
+- Do not send email, generate sendable autonomous replies, place calls, or enroll live campaigns.
+- Lead updates, if any, must use `ALLOWED_TRANSITIONS` and must not enter `meeting_booked`.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

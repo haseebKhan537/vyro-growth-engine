@@ -7,9 +7,15 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings
 from vyro_growth.models import Suppression
+from vyro_growth.providers.calendar_booking import (
+    BookingPlanPayload,
+    LiveGoogleCalendarDisabledError,
+    StubBookingCalendarProvider,
+)
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
     GuardedEmailProvider,
+    GuardedGoogleCalendarProvider,
     GuardedSmartleadProvider,
     GuardedVoiceProvider,
 )
@@ -154,6 +160,52 @@ def test_guarded_smartlead_blocks_when_live_disabled(db_session: Session) -> Non
     )
     with pytest.raises(LiveSmartleadDisabledError, match="smartlead_live_disabled"):
         provider.plan_enrollment(_smartlead_payload())
+    assert inner.requests == []
+
+
+def test_guarded_google_calendar_blocks_when_live_disabled(db_session: Session) -> None:
+    inner = StubBookingCalendarProvider()
+    settings = Settings(outbound_enabled=True, google_calendar_live_enabled=False)
+    provider = GuardedGoogleCalendarProvider(
+        inner,
+        _cleared_guard(db_session),
+        db_session,
+        settings,
+    )
+    with pytest.raises(LiveGoogleCalendarDisabledError, match="google_calendar_live_disabled"):
+        provider.plan_booking(
+            BookingPlanPayload(
+                lead_id=uuid4(),
+                organization_id=uuid4(),
+                idempotency_key="key",
+                request_source="operator_request",
+                organization_name="Clinic",
+                attendee_email="owner@clinic.com",
+            )
+        )
+    assert inner.requests == []
+
+
+def test_guarded_google_calendar_blocks_when_outbound_disabled(db_session: Session) -> None:
+    inner = StubBookingCalendarProvider()
+    settings = Settings(outbound_enabled=False, google_calendar_live_enabled=True)
+    provider = GuardedGoogleCalendarProvider(
+        inner,
+        OutboundGuard(settings),
+        db_session,
+        settings,
+    )
+    with pytest.raises(OutboundBlockedError, match="global_outbound_disabled"):
+        provider.plan_booking(
+            BookingPlanPayload(
+                lead_id=uuid4(),
+                organization_id=uuid4(),
+                idempotency_key="key",
+                request_source="operator_request",
+                organization_name="Clinic",
+                attendee_email="owner@clinic.com",
+            )
+        )
     assert inner.requests == []
 
 

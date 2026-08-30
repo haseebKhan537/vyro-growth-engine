@@ -24,6 +24,8 @@ PHASE_ONE_MODELS = (
     models.OutreachPlanRun,
     models.CampaignEnrollment,
     models.ReplyClassification,
+    models.BookingPlanRun,
+    models.BookingPlan,
 )
 
 

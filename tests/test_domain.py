@@ -6,6 +6,7 @@ from vyro_growth.domain import (
     ReplyIntent,
     can_transition,
     conversation_status_for,
+    desired_booking_stage,
     desired_reply_stages,
 )
 
@@ -32,6 +33,14 @@ def test_meeting_request_never_targets_booked_or_contacted() -> None:
     assert conversation_status_for(ReplyIntent.MEETING_REQUEST) is (
         ConversationStatus.MEETING_REQUESTED
     )
+
+
+def test_booking_plan_targets_meeting_ready_never_booked() -> None:
+    assert desired_booking_stage(LeadStage.INTERESTED) is LeadStage.MEETING_READY
+    assert desired_booking_stage(LeadStage.QUALIFICATION_PENDING) is LeadStage.MEETING_READY
+    assert desired_booking_stage(LeadStage.MEETING_READY) is LeadStage.MEETING_READY
+    assert desired_booking_stage(LeadStage.CONTACTED) is None
+    assert desired_booking_stage(LeadStage.DISCOVERED) is None
 
 
 def test_unsubscribe_targets_suppressed() -> None:

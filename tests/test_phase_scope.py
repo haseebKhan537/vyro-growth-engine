@@ -3,6 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from vyro_growth.config import Settings
+from vyro_growth.providers.calendar_booking import (
+    StubBookingCalendarProvider,
+    build_booking_calendar_provider,
+)
 from vyro_growth.providers.personalization import (
     StubPersonalizationProvider,
     build_personalization_provider,
@@ -22,6 +26,8 @@ def test_outbound_remains_disabled_by_default() -> None:
     assert settings.smartlead_live_enabled is False
     assert settings.smartlead_api_key == ""
     assert settings.openai_reply_classification_enabled is False
+    assert settings.google_calendar_live_enabled is False
+    assert settings.google_calendar_api_key == ""
 
 
 def test_env_example_keeps_outbound_disabled() -> None:
@@ -33,6 +39,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "OPENAI_PERSONALIZATION_ENABLED=false" in env_example
     assert "SMARTLEAD_LIVE_ENABLED=false" in env_example
     assert "OPENAI_REPLY_CLASSIFICATION_ENABLED=false" in env_example
+    assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in env_example
     assert "sk-" not in env_example
 
 
@@ -47,6 +54,19 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "reply_classification.py",
         "reply_classification_openai.py",
         "reply_classification_handler.py",
+    }
+    calendar_boundary = {
+        "config.py",
+        "observability.py",
+        "calendar_booking.py",
+        "google_calendar.py",
+        "guarded.py",
+        "booking_plan.py",
+        "booking_plan_handler.py",
+        "models.py",
+        "cli.py",
+        "domain.py",
+        "__init__.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -77,6 +97,8 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
             assert path.name in openai_boundary, f"openai token leaked into {path}"
         if "smartlead" in source:
             assert path.name in smartlead_boundary, f"smartlead token leaked into {path}"
+        if "google_calendar" in source or "google calendar" in source:
+            assert path.name in calendar_boundary, f"google calendar token leaked into {path}"
 
 
 def test_default_personalization_provider_is_stub() -> None:
@@ -102,6 +124,26 @@ def test_smartlead_stub_and_planner_do_not_use_httpx() -> None:
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "SMARTLEAD_LIVE_ENABLED=false" in env_example
+
+
+def test_default_booking_calendar_provider_is_stub() -> None:
+    settings = Settings(google_calendar_live_enabled=True, google_calendar_api_key="placeholder")
+    provider = build_booking_calendar_provider(settings)
+    assert isinstance(provider, StubBookingCalendarProvider)
+
+
+def test_booking_stub_and_planner_do_not_use_httpx() -> None:
+    paths = [
+        Path("src/vyro_growth/providers/calendar_booking.py"),
+        Path("src/vyro_growth/services/booking_plan.py"),
+        Path("src/vyro_growth/workers/booking_plan_handler.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "google.calendar" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in env_example
 
 
 def test_default_reply_classifier_is_stub() -> None:

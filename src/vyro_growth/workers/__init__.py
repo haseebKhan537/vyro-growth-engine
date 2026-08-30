@@ -1,6 +1,10 @@
 """Background worker abstractions."""
 
 from vyro_growth.workers.base import InlineJobQueue, Job, JobQueue
+from vyro_growth.workers.booking_plan_handler import (
+    PLAN_BOOKING_SLOTS_JOB,
+    PlanBookingSlotsHandler,
+)
 from vyro_growth.workers.contact_enrichment_handler import (
     ENRICH_DECISION_MAKERS_JOB,
     EnrichDecisionMakersHandler,
@@ -41,6 +45,8 @@ from vyro_growth.workers.website_enrichment_handler import (
 
 __all__ = [
     "CLASSIFY_INBOUND_REPLIES_JOB",
+    "PLAN_BOOKING_SLOTS_JOB",
+    "PlanBookingSlotsHandler",
     "DISCOVER_NPPES_PRACTICES_JOB",
     "ENRICH_DECISION_MAKERS_JOB",
     "ENRICH_ORGANIZATION_WEBSITES_JOB",

@@ -7,6 +7,7 @@ from uuid import UUID
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
 from vyro_growth.config import get_settings
 from vyro_growth.database import SessionLocal
+from vyro_growth.providers.calendar_booking import build_booking_calendar_provider
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 from vyro_growth.providers.personalization import build_personalization_provider
@@ -14,6 +15,7 @@ from vyro_growth.providers.reply_classification import build_reply_classifier
 from vyro_growth.providers.smartlead import build_smartlead_provider
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
+from vyro_growth.services.booking_plan import BookingPlanService
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
@@ -136,6 +138,32 @@ def build_parser() -> argparse.ArgumentParser:
         default=50,
         help="Maximum unclassified inbound messages when no id is provided",
     )
+
+    booking = subparsers.add_parser(
+        "plan-booking",
+        help="Create a dry-run booking plan without calendar events or Meet links",
+    )
+    booking.add_argument("--lead-id", help="Existing lead UUID")
+    booking.add_argument("--classification-id", help="Stored meeting-request classification UUID")
+    booking.add_argument(
+        "--operator-request",
+        action="store_true",
+        help="Plan from an explicit operator booking request instead of a stored reply",
+    )
+    booking.add_argument(
+        "--request-key",
+        help="Idempotency key for an operator booking request (default: operator)",
+    )
+    booking.add_argument("--window-start", help="Optional requested window start (ISO-8601)")
+    booking.add_argument("--window-end", help="Optional requested window end (ISO-8601)")
+    booking.add_argument("--state", help="Limit batch planning to a two-letter state code")
+    booking.add_argument("--city", help="Limit batch planning to a city")
+    booking.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum meeting-request classifications to plan when no id is provided",
+    )
     return parser
 
 
@@ -189,6 +217,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "classify-replies":
         return _run_classify_replies(parser, args)
+
+    if args.command == "plan-booking":
+        return _run_plan_booking(parser, args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -387,6 +418,58 @@ def _run_classify_replies(parser: argparse.ArgumentParser, args: argparse.Namesp
         )
     print(f"classified={len(results)}")
     return 0
+
+
+def _run_plan_booking(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if args.lead_id and args.classification_id and not args.operator_request:
+        parser.error("Provide --lead-id or --classification-id, not both")
+    if args.operator_request and not args.lead_id:
+        parser.error("--operator-request requires --lead-id")
+    requested_window = _requested_window(args.window_start, args.window_end)
+    service = BookingPlanService(build_booking_calendar_provider())
+    with SessionLocal() as db:
+        if args.classification_id and not args.lead_id:
+            result = service.plan_classification(db, UUID(args.classification_id))
+        elif args.lead_id:
+            result = service.plan_lead(
+                db,
+                UUID(args.lead_id),
+                classification_id=(
+                    UUID(args.classification_id) if args.classification_id else None
+                ),
+                operator_request=args.operator_request,
+                request_key=args.request_key,
+                requested_window=requested_window,
+            )
+        else:
+            result = service.plan_batch(
+                db,
+                limit=args.limit,
+                state=args.state,
+                city=args.city,
+            )
+    print(
+        "Booking plan:",
+        f"id={result.booking_plan_run_id}",
+        f"planned={result.planned_count}",
+        f"skipped={result.skipped_count}",
+        f"suppressed={result.suppressed_count}",
+        f"blocked={result.blocked_count}",
+        f"reused={result.reused_count}",
+        f"status={result.status.value}",
+    )
+    return 0
+
+
+def _requested_window(start: str | None, end: str | None) -> dict[str, object] | None:
+    if not start and not end:
+        return None
+    window: dict[str, object] = {}
+    if start:
+        window["starts_at"] = start
+    if end:
+        window["ends_at"] = end
+    return window
 
 
 if __name__ == "__main__":
