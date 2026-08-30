@@ -4,7 +4,8 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
@@ -56,7 +57,7 @@ class LeadScore(TimestampMixin, Base):
     lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
     score: Mapped[int]
     model_version: Mapped[str] = mapped_column(String(64))
-    rationale: Mapped[dict] = mapped_column(JSONB, default=dict)
+    rationale: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
 
 
 class Campaign(TimestampMixin, Base):
@@ -102,7 +103,7 @@ class Activity(TimestampMixin, Base):
     lead_id: Mapped[UUID | None] = mapped_column(ForeignKey("leads.id"), index=True)
     actor: Mapped[str] = mapped_column(String(120))
     action: Mapped[str] = mapped_column(String(120), index=True)
-    details: Mapped[dict] = mapped_column(JSONB, default=dict)
+    details: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
 
 
 class Suppression(TimestampMixin, Base):
@@ -121,4 +122,4 @@ class SourceEvidence(TimestampMixin, Base):
     source_url: Mapped[str] = mapped_column(String(1000))
     claim_type: Mapped[str] = mapped_column(String(120), index=True)
     extracted_value: Mapped[str | None] = mapped_column(Text)
-    metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    metadata_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
