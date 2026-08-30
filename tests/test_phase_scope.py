@@ -30,6 +30,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "google.calendar",
         "twilio",
         "vapi",
+        "retell",
     )
     lowered = source.lower()
     for token in forbidden:

@@ -116,7 +116,7 @@ NPPES_INTEGRATION_TESTS=1 pytest -q -m integration
 
 ## Phase 3 foundation — deterministic lead scoring
 
-Local-only scoring of discovered organizations and leads. It uses persisted NPI, location, specialty, website, contact, and `source_evidence` fields. It does not call Apollo, scraping, OpenAI, Google, Smartlead, Twilio, Vapi, or NPPES, and it does not send outreach or qualify a lead.
+Local-only scoring of discovered organizations and leads. Phase 4 upgrades the same CLI and worker. It uses persisted NPI, location, specialty, website, contact, and `source_evidence` fields. It does not call Apollo, scraping, OpenAI, Google, Smartlead, Twilio, Vapi, Retell, or NPPES, and it does not send outreach or qualify a lead.
 
 CLI:
 ```bash
@@ -127,12 +127,20 @@ vyro-growth score-leads --limit 50
 
 Worker job name: `score_discovered_leads`
 
+## Phase 4 — Advanced ICP qualification
+
+Prioritize organizations from stored public/business evidence only. Scoring remains outbound-disabled and does not call live paid or external providers.
+
 Each run writes:
-- a `lead_scores` row with total score, `deterministic-v1` model version, and factor/reason rationale
-- an `activities` audit row (`lead_scored`)
+- a `lead_scores` row with total score, `deterministic-icp-v2` model version, band, reason codes, and factor/reason rationale
+- an `activities` audit row (`lead_scored`) only when the score changes
 - a `discovered` lead for the organization if one does not already exist
 
-Missing fields score 0 and are listed. Unknown specialty fit, unverified emails, and absent websites are not inferred.
+Bands: `hot`, `high`, `medium`, `low`, `research`, `disqualified`.
+
+Material reasons link back to stored `source_evidence` (`evidence_id`, `source_url`, `claim_type`) when available. Missing, ambiguous, and conflicting facts score 0 for that factor and are not inferred. Website practice-size, ownership, provider-count, billing, and website business-contact signals are used only after a verified website match. Billing/RCM points require an explicit stored phrase.
+
+Identical reruns reuse the existing same-version score only when the canonical rationale matches, including evidence pointers and observed values. They do not create duplicate leads, activities, or outreach rows. Leads are not auto-qualified.
 
 ## Phase 3A — Official website discovery
 

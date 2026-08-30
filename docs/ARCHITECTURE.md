@@ -26,13 +26,17 @@ Integrations are isolated behind interfaces so providers can be replaced without
 6. No outbound actions occur in this phase.
 
 ### Phase 3 foundation: deterministic lead scoring
-Scoring uses only persisted local fields (`organizations`, `leads`, `contacts`, `source_evidence`). It does not call NPPES, Apollo, scraping, OpenAI, Google, Smartlead, Twilio, Vapi, or any other provider.
+Scoring began as a local-only 0–100 total from persisted organization/lead/contact/evidence fields. Phase 4 upgrades that engine; the CLI and worker entrypoints are unchanged.
+
+### Phase 4: advanced ICP qualification
+Scoring uses only stored public/business evidence. It does not call NPPES, Apollo, scraping, OpenAI, Google, Smartlead, Twilio, Vapi, Retell, or any other live provider.
 
 1. Operator or worker submits `vyro-growth score-leads` or job `score_discovered_leads` with a lead id, organization id, or batch limit. There is no HTTP trigger.
-2. `LeadScoringService` builds a snapshot from stored values only. Missing fields score 0 and are listed; unknown specialty fit is not assumed; websites and contacts are never inferred from a name.
-3. The result is an integer 0–100 total plus an auditable rationale (`factors`, `missing_fields`, `used_fields`, `fabricated_facts: false`).
-4. A `lead_scores` row and an `activities` audit row are written. A missing lead for an organization is created in `discovered` and is not auto-qualified.
-5. No outbound actions occur.
+2. `LeadScoringService` builds a snapshot from stored NPPES identity/specialty/location facts, website match status, website enrichment facts, contact-enrichment signals, and already-stored public business contacts. Missing, ambiguous, and conflicting facts stay unknown.
+3. Website-derived practice-size, provider-count, independence, larger-group, billing/RCM, and website business-contact signals are scored only when a verified website match exists and the claim is explicitly stored. Billing/revenue-cycle points require an allowlisted phrase in source evidence.
+4. The result is an integer 0–100 total, a band (`hot`, `high`, `medium`, `low`, `research`, `disqualified`), reason codes, and evidence links (`evidence_id`, `source_url`, `claim_type`) on material factors. `fabricated_facts` is always false.
+5. A `lead_scores` row and an `activities` audit row are written on change. Reruns reuse the latest same-version score only when the canonical rationale is identical, including evidence pointers, observed values, missing fields, and research reasons. Identical reuse does not add another activity, lead, or outreach row. A missing lead is created in `discovered` and is not auto-qualified.
+6. No outbound actions occur.
 
 ### Phase 3A: official website discovery
 Website enrichment is public-page-only. It does not contact prospects, create contacts, or call later-phase providers.

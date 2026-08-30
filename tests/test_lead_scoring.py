@@ -18,6 +18,7 @@ from vyro_growth.services.lead_scoring import (
     FactorStatus,
     LeadScoringError,
     LeadScoringService,
+    ReasonCode,
     ScoreBand,
     ScoreFactor,
     ScoringResult,
@@ -79,40 +80,27 @@ def test_classify_specialty_is_conservative() -> None:
     assert classify_specialty(None).value == "unknown"
 
 
-def test_complete_local_record_scores_high_with_all_factors() -> None:
+def test_complete_local_record_scores_high_without_website_enrichment() -> None:
     result = score_snapshot(_target_snapshot())
 
-    assert result.total == 100
+    assert result.total == 71
     assert result.band is ScoreBand.HIGH
     assert result.model_version == MODEL_VERSION
     assert result.fabricated_facts is False
     assert result.external_providers_called == ()
-    assert _factor(result, FactorCode.NPI_IDENTITY).points == 20
-    assert _factor(result, FactorCode.SPECIALTY_FIT).points == 15
-    assert _factor(result, FactorCode.LOCAL_WEBSITE).points == 5
-    assert _factor(result, FactorCode.VERIFIED_EMAIL).points == 5
+    assert _factor(result, FactorCode.NPI_IDENTITY).points == 12
+    assert _factor(result, FactorCode.SPECIALTY_FIT).points == 13
+    assert _factor(result, FactorCode.LOCAL_WEBSITE).points == 3
+    assert _factor(result, FactorCode.VERIFIED_EMAIL).points == 4
+    assert _factor(result, FactorCode.WEBSITE_MATCH).status is FactorStatus.MISSING
 
 
 def test_missing_data_scores_zero_and_lists_missing_fields() -> None:
-    result = score_snapshot(
-        ScoringSnapshot(
-            organization_name=None,
-            npi=None,
-            city=None,
-            state=None,
-            specialty=None,
-            website=None,
-            nppes_status=None,
-            has_nppes_evidence=False,
-            nppes_source_url=None,
-            verified_email=False,
-            has_contact_email=False,
-            decision_maker_title=None,
-        )
-    )
+    result = score_snapshot(ScoringSnapshot())
 
     assert result.total == 0
-    assert result.band is ScoreBand.LOW
+    assert result.band is ScoreBand.RESEARCH
+    assert ReasonCode.RESEARCH_SPECIALTY_MISSING.value in result.research_reasons
     assert "organization.name" in result.missing_fields
     assert "organization.npi" in result.missing_fields
     assert "organization.website" in result.missing_fields
@@ -142,7 +130,11 @@ def test_rationale_payload_is_auditable_and_json_serializable() -> None:
         "no_outbound": True,
         "local_data_only": True,
         "unknown_not_inferred": True,
+        "website_facts_require_verified_match": True,
+        "billing_signals_require_explicit_evidence": True,
     }
+    assert "reason_codes" in payload
+    assert payload["fabricated_facts"] is False
     assert isinstance(payload["factors"], list)
     assert {factor["code"] for factor in payload["factors"]} == {code.value for code in FactorCode}
     json.dumps(payload)
@@ -167,8 +159,9 @@ def test_unknown_specialty_is_not_assumed_positive() -> None:
 
     present = _factor(result, FactorCode.SPECIALTY_PRESENT)
     fit = _factor(result, FactorCode.SPECIALTY_FIT)
-    assert present.points == 8
+    assert present.points == 5
     assert fit.points == 0
+    assert result.band is not ScoreBand.HOT
     assert fit.status is FactorStatus.APPLIED
     assert "not assumed" in fit.reason
 
@@ -177,7 +170,9 @@ def test_hospital_specialty_is_penalized() -> None:
     result = score_snapshot(_target_snapshot(specialty="General Acute Care Hospital"))
 
     fit = _factor(result, FactorCode.SPECIALTY_FIT)
-    assert fit.points == -10
+    assert fit.points == 0
+    assert result.band is ScoreBand.DISQUALIFIED
+    assert ReasonCode.DISQ_EXCLUDED_SPECIALTY.value in result.disqualification_codes
     assert "outside the conservative medical billing ICP" in fit.reason
 
 
@@ -222,6 +217,8 @@ def test_excluded_organization_name_applies_penalty() -> None:
     excluded = _factor(result, FactorCode.EXCLUDED_ORGANIZATION_NAME)
     assert excluded.points == -15
     assert excluded.status is FactorStatus.APPLIED
+    assert result.band is ScoreBand.DISQUALIFIED
+    assert ReasonCode.DISQ_EXCLUDED_ORGANIZATION.value in result.disqualification_codes
 
 
 def _seed_organization(
@@ -330,7 +327,7 @@ def test_unverified_contact_email_is_ignored_in_persisted_score(db_session: Sess
     title = _factor(result.scoring, FactorCode.DECISION_MAKER_TITLE)
 
     assert email.points == 0
-    assert title.points == 5
+    assert title.points == 6
     assert title.observed_value == "Practice Manager"
 
 
@@ -376,6 +373,11 @@ def test_scoring_modules_do_not_import_outbound_or_enrichment_providers() -> Non
         "vyro_growth.providers.nppes_client",
         "vyro_growth.providers.stubs",
         "vyro_growth.providers.guarded",
+        "vyro_growth.providers.website_client",
+        "vyro_growth.providers.decision_makers",
+        "vyro_growth.services.outbound_guard",
+        "vyro_growth.services.website_enrichment",
+        "vyro_growth.services.contact_enrichment",
     }
     imported: set[str] = set()
     for path in files:
@@ -394,6 +396,7 @@ def test_scoring_modules_do_not_import_outbound_or_enrichment_providers() -> Non
         "firecrawl",
         "twilio",
         "vapi",
+        "retell",
         "google.calendar",
     )
     for token in forbidden_tokens:

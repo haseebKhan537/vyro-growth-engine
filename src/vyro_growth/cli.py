@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     score = subparsers.add_parser(
         "score-leads",
-        help="Score discovered organizations or leads from local data only",
+        help="Score discovered organizations from stored public/business evidence only",
     )
     score.add_argument("--lead-id", help="Existing lead UUID")
     score.add_argument("--organization-id", help="Organization UUID")
