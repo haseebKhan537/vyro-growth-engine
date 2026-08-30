@@ -107,7 +107,7 @@ def test_no_injected_client_never_opens_live_http() -> None:
 def test_injected_client_parses_dry_run_result() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["authorization"] == "Bearer test-placeholder-key"
-        assert b'"dry_run": true' in request.content
+        assert b'"dry_run":true' in request.content
         return httpx.Response(
             200,
             json={
