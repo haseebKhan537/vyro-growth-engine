@@ -23,6 +23,7 @@ PHASE_ONE_MODELS = (
     models.PersonalizationDraft,
     models.OutreachPlanRun,
     models.CampaignEnrollment,
+    models.ReplyClassification,
 )
 
 

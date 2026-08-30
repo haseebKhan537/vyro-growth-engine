@@ -20,11 +20,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
 from vyro_growth.domain import (
+    ConversationStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
     EnrollmentStatus,
     LeadStage,
     OutreachPlanRunStatus,
+    ReplyClassificationOutcome,
+    ReplyIntent,
 )
 
 
@@ -125,7 +128,7 @@ class Conversation(TimestampMixin, Base):
     __tablename__ = "conversations"
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
-    status: Mapped[str] = mapped_column(String(64), default="open")
+    status: Mapped[str] = mapped_column(String(64), default=ConversationStatus.OPEN.value)
     summary: Mapped[str | None] = mapped_column(Text)
 
 
@@ -321,3 +324,42 @@ class CampaignEnrollment(TimestampMixin, Base):
     details_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     campaign: Mapped[Campaign] = relationship(back_populates="enrollments")
     plan_run: Mapped[OutreachPlanRun | None] = relationship(back_populates="enrollments")
+
+
+class ReplyClassification(TimestampMixin, Base):
+    __tablename__ = "reply_classifications"
+    __table_args__ = (
+        UniqueConstraint(
+            "lead_id",
+            "content_hash",
+            name="uq_reply_classifications_lead_content_hash",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
+    outreach_message_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("outreach_messages.id"), unique=True, index=True
+    )
+    conversation_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("conversations.id"), index=True
+    )
+    provider_message_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    sender_email: Mapped[str | None] = mapped_column(String(320), index=True)
+    intent: Mapped[str] = mapped_column(String(64), default=ReplyIntent.UNKNOWN.value, index=True)
+    outcome: Mapped[str] = mapped_column(
+        String(32), default=ReplyClassificationOutcome.UNKNOWN.value, index=True
+    )
+    confidence: Mapped[float] = mapped_column(Float)
+    provider_name: Mapped[str] = mapped_column(String(64), index=True)
+    schema_version: Mapped[str] = mapped_column(String(64))
+    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+    unsubscribe_explicit: Mapped[bool] = mapped_column(Boolean, default=False)
+    suppressed: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    lead_stage_before: Mapped[str] = mapped_column(String(64))
+    lead_stage_after: Mapped[str] = mapped_column(String(64))
+    conversation_status_after: Mapped[str | None] = mapped_column(String(64))
+    matched_signals: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    rationale_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)

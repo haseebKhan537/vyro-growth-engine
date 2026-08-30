@@ -80,6 +80,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not place calls, book calendar events, scrape patient data, or collect PHI.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 
+## Reply classification integrity
+- Classification is dry-run only. It is not outreach and does not generate a reply to send.
+- Operate from stored inbound message text/metadata or test fixtures. Do not poll a live mailbox or call Smartlead/OpenAI/Google/Twilio by default.
+- Do not infer medical conditions, patient details, revenue, denial rates, A/R, payer mix, billing software, or other private business facts from a reply.
+- Explicit unsubscribe / opt-out language must create or confirm a permanent suppression record.
+- Lead/conversation updates are conservative and must use `ALLOWED_TRANSITIONS`. Never advance into `contacted` or `meeting_booked` from this layer. Do not book calendar events or create Google Meet links.
+- The OpenAI reply classifier is a guarded boundary. Default `OPENAI_REPLY_CLASSIFICATION_ENABLED=false`. CI and local tests use the rule stub and do not require a live key. Never commit API keys.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged; classification must not lift the halt.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

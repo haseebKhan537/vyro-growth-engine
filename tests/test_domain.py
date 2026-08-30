@@ -1,6 +1,13 @@
 import pytest
 
-from vyro_growth.domain import LeadStage, can_transition
+from vyro_growth.domain import (
+    ConversationStatus,
+    LeadStage,
+    ReplyIntent,
+    can_transition,
+    conversation_status_for,
+    desired_reply_stages,
+)
 
 
 def test_valid_transition() -> None:
@@ -15,3 +22,18 @@ def test_invalid_transition_skips_pipeline() -> None:
 def test_terminal_states_do_not_transition(terminal: LeadStage) -> None:
     for target in LeadStage:
         assert not can_transition(terminal, target)
+
+
+def test_meeting_request_never_targets_booked_or_contacted() -> None:
+    targets = desired_reply_stages(ReplyIntent.MEETING_REQUEST)
+    assert LeadStage.MEETING_BOOKED not in targets
+    assert LeadStage.MEETING_READY not in targets
+    assert LeadStage.CONTACTED not in targets
+    assert conversation_status_for(ReplyIntent.MEETING_REQUEST) is (
+        ConversationStatus.MEETING_REQUESTED
+    )
+
+
+def test_unsubscribe_targets_suppressed() -> None:
+    assert desired_reply_stages(ReplyIntent.UNSUBSCRIBE) == (LeadStage.SUPPRESSED,)
+    assert conversation_status_for(ReplyIntent.UNSUBSCRIBE) is ConversationStatus.SUPPRESSED

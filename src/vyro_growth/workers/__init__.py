@@ -25,6 +25,10 @@ from vyro_growth.workers.personalization_handler import (
     PERSONALIZE_SCORED_LEADS_JOB,
     PersonalizeScoredLeadsHandler,
 )
+from vyro_growth.workers.reply_classification_handler import (
+    CLASSIFY_INBOUND_REPLIES_JOB,
+    ClassifyInboundRepliesHandler,
+)
 from vyro_growth.workers.runner import InlineWorkerRunner, JobHandler, UnknownJobError, WorkerRunner
 from vyro_growth.workers.scoring_handler import (
     SCORE_DISCOVERED_LEADS_JOB,
@@ -36,9 +40,11 @@ from vyro_growth.workers.website_enrichment_handler import (
 )
 
 __all__ = [
+    "CLASSIFY_INBOUND_REPLIES_JOB",
     "DISCOVER_NPPES_PRACTICES_JOB",
     "ENRICH_DECISION_MAKERS_JOB",
     "ENRICH_ORGANIZATION_WEBSITES_JOB",
+    "ClassifyInboundRepliesHandler",
     "DiscoverNppesPracticesHandler",
     "EnrichDecisionMakersHandler",
     "EnrichOrganizationWebsitesHandler",
