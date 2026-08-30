@@ -26,6 +26,7 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - source evidence retention
 
 ## Phase 3 — Research and enrichment
+- deterministic local lead scoring from existing organization/evidence fields (no external providers)
 - official website resolution
 - site crawling/search adapter
 - provider count and location extraction
@@ -41,7 +42,7 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - suppression before qualification/outreach
 
 ## Phase 5 — AI qualification and scoring
-- deterministic base scoring
+- deterministic base scoring (started in Phase 3; remain local-only until AI rationale is grounded)
 - AI-assisted rationale
 - structured outputs
 - evidence grounding

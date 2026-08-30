@@ -25,6 +25,15 @@ Integrations are isolated behind interfaces so providers can be replaced without
 5. Duplicate NPIs within a run are skipped; reruns update existing organizations safely and append new evidence/audit history.
 6. No outbound actions occur in this phase.
 
+### Phase 3 foundation: deterministic lead scoring
+Scoring uses only persisted local fields (`organizations`, `leads`, `contacts`, `source_evidence`). It does not call NPPES, Apollo, scraping, OpenAI, Google, Smartlead, Twilio, Vapi, or any other provider.
+
+1. Operator or worker submits `vyro-growth score-leads` or job `score_discovered_leads` with a lead id, organization id, or batch limit. There is no HTTP trigger.
+2. `LeadScoringService` builds a snapshot from stored values only. Missing fields score 0 and are listed; unknown specialty fit is not assumed; websites and contacts are never inferred from a name.
+3. The result is an integer 0–100 total plus an auditable rationale (`factors`, `missing_fields`, `used_fields`, `fabricated_facts: false`).
+4. A `lead_scores` row and an `activities` audit row are written. A missing lead for an organization is created in `discovered` and is not auto-qualified.
+5. No outbound actions occur.
+
 ### Event flow
 1. Practice discovered.
 2. Practice normalized/deduplicated.
