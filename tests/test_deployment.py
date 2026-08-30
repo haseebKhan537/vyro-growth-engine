@@ -51,8 +51,8 @@ def test_compose_keeps_outbound_and_live_providers_off() -> None:
     assert 'SMARTLEAD_LIVE_ENABLED: "false"' in compose
     assert 'GOOGLE_CALENDAR_LIVE_ENABLED: "false"' in compose
     assert 'VOICE_LIVE_ENABLED: "false"' in compose
-    assert "vyro-growth worker --check" in compose
-    assert "alembic upgrade head" in compose
+    assert '"vyro-growth", "worker", "--check"' in compose
+    assert '"alembic", "upgrade", "head"' in compose
     assert "/health" in compose
     assert "SMARTLEAD_API_KEY:" not in compose
     assert "OPENAI_API_KEY:" not in compose
