@@ -111,8 +111,21 @@ class Suppression(TimestampMixin, Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     email: Mapped[str | None] = mapped_column(String(320), unique=True, index=True)
     domain: Mapped[str | None] = mapped_column(String(255), index=True)
+    phone: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
     reason: Mapped[str] = mapped_column(String(120))
     permanent: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+GLOBAL_OPERATOR_CONTROL_KEY = "global"
+
+
+class OperatorControl(TimestampMixin, Base):
+    """Singleton-style operator safety controls, keyed by a stable name."""
+
+    __tablename__ = "operator_controls"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    outbound_halted: Mapped[bool] = mapped_column(Boolean, default=True)
+    reason: Mapped[str | None] = mapped_column(String(255))
 
 
 class DiscoveryRun(TimestampMixin, Base):

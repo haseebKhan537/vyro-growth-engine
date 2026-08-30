@@ -12,7 +12,17 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://vyro:vyro@localhost:5432/vyro_growth"
     outbound_enabled: bool = Field(
         default=False,
-        description="Global kill switch. Must be explicitly enabled before any outbound action.",
+        description=(
+            "Primary env enablement for outreach-like actions. Must be explicitly true, "
+            "and is not sufficient if the operator halt is active."
+        ),
+    )
+    outbound_halted: bool = Field(
+        default=False,
+        description=(
+            "Settings-backed operator halt. When true, blocks outbound even if "
+            "OUTBOUND_ENABLED is true."
+        ),
     )
     log_level: str = "INFO"
     nppes_api_base_url: str = "https://npiregistry.cms.hhs.gov/api/"
