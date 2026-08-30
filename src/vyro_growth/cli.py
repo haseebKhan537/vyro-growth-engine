@@ -22,6 +22,7 @@ from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
 from vyro_growth.services.booking_plan import BookingPlanService
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
+from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.personalization import PersonalizationService
@@ -210,6 +211,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=50,
         help="Maximum inbound call-request messages to plan when no id is provided",
     )
+
+    subparsers.add_parser(
+        "dashboard-summary",
+        help="Print a read-only pipeline and safety summary (no outbound side effects)",
+    )
     return parser
 
 
@@ -269,6 +275,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "plan-voice-qualification":
         return _run_plan_voice_qualification(parser, args)
+
+    if args.command == "dashboard-summary":
+        return _run_dashboard_summary()
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -609,6 +618,92 @@ def _voice_channel(value: str | None) -> VoiceConsentChannel | None:
         return VoiceConsentChannel(value)
     except ValueError:
         return None
+
+
+def _run_dashboard_summary() -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        summary = DashboardAnalyticsService().summarize(db, settings)
+    _print_dashboard_summary(summary)
+    return 0
+
+
+def _print_dashboard_summary(summary: DashboardSummary) -> None:
+    safety = summary.safety
+    print(
+        "Dashboard safety:",
+        f"outbound_enabled={safety.outbound_enabled}",
+        f"operator_halt={safety.operator_halt_status}",
+        f"planned={safety.planned_count}",
+        f"skipped={safety.skipped_count}",
+        f"suppressed={safety.suppressed_count}",
+        f"blocked={safety.blocked_count}",
+        f"live_calendar_events={safety.live_calendar_events}",
+        f"live_meet_links={safety.live_meet_links}",
+        f"live_phone_calls={safety.live_phone_calls}",
+        f"phi_fields_present={safety.phi_fields_present}",
+    )
+    print(
+        "Discovery:",
+        f"organizations={summary.discovery.organizations}",
+        f"leads={summary.discovery.leads}",
+        f"runs={summary.discovery.discovery_runs}",
+    )
+    print(
+        "Website enrichment:",
+        f"runs={summary.website_enrichment.enrichment_runs}",
+        f"match={summary.website_enrichment.by_match_status}",
+    )
+    print(
+        "Decision-makers:",
+        f"contacts={summary.decision_maker_enrichment.contacts}",
+        f"runs={summary.decision_maker_enrichment.enrichment_runs}",
+    )
+    print(
+        "Scoring:",
+        f"latest={summary.scoring.latest_scores}",
+        f"bands={summary.scoring.by_band}",
+    )
+    print(
+        "Personalization:",
+        f"drafts={summary.personalization.drafts}",
+        f"readiness={summary.personalization.by_readiness}",
+    )
+    print(
+        "Outreach plans:",
+        f"planned={summary.outreach_plans.planned_count}",
+        f"skipped={summary.outreach_plans.skipped_count}",
+        f"suppressed={summary.outreach_plans.suppressed_count}",
+        f"blocked={summary.outreach_plans.blocked_count}",
+    )
+    print(
+        "Reply classifications:",
+        f"total={summary.reply_classifications.classifications}",
+        f"outcomes={summary.reply_classifications.by_outcome}",
+    )
+    print(
+        "Booking plans:",
+        f"planned={summary.booking_plans.planned_count}",
+        f"events_created={summary.booking_plans.events_created}",
+        f"meet_links_created={summary.booking_plans.meet_links_created}",
+    )
+    print(
+        "Voice qualification plans:",
+        f"planned={summary.voice_qualification_plans.planned_count}",
+        f"calls_placed={summary.voice_qualification_plans.calls_placed}",
+    )
+    print(
+        "Suppressions:",
+        f"records={summary.suppressions.records}",
+        f"reasons={summary.suppressions.by_reason}",
+    )
+    for run in summary.latest_runs:
+        print(
+            "Latest run:",
+            f"phase={run.phase}",
+            f"status={run.status}",
+            f"run_id={run.run_id or '-'}",
+        )
 
 
 if __name__ == "__main__":

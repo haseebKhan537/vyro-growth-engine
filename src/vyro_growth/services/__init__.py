@@ -11,6 +11,11 @@ from vyro_growth.services.contact_enrichment import (
     ContactEnrichmentResult,
     ContactEnrichmentService,
 )
+from vyro_growth.services.dashboard import (
+    DashboardAnalyticsService,
+    DashboardSummary,
+    SafetyCard,
+)
 from vyro_growth.services.discovery import (
     DiscoveryQueryError,
     DiscoveryRunResult,
@@ -80,6 +85,8 @@ __all__ = [
     "ContactEnrichmentError",
     "ContactEnrichmentResult",
     "ContactEnrichmentService",
+    "DashboardAnalyticsService",
+    "DashboardSummary",
     "DatabaseHaltReader",
     "DiscoveryQueryError",
     "DiscoveryRunResult",
@@ -104,6 +111,7 @@ __all__ = [
     "ReplyClassificationError",
     "ReplyClassificationJobResult",
     "ReplyClassificationService",
+    "SafetyCard",
     "ScoringResult",
     "VoiceConsentInput",
     "VoiceItemResult",

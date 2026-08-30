@@ -30,7 +30,7 @@ def test_non_development_fails_closed_without_configured_key() -> None:
     assert not is_internal_http_trigger_allowed(decision)
     assert internal_trigger_http_error(decision) == (
         403,
-        "Internal discovery trigger requires INTERNAL_API_KEY",
+        "Internal operator route requires INTERNAL_API_KEY",
     )
 
 

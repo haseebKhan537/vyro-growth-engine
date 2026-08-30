@@ -22,12 +22,13 @@ This repository is a sales/prospecting system. It must not ingest, store, proces
 Do not implement indiscriminate cold AI robocalling. Voice automation is restricted to inbound leads, requested callbacks, or prospects with documented permission/consent.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes` is an internal operator trigger, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, and `GET /internal/dashboard/safety` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
-- The HTTP trigger requires explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
+- Dashboard routes are read-only. CLI (`vyro-growth dashboard-summary`) does not use the HTTP key and does not write pipeline state.
+- These routes require explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
 - Outside development, a missing or blank `INTERNAL_API_KEY` fails closed. A missing or invalid request key is rejected.
 - In development, an empty configured key is allowed for local use. If a key is configured, the request must match it.
-- Do not expose this route on a public ingress. Prefer CLI or worker execution in deployed environments.
+- Do not expose these routes on a public ingress. Prefer CLI or worker execution in deployed environments.
 
 ## Secrets
 - Never commit API keys, passwords, OAuth refresh tokens, SMTP credentials, or private keys.
@@ -111,6 +112,12 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - The guarded live adapter still requires outbound enablement, documented consent, and a lifted operator halt. Phase 9 does not open a default HTTP session; a future owner-approved step must inject a live client.
 - Do not send email, generate sendable autonomous replies, create calendar events, create Google Meet links, book meetings, or enroll live campaigns.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
+## Dashboard integrity
+- Phase 10 dashboard summaries are read-only. They do not send email, generate replies, place calls, book meetings, create calendar events or Meet links, enroll campaigns, or call live paid/external providers.
+- Report counts, run statuses, timestamps, and safety flags only. Do not return message bodies, personalization copy, emails, phones, evidence snippets, voice facts, or other prospect/PHI fields.
+- Do not invent prospect facts to fill empty metrics. Missing pipeline state is reported as zero or `not_started`.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is displayed and must not be lifted by dashboard reads.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

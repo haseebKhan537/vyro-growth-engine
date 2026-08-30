@@ -77,7 +77,7 @@ def internal_trigger_http_error(decision: InternalTriggerDecision) -> tuple[int,
         case InternalTriggerDecision.ALLOWED | InternalTriggerDecision.DEVELOPMENT_OPEN:
             return None
         case InternalTriggerDecision.KEY_NOT_CONFIGURED:
-            return (403, "Internal discovery trigger requires INTERNAL_API_KEY")
+            return (403, "Internal operator route requires INTERNAL_API_KEY")
         case InternalTriggerDecision.MISSING_KEY | InternalTriggerDecision.INVALID_KEY:
             return (401, "Invalid or missing internal API key")
         case _:

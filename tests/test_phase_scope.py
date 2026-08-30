@@ -61,6 +61,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "reply_classification.py",
         "reply_classification_openai.py",
         "reply_classification_handler.py",
+        "dashboard.py",
     }
     calendar_boundary = {
         "config.py",
@@ -74,6 +75,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "cli.py",
         "domain.py",
         "__init__.py",
+        "dashboard.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -87,6 +89,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "cli.py",
         "domain.py",
         "__init__.py",
+        "dashboard.py",
     }
     forbidden = (
         "apollo",

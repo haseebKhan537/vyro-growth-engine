@@ -33,8 +33,9 @@ class Settings(BaseSettings):
     internal_api_key: str = Field(
         default="",
         description=(
-            "Shared secret for internal HTTP triggers such as NPPES discovery. "
-            "Required outside development; empty is fail-closed in those environments."
+            "Shared secret for internal HTTP routes such as NPPES discovery and the "
+            "operator dashboard. Required outside development; empty is fail-closed "
+            "in those environments."
         ),
     )
     website_fetch_timeout_seconds: float = Field(default=8.0, ge=1.0)
