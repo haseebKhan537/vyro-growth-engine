@@ -19,6 +19,7 @@ from vyro_growth.models import (
     SourceEvidence,
 )
 from vyro_growth.services.lead_scoring import (
+    EvidencePointer,
     FactorCode,
     FactorStatus,
     LeadScoringService,
@@ -27,6 +28,7 @@ from vyro_growth.services.lead_scoring import (
     ScoreFactor,
     ScoringResult,
     ScoringSnapshot,
+    canonical_rationale_digest,
     score_snapshot,
 )
 
@@ -452,6 +454,89 @@ def test_scoring_rerun_is_idempotent_and_creates_no_outreach(db_session: Session
     assert outreach_count == 0
     assert first.scoring.fabricated_facts is False
     assert first.scoring.external_providers_called == ()
+
+
+def test_rationale_digest_changes_when_evidence_pointers_change() -> None:
+    first = score_snapshot(
+        _enriched_snapshot(
+            website_match_evidence=EvidencePointer(
+                evidence_id="11111111-1111-1111-1111-111111111111",
+                source_url="https://austinfamily.example",
+                claim_type=WebsiteFactType.WEBSITE_MATCH.value,
+                extracted_value="verified",
+            )
+        )
+    )
+    second = score_snapshot(
+        _enriched_snapshot(
+            website_match_evidence=EvidencePointer(
+                evidence_id="22222222-2222-2222-2222-222222222222",
+                source_url="https://www.austinfamily.example/contact",
+                claim_type=WebsiteFactType.WEBSITE_MATCH.value,
+                extracted_value="verified",
+            )
+        )
+    )
+
+    assert first.total == second.total
+    assert first.band == second.band
+    assert first.reason_codes == second.reason_codes
+    assert first.disqualification_codes == second.disqualification_codes
+    assert canonical_rationale_digest(first.to_rationale()) != canonical_rationale_digest(
+        second.to_rationale()
+    )
+    assert _factor(first, FactorCode.WEBSITE_MATCH).source_url != _factor(
+        second, FactorCode.WEBSITE_MATCH
+    ).source_url
+
+
+def test_evidence_pointer_change_writes_new_score_when_totals_match(db_session: Session) -> None:
+    organization = _seed_organization(db_session)
+    first_match = _add_fact(
+        db_session,
+        organization,
+        WebsiteFactType.WEBSITE_MATCH.value,
+        "verified",
+        source_url="https://austinfamily.example",
+    )
+    service = LeadScoringService()
+    first = service.score_organization(db_session, organization.id)
+
+    second_match = _add_fact(
+        db_session,
+        organization,
+        WebsiteFactType.WEBSITE_MATCH.value,
+        "verified",
+        source_url="https://www.austinfamily.example/about",
+    )
+    second = service.score_organization(db_session, organization.id)
+
+    first_score = db_session.get(LeadScore, first.lead_score_id)
+    second_score = db_session.get(LeadScore, second.lead_score_id)
+    first_match_factor = _factor(first.scoring, FactorCode.WEBSITE_MATCH)
+    second_match_factor = _factor(second.scoring, FactorCode.WEBSITE_MATCH)
+    activity_count = db_session.scalar(
+        select(func.count()).select_from(Activity).where(Activity.action == "lead_scored")
+    )
+    outreach_count = db_session.scalar(select(func.count()).select_from(OutreachMessage))
+
+    assert first.scoring.total == second.scoring.total
+    assert first.scoring.band == second.scoring.band
+    assert first.scoring.reason_codes == second.scoring.reason_codes
+    assert first.scoring.disqualification_codes == second.scoring.disqualification_codes
+    assert first.reused_existing_score is False
+    assert second.reused_existing_score is False
+    assert second.lead_score_id != first.lead_score_id
+    assert first_match_factor.evidence_id == str(first_match.id)
+    assert second_match_factor.evidence_id == str(second_match.id)
+    assert first_match_factor.source_url == "https://austinfamily.example"
+    assert second_match_factor.source_url == "https://www.austinfamily.example/about"
+    assert first_score is not None
+    assert second_score is not None
+    assert first_score.rationale != second_score.rationale
+    assert second_score.rationale["factors"]
+    assert activity_count == 2
+    assert outreach_count == 0
 
 
 def test_changed_evidence_writes_new_score_without_outbound(db_session: Session) -> None:

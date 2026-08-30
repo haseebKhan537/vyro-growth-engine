@@ -140,7 +140,7 @@ Bands: `hot`, `high`, `medium`, `low`, `research`, `disqualified`.
 
 Material reasons link back to stored `source_evidence` (`evidence_id`, `source_url`, `claim_type`) when available. Missing, ambiguous, and conflicting facts score 0 for that factor and are not inferred. Website practice-size, ownership, provider-count, billing, and website business-contact signals are used only after a verified website match. Billing/RCM points require an explicit stored phrase.
 
-Identical reruns reuse the existing same-version score and do not create duplicate leads, activities, or outreach rows. Leads are not auto-qualified.
+Identical reruns reuse the existing same-version score only when the canonical rationale matches, including evidence pointers and observed values. They do not create duplicate leads, activities, or outreach rows. Leads are not auto-qualified.
 
 ## Phase 3A — Official website discovery
 

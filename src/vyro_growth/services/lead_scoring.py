@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
@@ -2085,7 +2086,7 @@ class LeadScoringService:
         scoring = score_snapshot(snapshot_from_records(organization, evidence_rows, contacts))
         rationale = scoring.to_rationale()
         existing = self._latest_score(db, lead.id)
-        if existing is not None and _same_score(existing, scoring, rationale):
+        if existing is not None and _same_score(existing, rationale):
             if commit:
                 db.commit()
             logger.info(
@@ -2162,17 +2163,11 @@ class LeadScoringService:
         )
 
 
-def _same_score(
-    existing: LeadScore,
-    scoring: ScoringResult,
-    rationale: dict[str, object],
-) -> bool:
-    if existing.score != scoring.total:
-        return False
+def canonical_rationale_digest(rationale: object) -> str:
+    """Stable JSON digest of a scoring rationale for idempotent reuse checks."""
+    return json.dumps(rationale, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _same_score(existing: LeadScore, rationale: dict[str, object]) -> bool:
     stored = existing.rationale if isinstance(existing.rationale, dict) else {}
-    return (
-        stored.get("band") == scoring.band.value
-        and stored.get("total") == rationale["total"]
-        and stored.get("reason_codes") == list(scoring.reason_codes)
-        and stored.get("disqualification_codes") == list(scoring.disqualification_codes)
-    )
+    return canonical_rationale_digest(stored) == canonical_rationale_digest(rationale)
