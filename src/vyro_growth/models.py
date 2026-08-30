@@ -20,6 +20,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
 from vyro_growth.domain import (
+    BookingPlanRunStatus,
+    BookingPlanStatus,
     ConversationStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
@@ -363,3 +365,61 @@ class ReplyClassification(TimestampMixin, Base):
     matched_signals: Mapped[list[object]] = mapped_column(JSONB, default=list)
     rationale_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+
+
+class BookingPlanRun(TimestampMixin, Base):
+    __tablename__ = "booking_plan_runs"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(
+        String(32), default=BookingPlanRunStatus.PENDING.value, index=True
+    )
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    planned_count: Mapped[int] = mapped_column(default=0)
+    skipped_count: Mapped[int] = mapped_column(default=0)
+    suppressed_count: Mapped[int] = mapped_column(default=0)
+    blocked_count: Mapped[int] = mapped_column(default=0)
+    reused_count: Mapped[int] = mapped_column(default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    plans: Mapped[list[BookingPlan]] = relationship(back_populates="plan_run")
+
+
+class BookingPlan(TimestampMixin, Base):
+    __tablename__ = "booking_plans"
+    __table_args__ = (
+        UniqueConstraint(
+            "idempotency_key",
+            name="uq_booking_plans_idempotency_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    booking_plan_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("booking_plan_runs.id"), index=True
+    )
+    lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
+    contact_id: Mapped[UUID | None] = mapped_column(ForeignKey("contacts.id"), index=True)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    reply_classification_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("reply_classifications.id"), index=True
+    )
+    request_source: Mapped[str] = mapped_column(String(64), index=True)
+    request_key: Mapped[str] = mapped_column(String(255), index=True)
+    status: Mapped[str] = mapped_column(
+        String(32), default=BookingPlanStatus.SKIPPED.value, index=True
+    )
+    skip_reason: Mapped[str | None] = mapped_column(String(64), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    provider_name: Mapped[str] = mapped_column(String(64), default="stub")
+    requested_window: Mapped[dict[str, object] | None] = mapped_column(JSONB)
+    proposed_slots: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=True)
+    event_created: Mapped[bool] = mapped_column(Boolean, default=False)
+    meet_link_created: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    provider_event_id: Mapped[str | None] = mapped_column(String(255))
+    meeting_url: Mapped[str | None] = mapped_column(String(1000))
+    lead_stage_before: Mapped[str] = mapped_column(String(64))
+    lead_stage_after: Mapped[str] = mapped_column(String(64))
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    plan_run: Mapped[BookingPlanRun | None] = relationship(back_populates="plans")

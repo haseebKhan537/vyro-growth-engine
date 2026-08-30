@@ -310,6 +310,35 @@ Each run writes:
 
 `OUTBOUND_ENABLED` remains false by default. Persistent operator halt is preserved. Live OpenAI classification is gated behind `OPENAI_REPLY_CLASSIFICATION_ENABLED=false` unless explicitly enabled with a key; tests never require that key.
 
+## Phase 8 — Dry-run calendar booking planning
+
+Prepare and audit meeting drafts from already-consented contexts without creating calendar events or Google Meet links. CI and default local development use a deterministic calendar stub. Live Google Calendar is not called.
+
+CLI:
+```bash
+vyro-growth plan-booking --lead-id <uuid>
+vyro-growth plan-booking --classification-id <uuid>
+vyro-growth plan-booking --lead-id <uuid> --operator-request --request-key ops-1
+vyro-growth plan-booking --limit 25 --state TX
+```
+
+Worker job name: `plan_booking_slots`
+
+Eligible booking contexts need one of:
+
+- a stored inbound reply classified as `meeting_request`
+- an explicit operator-created booking request (`--operator-request`)
+
+Mere `interested` replies are not enough. Email, domain, and organization suppressions skip the lead with an audited reason. Re-running the same lead/contact/classification/request key reuses the existing booking plan.
+
+Each run writes:
+
+- `booking_plans` rows (`planned`, `skipped`, `suppressed`, or `blocked`) with proposed slots, requested window if present, provider name, status, idempotency key, and audit JSON
+- a `booking_plan_runs` audit row
+- `activities` audit rows
+
+No Google Calendar event is created, no Google Meet link is created, no email is sent, no calls are placed, and no live campaign enrollment occurs. Lead stage may move from `interested` or `qualification_pending` to `meeting_ready` and never to `meeting_booked`. `OUTBOUND_ENABLED` remains false by default. `GOOGLE_CALENDAR_LIVE_ENABLED=false`; tests never require a live key.
+
 ## Phase 1
 
 Production foundation:

@@ -239,6 +239,69 @@ def desired_reply_stages(intent: ReplyIntent) -> tuple[LeadStage, ...]:
             return _unreachable_intent(intent)
 
 
+class BookingPlanRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class BookingPlanStatus(StrEnum):
+    PLANNED = "planned"
+    SKIPPED = "skipped"
+    SUPPRESSED = "suppressed"
+    BLOCKED = "blocked"
+
+
+class BookingRequestSource(StrEnum):
+    MEETING_REQUEST_REPLY = "meeting_request_reply"
+    OPERATOR_REQUEST = "operator_request"
+
+
+class BookingSkipReason(StrEnum):
+    INELIGIBLE_CONSENT = "ineligible_consent"
+    MISSING_MEETING_REQUEST = "missing_meeting_request"
+    MISSING_CONTACT = "missing_contact"
+    SUPPRESSED = "suppressed"
+    SUPPRESSION_CHECK_UNAVAILABLE = "suppression_check_unavailable"
+    MALFORMED_PROVIDER_OUTPUT = "malformed_provider_output"
+    PROVIDER_RETRYABLE_ERROR = "provider_retryable_error"
+    PROVIDER_NON_RETRYABLE_ERROR = "provider_non_retryable_error"
+    PROVIDER_NOT_ACCEPTED = "provider_not_accepted"
+    LIVE_BOOKING_REJECTED = "live_booking_rejected"
+    EVENT_CREATION_REJECTED = "event_creation_rejected"
+    MEET_LINK_REJECTED = "meet_link_rejected"
+    GOOGLE_CALENDAR_LIVE_DISABLED = "google_calendar_live_disabled"
+    GLOBAL_OUTBOUND_DISABLED = "global_outbound_disabled"
+    OPERATOR_GLOBAL_HALT = "operator_global_halt"
+    OPERATOR_HALT_UNAVAILABLE = "operator_halt_unavailable"
+    TARGET_UNIDENTIFIED = "target_unidentified"
+    LIVE_GOOGLE_NOT_IMPLEMENTED = "live_google_not_implemented"
+
+
+FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(
+    {
+        LeadStage.MEETING_BOOKED,
+        LeadStage.WON,
+        LeadStage.CONTACTED,
+    }
+)
+
+
+def desired_booking_stage(current: LeadStage) -> LeadStage | None:
+    """Conservative CRM target after a dry-run booking plan.
+
+    Phase 8 may move interested or qualification-pending leads to meeting_ready.
+    It never books a meeting.
+    """
+
+    if current is LeadStage.MEETING_READY:
+        return LeadStage.MEETING_READY
+    if current in {LeadStage.INTERESTED, LeadStage.QUALIFICATION_PENDING}:
+        return LeadStage.MEETING_READY
+    return None
+
+
 def conversation_status_for(intent: ReplyIntent) -> ConversationStatus:
     match intent:
         case ReplyIntent.UNSUBSCRIBE:

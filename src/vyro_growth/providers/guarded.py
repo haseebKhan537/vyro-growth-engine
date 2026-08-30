@@ -10,6 +10,12 @@ from vyro_growth.providers.base import (
     SendResult,
     VoiceProvider,
 )
+from vyro_growth.providers.calendar_booking import (
+    BookingCalendarProvider,
+    BookingPlanPayload,
+    BookingPlanProviderResult,
+    LiveGoogleCalendarDisabledError,
+)
 from vyro_growth.providers.smartlead import (
     LiveSmartleadDisabledError,
     SmartleadLeadPayload,
@@ -132,3 +138,33 @@ class GuardedSmartleadProvider:
             organization_id=payload.organization_id,
         )
         return self._inner.plan_enrollment(payload)
+
+
+class GuardedGoogleCalendarProvider:
+    """Live Google Calendar boundary that enforces outbound and live-enablement gates."""
+
+    live = True
+
+    def __init__(
+        self,
+        inner: BookingCalendarProvider,
+        guard: OutboundGuard,
+        db: Session,
+        settings: Settings,
+    ) -> None:
+        self._inner = inner
+        self._guard = guard
+        self._db = db
+        self._settings = settings
+
+    def plan_booking(self, payload: BookingPlanPayload) -> BookingPlanProviderResult:
+        if not self._settings.google_calendar_live_enabled:
+            raise LiveGoogleCalendarDisabledError("google_calendar_live_disabled")
+        self._guard.require_allowed(
+            self._db,
+            action=OutboundAction.CALENDAR_SCHEDULE,
+            email=payload.attendee_email,
+            domain=domain_from_email(payload.attendee_email),
+            organization_id=payload.organization_id,
+        )
+        return self._inner.plan_booking(payload)

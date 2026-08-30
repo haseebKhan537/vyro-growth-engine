@@ -94,6 +94,31 @@ class Settings(BaseSettings):
             "local development use the deterministic rule stub and never require a live key."
         ),
     )
+    google_calendar_live_enabled: bool = Field(
+        default=False,
+        description=(
+            "Explicit opt-in for the live Google Calendar/Meet adapter boundary. Default "
+            "false; CI and local development use the deterministic stub and never create "
+            "calendar events or Meet links. Phase 8 does not perform live HTTP even when "
+            "this flag is true unless a test injects a client."
+        ),
+    )
+    google_calendar_api_key: str = Field(
+        default="",
+        description=(
+            "Live Google Calendar credential placeholder. Unused unless a future "
+            "owner-approved live step."
+        ),
+    )
+    google_calendar_api_base_url: str = Field(
+        default="",
+        description=(
+            "Live Google Calendar API base URL. Unused by default; not required for tests."
+        ),
+    )
+    google_calendar_timeout_seconds: float = Field(default=10.0, ge=1.0)
+    google_calendar_max_retries: int = Field(default=3, ge=0)
+    google_calendar_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
 
 
 @lru_cache

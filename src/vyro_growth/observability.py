@@ -11,6 +11,7 @@ SENSITIVE_KEYS = {
     "apikey",
     "openai_api_key",
     "smartlead_api_key",
+    "google_calendar_api_key",
     "internal_api_key",
     "password",
     "secret",
