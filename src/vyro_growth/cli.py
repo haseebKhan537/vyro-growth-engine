@@ -7,9 +7,11 @@ from uuid import UUID
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
 from vyro_growth.config import get_settings
 from vyro_growth.database import SessionLocal
+from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
+from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentService
 
@@ -60,6 +62,20 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Re-check organizations that already have a verified website",
     )
+
+    contacts = subparsers.add_parser(
+        "enrich-contacts",
+        help="Persist professional decision-maker contacts from the stub enrichment provider",
+    )
+    contacts.add_argument("--organization-id", help="Organization UUID")
+    contacts.add_argument("--state", help="Limit batch enrichment to a two-letter state code")
+    contacts.add_argument("--city", help="Limit batch enrichment to a city")
+    contacts.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum organizations to enrich when no organization id is provided",
+    )
     return parser
 
 
@@ -101,6 +117,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "enrich-websites":
         return _run_enrich_websites(parser, args)
+
+    if args.command == "enrich-contacts":
+        return _run_enrich_contacts(args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -175,6 +194,33 @@ def _run_enrich_websites(parser: argparse.ArgumentParser, args: argparse.Namespa
             f"status={enrichment_item.status.value}",
         )
     print(f"enriched={len(enrichment_results)}")
+    return 0
+
+
+def _run_enrich_contacts(args: argparse.Namespace) -> int:
+    service = ContactEnrichmentService(build_decision_maker_provider())
+    with SessionLocal() as db:
+        if args.organization_id:
+            contact_results = [service.enrich_organization(db, UUID(args.organization_id))]
+        else:
+            contact_results = list(
+                service.enrich_batch(
+                    db,
+                    limit=args.limit,
+                    state=args.state,
+                    city=args.city,
+                )
+            )
+    for item in contact_results:
+        print(
+            "Contact enrichment:",
+            f"organization_id={item.organization_id}",
+            f"upserted={item.contacts_upserted}",
+            f"skipped={item.contacts_skipped}",
+            f"provider={item.provider_name}",
+            f"status={item.status.value}",
+        )
+    print(f"enriched={len(contact_results)}")
     return 0
 
 

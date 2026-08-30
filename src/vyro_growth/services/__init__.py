@@ -1,5 +1,10 @@
 """Application services."""
 
+from vyro_growth.services.contact_enrichment import (
+    ContactEnrichmentError,
+    ContactEnrichmentResult,
+    ContactEnrichmentService,
+)
 from vyro_growth.services.discovery import (
     DiscoveryQueryError,
     DiscoveryRunResult,
@@ -37,6 +42,9 @@ from vyro_growth.services.website_enrichment import (
 )
 
 __all__ = [
+    "ContactEnrichmentError",
+    "ContactEnrichmentResult",
+    "ContactEnrichmentService",
     "DatabaseHaltReader",
     "DiscoveryQueryError",
     "DiscoveryRunResult",
