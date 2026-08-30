@@ -279,6 +279,37 @@ Each run writes:
 
 No email is sent, no live Smartlead campaign enrollment occurs, lead stage is not advanced to `contacted`, and no `outreach_messages` rows are created. `OUTBOUND_ENABLED` remains false by default. `SMARTLEAD_LIVE_ENABLED=false`; tests never require a live key.
 
+## Phase 7 — Reply classification (dry-run)
+
+Classify stored inbound replies and apply conservative CRM/conversation updates. This layer does not send email, generate autonomous replies, place calls, book meetings, create Google Meet links, or enroll live campaigns. CI and default local development use a deterministic rule stub and do not require a live OpenAI API key.
+
+CLI:
+```bash
+vyro-growth classify-replies --message-id <uuid>
+vyro-growth classify-replies --lead-id <uuid>
+vyro-growth classify-replies --limit 25
+```
+
+Worker job name: `classify_inbound_replies`
+
+Intents: `interested`, `not_interested`, `unsubscribe`, `wrong_person`, `out_of_office`, `referral`, `needs_more_info`, `meeting_request`, `hostile`, `spam`, `unknown`.
+
+Conservative state rules:
+
+- `contacted` can move to `replied`, then `interested` for genuine interest or a meeting request
+- meeting requests never create calendar events and never move to `meeting_ready` or `meeting_booked`
+- explicit unsubscribe / opt-out creates or confirms a permanent suppression and moves the lead to `suppressed` when the current stage allows it
+- out-of-office and spam do not advance the lead
+- a reply on a `discovered` or `ready_for_outreach` lead does not jump into `contacted`
+
+Each run writes:
+
+- a `reply_classifications` row (reused on the same inbound message, provider id, or content hash)
+- conversation status/summary updates
+- an `activities` audit row (`reply_classified`, `reply_skipped`, `reply_suppressed`, `reply_blocked`, `reply_unknown`, or `reply_classification_failed`)
+
+`OUTBOUND_ENABLED` remains false by default. Persistent operator halt is preserved. Live OpenAI classification is gated behind `OPENAI_REPLY_CLASSIFICATION_ENABLED=false` unless explicitly enabled with a key; tests never require that key.
+
 ## Phase 1
 
 Production foundation:

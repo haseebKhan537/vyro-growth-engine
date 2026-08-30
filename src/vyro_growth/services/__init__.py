@@ -47,6 +47,12 @@ from vyro_growth.services.personalization import (
     PersonalizationJobResult,
     PersonalizationService,
 )
+from vyro_growth.services.reply_classification import (
+    InboundReplySpec,
+    ReplyClassificationError,
+    ReplyClassificationJobResult,
+    ReplyClassificationService,
+)
 from vyro_growth.services.website_enrichment import (
     WebsiteEnrichmentError,
     WebsiteEnrichmentResult,
@@ -76,7 +82,11 @@ __all__ = [
     "PersonalizationError",
     "PersonalizationJobResult",
     "PersonalizationService",
+    "InboundReplySpec",
     "PersistedScoreResult",
+    "ReplyClassificationError",
+    "ReplyClassificationJobResult",
+    "ReplyClassificationService",
     "ScoringResult",
     "StaticHaltReader",
     "WebsiteEnrichmentError",

@@ -7,6 +7,10 @@ from vyro_growth.providers.personalization import (
     StubPersonalizationProvider,
     build_personalization_provider,
 )
+from vyro_growth.providers.reply_classification import (
+    StubReplyClassifier,
+    build_reply_classifier,
+)
 from vyro_growth.providers.smartlead import StubSmartleadProvider, build_smartlead_provider
 
 
@@ -17,6 +21,7 @@ def test_outbound_remains_disabled_by_default() -> None:
     assert settings.openai_personalization_enabled is False
     assert settings.smartlead_live_enabled is False
     assert settings.smartlead_api_key == ""
+    assert settings.openai_reply_classification_enabled is False
 
 
 def test_env_example_keeps_outbound_disabled() -> None:
@@ -27,6 +32,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "WEBSITE_USER_AGENT=VyroGrowthEngine/0.1" in env_example
     assert "OPENAI_PERSONALIZATION_ENABLED=false" in env_example
     assert "SMARTLEAD_LIVE_ENABLED=false" in env_example
+    assert "OPENAI_REPLY_CLASSIFICATION_ENABLED=false" in env_example
     assert "sk-" not in env_example
 
 
@@ -38,6 +44,9 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "personalization.py",
         "personalization_openai.py",
         "personalization_handler.py",
+        "reply_classification.py",
+        "reply_classification_openai.py",
+        "reply_classification_handler.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -93,6 +102,12 @@ def test_smartlead_stub_and_planner_do_not_use_httpx() -> None:
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "SMARTLEAD_LIVE_ENABLED=false" in env_example
+
+
+def test_default_reply_classifier_is_stub() -> None:
+    settings = Settings(openai_reply_classification_enabled=False)
+    provider = build_reply_classifier(settings)
+    assert isinstance(provider, StubReplyClassifier)
 
 
 def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:

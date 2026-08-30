@@ -10,6 +10,7 @@ from vyro_growth.database import SessionLocal
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 from vyro_growth.providers.personalization import build_personalization_provider
+from vyro_growth.providers.reply_classification import build_reply_classifier
 from vyro_growth.providers.smartlead import build_smartlead_provider
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
@@ -17,6 +18,7 @@ from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.personalization import PersonalizationService
+from vyro_growth.services.reply_classification import ReplyClassificationService
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentService
 
 
@@ -119,6 +121,21 @@ def build_parser() -> argparse.ArgumentParser:
         default=50,
         help="Maximum leads to plan when no lead id is provided",
     )
+
+    classify = subparsers.add_parser(
+        "classify-replies",
+        help=(
+            "Classify stored inbound replies and update CRM state (dry-run, no outbound)"
+        ),
+    )
+    classify.add_argument("--message-id", help="Inbound outreach message UUID")
+    classify.add_argument("--lead-id", help="Lead UUID with stored inbound messages")
+    classify.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum unclassified inbound messages when no id is provided",
+    )
     return parser
 
 
@@ -169,6 +186,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "plan-outreach":
         return _run_plan_outreach(args)
+
+    if args.command == "classify-replies":
+        return _run_classify_replies(parser, args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -338,6 +358,34 @@ def _run_plan_outreach(args: argparse.Namespace) -> int:
         f"reused={result.reused_count}",
         f"status={result.status.value}",
     )
+    return 0
+
+
+def _run_classify_replies(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if args.message_id and args.lead_id:
+        parser.error("Provide --message-id or --lead-id, not both")
+    service = ReplyClassificationService(build_reply_classifier())
+    with SessionLocal() as db:
+        if args.message_id:
+            results = [service.classify_message(db, UUID(args.message_id))]
+        elif args.lead_id:
+            results = list(service.classify_lead(db, UUID(args.lead_id)))
+        else:
+            results = list(service.classify_batch(db, limit=args.limit))
+    for item in results:
+        print(
+            "Reply classification:",
+            f"lead_id={item.lead_id}",
+            f"message_id={item.message_id or '-'}",
+            f"intent={item.intent.value if item.intent else '-'}",
+            f"outcome={item.outcome.value}",
+            f"provider={item.provider_name}",
+            f"reused={item.reused_existing}",
+            f"suppressed={item.suppressed}",
+            f"stage={item.lead_stage_after}",
+            f"outbound_attempted={item.outbound_attempted}",
+        )
+    print(f"classified={len(results)}")
     return 0
 
 

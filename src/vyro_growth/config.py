@@ -87,6 +87,13 @@ class Settings(BaseSettings):
     smartlead_timeout_seconds: float = Field(default=10.0, ge=1.0)
     smartlead_max_retries: int = Field(default=3, ge=0)
     smartlead_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
+    openai_reply_classification_enabled: bool = Field(
+        default=False,
+        description=(
+            "Explicit opt-in for live OpenAI reply classification. Default false; CI and "
+            "local development use the deterministic rule stub and never require a live key."
+        ),
+    )
 
 
 @lru_cache

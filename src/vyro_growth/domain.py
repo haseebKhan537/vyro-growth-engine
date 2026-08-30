@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import Never
 
 
 class DiscoveryRunStatus(StrEnum):
@@ -110,6 +111,48 @@ class EnrollmentSkipReason(StrEnum):
     LIVE_SMARTLEAD_NOT_IMPLEMENTED = "live_smartlead_not_implemented"
 
 
+class MessageDirection(StrEnum):
+    INBOUND = "inbound"
+    OUTBOUND = "outbound"
+
+
+class ReplyIntent(StrEnum):
+    INTERESTED = "interested"
+    NOT_INTERESTED = "not_interested"
+    UNSUBSCRIBE = "unsubscribe"
+    WRONG_PERSON = "wrong_person"
+    OUT_OF_OFFICE = "out_of_office"
+    REFERRAL = "referral"
+    NEEDS_MORE_INFO = "needs_more_info"
+    MEETING_REQUEST = "meeting_request"
+    HOSTILE = "hostile"
+    SPAM = "spam"
+    UNKNOWN = "unknown"
+
+
+class ReplyClassificationOutcome(StrEnum):
+    CLASSIFIED = "classified"
+    SKIPPED = "skipped"
+    SUPPRESSED = "suppressed"
+    BLOCKED = "blocked"
+    UNKNOWN = "unknown"
+    FAILED = "failed"
+
+
+class ConversationStatus(StrEnum):
+    OPEN = "open"
+    REPLIED = "replied"
+    INTERESTED = "interested"
+    NEEDS_INFO = "needs_info"
+    REFERRAL = "referral"
+    OUT_OF_OFFICE = "out_of_office"
+    MEETING_REQUESTED = "meeting_requested"
+    CLOSED = "closed"
+    SUPPRESSED = "suppressed"
+    HOSTILE = "hostile"
+    SPAM = "spam"
+
+
 class LeadStage(StrEnum):
     DISCOVERED = "discovered"
     ENRICHING = "enriching"
@@ -158,3 +201,65 @@ ALLOWED_TRANSITIONS: dict[LeadStage, set[LeadStage]] = {
 
 def can_transition(current: LeadStage, target: LeadStage) -> bool:
     return target in ALLOWED_TRANSITIONS[current]
+
+
+FORBIDDEN_REPLY_STAGES: frozenset[LeadStage] = frozenset(
+    {
+        LeadStage.CONTACTED,
+        LeadStage.MEETING_READY,
+        LeadStage.MEETING_BOOKED,
+        LeadStage.WON,
+    }
+)
+
+
+def _unreachable_intent(value: ReplyIntent) -> Never:
+    raise RuntimeError(f"unhandled reply intent: {value!r}")
+
+
+def desired_reply_stages(intent: ReplyIntent) -> tuple[LeadStage, ...]:
+    """Conservative CRM targets for a classified inbound reply.
+
+    Meeting requests stay at interested. This phase never books a meeting or
+    claims outreach was sent.
+    """
+
+    match intent:
+        case ReplyIntent.UNSUBSCRIBE:
+            return (LeadStage.SUPPRESSED,)
+        case ReplyIntent.NOT_INTERESTED | ReplyIntent.WRONG_PERSON | ReplyIntent.HOSTILE:
+            return (LeadStage.LOST,)
+        case ReplyIntent.INTERESTED | ReplyIntent.MEETING_REQUEST:
+            return (LeadStage.REPLIED, LeadStage.INTERESTED)
+        case ReplyIntent.NEEDS_MORE_INFO | ReplyIntent.REFERRAL | ReplyIntent.UNKNOWN:
+            return (LeadStage.REPLIED,)
+        case ReplyIntent.OUT_OF_OFFICE | ReplyIntent.SPAM:
+            return ()
+        case _:
+            return _unreachable_intent(intent)
+
+
+def conversation_status_for(intent: ReplyIntent) -> ConversationStatus:
+    match intent:
+        case ReplyIntent.UNSUBSCRIBE:
+            return ConversationStatus.SUPPRESSED
+        case ReplyIntent.NOT_INTERESTED | ReplyIntent.WRONG_PERSON:
+            return ConversationStatus.CLOSED
+        case ReplyIntent.HOSTILE:
+            return ConversationStatus.HOSTILE
+        case ReplyIntent.SPAM:
+            return ConversationStatus.SPAM
+        case ReplyIntent.OUT_OF_OFFICE:
+            return ConversationStatus.OUT_OF_OFFICE
+        case ReplyIntent.REFERRAL:
+            return ConversationStatus.REFERRAL
+        case ReplyIntent.NEEDS_MORE_INFO:
+            return ConversationStatus.NEEDS_INFO
+        case ReplyIntent.INTERESTED:
+            return ConversationStatus.INTERESTED
+        case ReplyIntent.MEETING_REQUEST:
+            return ConversationStatus.MEETING_REQUESTED
+        case ReplyIntent.UNKNOWN:
+            return ConversationStatus.REPLIED
+        case _:
+            return _unreachable_intent(intent)

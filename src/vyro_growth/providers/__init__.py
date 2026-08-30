@@ -43,6 +43,15 @@ from vyro_growth.providers.personalization import (
     StubPersonalizationProvider,
     build_personalization_provider,
 )
+from vyro_growth.providers.reply_classification import (
+    ReplyClassificationContent,
+    ReplyClassificationRequest,
+    ReplyClassifierProvider,
+    ReplyClassifierResult,
+    StaticReplyClassifier,
+    StubReplyClassifier,
+    build_reply_classifier,
+)
 from vyro_growth.providers.smartlead import (
     SmartleadLeadPayload,
     SmartleadPlanResult,
@@ -104,6 +113,10 @@ __all__ = [
     "PersonalizationProvider",
     "PersonalizationProviderResult",
     "PersonalizationRequest",
+    "ReplyClassificationContent",
+    "ReplyClassificationRequest",
+    "ReplyClassifierProvider",
+    "ReplyClassifierResult",
     "SendResult",
     "SmartleadLeadPayload",
     "SmartleadPlanResult",
@@ -113,6 +126,8 @@ __all__ = [
     "StubEmailProvider",
     "StubEnrichmentProvider",
     "StubPersonalizationProvider",
+    "StaticReplyClassifier",
+    "StubReplyClassifier",
     "StubSmartleadProvider",
     "StubVoiceProvider",
     "VoiceProvider",
@@ -124,6 +139,7 @@ __all__ = [
     "build_nppes_provider",
     "build_personalization_provider",
     "build_public_page_fetcher",
+    "build_reply_classifier",
     "build_smartlead_provider",
     "clean_optional_text",
 ]

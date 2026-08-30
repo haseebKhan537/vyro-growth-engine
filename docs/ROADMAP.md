@@ -60,13 +60,22 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - operator halt / `OUTBOUND_ENABLED` enforcement before any live outbound-like action
 - cadence engine, bounce/unsubscribe webhooks, and live campaign enrollment remain future work
 
-## Phase 7 — Reply agent
+## Phase 7 — Reply classification foundation (current)
+Dry-run inbound classification only. No autonomous replies, booking, or calls.
+- reply classifier provider interface plus deterministic rule stub
+- guarded OpenAI boundary disabled by default and unused in CI
+- structured intents: interested, not interested, unsubscribe, wrong person, out of office, referral, needs more info, meeting request, hostile, spam, unknown
+- persisted classifications with content-hash / provider-id / message idempotency
+- conservative lead/conversation transitions using the existing state machine
+- explicit unsubscribe creates or confirms suppression records
+- audit rows for classified, skipped, suppressed, blocked, unknown, and failed replies
+- CLI `classify-replies` and worker job `classify_inbound_replies`
+
+Future reply-agent work (not in this phase):
 - inbound webhook processing
-- intent classification
 - autonomous replies for approved classes
 - escalation rules
-- opt-out suppression
-- pricing/information/objection handling
+- pricing/information/objection handling that sends mail
 
 ## Phase 8 — Calendar and Google Meet setter
 - Google Calendar availability
