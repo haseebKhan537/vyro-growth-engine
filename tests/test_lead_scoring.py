@@ -119,7 +119,8 @@ def test_missing_data_scores_zero_and_lists_missing_fields() -> None:
     assert "contact.email_verified" in result.missing_fields
     assert _factor(result, FactorCode.NPI_IDENTITY).status is FactorStatus.MISSING
     assert _factor(result, FactorCode.SPECIALTY_FIT).reason == "specialty missing; fit not inferred"
-    assert _factor(result, FactorCode.EXCLUDED_ORGANIZATION_NAME).status is FactorStatus.NOT_APPLICABLE
+    excluded = _factor(result, FactorCode.EXCLUDED_ORGANIZATION_NAME)
+    assert excluded.status is FactorStatus.NOT_APPLICABLE
 
 
 def test_score_is_deterministic() -> None:
@@ -386,5 +387,14 @@ def test_scoring_modules_do_not_import_outbound_or_enrichment_providers() -> Non
                 imported.add(node.module)
     assert imported.isdisjoint(forbidden)
     source = "\n".join(path.read_text(encoding="utf-8") for path in files).lower()
-    for token in ("apollo", "smartlead", "openai", "firecrawl", "twilio", "vapi", "google.calendar"):
+    forbidden_tokens = (
+        "apollo",
+        "smartlead",
+        "openai",
+        "firecrawl",
+        "twilio",
+        "vapi",
+        "google.calendar",
+    )
+    for token in forbidden_tokens:
         assert token not in source
