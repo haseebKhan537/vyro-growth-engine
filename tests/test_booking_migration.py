@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from alembic.config import Config
 from alembic.script import ScriptDirectory
 
-from alembic.config import Config
 from vyro_growth.database import Base
 from vyro_growth.models import BookingPlan, BookingPlanRun
 

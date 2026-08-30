@@ -10,6 +10,7 @@ from vyro_growth.models import Suppression
 from vyro_growth.services.operator_halt import set_operator_halt
 from vyro_growth.services.outbound_guard import OutboundBlockedError, OutboundGuard
 from vyro_growth.workers import InlineJobQueue, InlineWorkerRunner, Job, UnknownJobError
+from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.outbound import (
     PLACE_CONSENT_CALLBACK_JOB,
@@ -19,7 +20,6 @@ from vyro_growth.workers.outbound import (
 )
 from vyro_growth.workers.outreach_enrollment_handler import PLAN_OUTREACH_ENROLLMENTS_JOB
 from vyro_growth.workers.personalization_handler import PERSONALIZE_SCORED_LEADS_JOB
-from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.reply_classification_handler import CLASSIFY_INBOUND_REPLIES_JOB
 from vyro_growth.workers.scoring_handler import SCORE_DISCOVERED_LEADS_JOB
 from vyro_growth.workers.website_enrichment_handler import ENRICH_ORGANIZATION_WEBSITES_JOB

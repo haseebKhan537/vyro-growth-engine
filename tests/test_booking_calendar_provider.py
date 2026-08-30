@@ -10,8 +10,8 @@ from vyro_growth.providers.calendar_booking import (
     BookingPlanPayload,
     MalformedBookingPlanOutput,
     StubBookingCalendarProvider,
-    build_booking_calendar_provider,
     booking_idempotency_key,
+    build_booking_calendar_provider,
     default_proposed_slots,
     parse_booking_plan_result,
 )

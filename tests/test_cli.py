@@ -15,6 +15,7 @@ from vyro_growth.domain import (
     ReplyIntent,
     WebsiteMatchStatus,
 )
+from vyro_growth.services.booking_plan import BookingPlanJobResult
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
 from vyro_growth.services.discovery import DiscoveryRunResult
 from vyro_growth.services.lead_scoring import (
@@ -23,7 +24,6 @@ from vyro_growth.services.lead_scoring import (
     ScoreBand,
     ScoringResult,
 )
-from vyro_growth.services.booking_plan import BookingPlanJobResult
 from vyro_growth.services.outreach_enrollment import OutreachPlanResult
 from vyro_growth.services.personalization import PersonalizationJobResult
 from vyro_growth.services.reply_classification import ReplyClassificationJobResult

@@ -40,8 +40,8 @@ from vyro_growth.providers.calendar_booking import (
     LiveGoogleCalendarNotImplementedError,
     MalformedBookingPlanOutput,
     RetryableBookingCalendarError,
-    build_booking_calendar_provider,
     booking_idempotency_key,
+    build_booking_calendar_provider,
     parse_booking_plan_result,
 )
 from vyro_growth.providers.decision_makers import clean_optional_text
@@ -746,12 +746,19 @@ class BookingPlanService:
             return classification
         if spec.operator_request:
             return None
-        return db.scalar(
+        meeting_request = db.scalar(
             select(ReplyClassification)
             .where(
                 ReplyClassification.lead_id == spec.lead.id,
                 ReplyClassification.intent == ReplyIntent.MEETING_REQUEST.value,
             )
+            .order_by(ReplyClassification.created_at.desc(), ReplyClassification.id.desc())
+        )
+        if meeting_request is not None:
+            return meeting_request
+        return db.scalar(
+            select(ReplyClassification)
+            .where(ReplyClassification.lead_id == spec.lead.id)
             .order_by(ReplyClassification.created_at.desc(), ReplyClassification.id.desc())
         )
 

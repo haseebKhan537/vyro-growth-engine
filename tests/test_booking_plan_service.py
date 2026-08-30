@@ -112,6 +112,14 @@ def test_interested_without_meeting_request_is_skipped(db_session: Session) -> N
     assert lead.stage == LeadStage.INTERESTED.value
 
 
+def test_missing_classification_is_skipped(db_session: Session) -> None:
+    organization = sample_organization(db_session)
+    lead = sample_lead(db_session, organization, stage=LeadStage.INTERESTED)
+    sample_contact(db_session, organization)
+    result = _service().plan_lead(db_session, lead.id)
+    assert result.items[0].skip_reason is BookingSkipReason.MISSING_MEETING_REQUEST
+
+
 def test_operator_request_plans_without_meeting_request(db_session: Session) -> None:
     organization = sample_organization(db_session)
     lead = sample_lead(db_session, organization, stage=LeadStage.INTERESTED)
