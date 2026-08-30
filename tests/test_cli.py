@@ -6,6 +6,7 @@ import pytest
 
 from vyro_growth.cli import build_parser, main
 from vyro_growth.domain import DiscoveryRunStatus, EnrichmentRunStatus, WebsiteMatchStatus
+from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
 from vyro_growth.services.discovery import DiscoveryRunResult
 from vyro_growth.services.lead_scoring import (
     MODEL_VERSION,
@@ -152,6 +153,23 @@ def test_parser_accepts_enrich_websites() -> None:
     assert args.reenrich is False
 
 
+def test_parser_accepts_enrich_contacts() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "enrich-contacts",
+            "--organization-id",
+            "11111111-1111-1111-1111-111111111111",
+            "--limit",
+            "3",
+        ]
+    )
+
+    assert args.command == "enrich-contacts"
+    assert args.limit == 3
+    assert args.state is None
+
+
 def test_cli_main_runs_website_enrichment(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -202,6 +220,57 @@ def test_cli_main_runs_website_enrichment(
     output = capsys.readouterr().out
     assert "match=verified" in output
     assert "facts=6" in output
+    assert "enriched=1" in output
+
+
+def test_cli_main_runs_contact_enrichment(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    result = ContactEnrichmentResult(
+        enrichment_run_id=uuid4(),
+        organization_id=uuid4(),
+        contacts_upserted=2,
+        contacts_skipped=1,
+        candidates_considered=3,
+        status=EnrichmentRunStatus.COMPLETED,
+        provider_name="stub",
+    )
+
+    class DummyService:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+        def enrich_batch(
+            self,
+            _db: object,
+            *,
+            limit: int,
+            state: str | None,
+            city: str | None,
+        ) -> tuple[ContactEnrichmentResult, ...]:
+            assert limit == 4
+            assert state == "TX"
+            assert city == "AUSTIN"
+            return (result,)
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ContactEnrichmentService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+
+    exit_code = main(["enrich-contacts", "--limit", "4", "--state", "TX", "--city", "AUSTIN"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "upserted=2" in output
+    assert "skipped=1" in output
+    assert "provider=stub" in output
     assert "enriched=1" in output
 
 

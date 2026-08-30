@@ -15,7 +15,7 @@ PostgreSQL is the system of record for organizations, contacts, leads, evidence,
 Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical.
 
 ### Provider adapters
-Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Planned future adapters include broader search/crawl, Apollo, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
+Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Phase 3B adds a `DecisionMakerEnrichmentProvider` boundary for professional contact candidates; the default implementation is a stub that returns no invented contacts and does not call a paid provider. Planned future adapters include broader search/crawl, a live paid contact provider, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
 
 ### Phase 2 discovery flow
 1. Operator or worker submits a targeted NPPES query through the CLI, worker job, or the internal HTTP trigger. The HTTP path is authorization-gated; CLI and worker paths are not. State alone is not enough; a narrower filter (`city`, `taxonomy_description`, or `organization_name`) is required.
@@ -44,6 +44,16 @@ Website enrichment is public-page-only. It does not contact prospects, create co
 5. Extracted facts are allowlisted public B2B signals with source URL, value, confidence, timestamp, and snippet. Missing facts are omitted, never invented.
 6. `organizations.website` is set only on verified matches. Sparse reruns do not wipe an existing website. Each run writes `enrichment_runs`, `source_evidence`, and an `activities` row.
 7. No outbound actions occur.
+
+### Phase 3B: decision-maker and contact enrichment foundation
+Contact enrichment identifies professional decision-makers. It does not send email, place calls, scrape LinkedIn, or call a live paid provider.
+
+1. Operator or worker submits `vyro-growth enrich-contacts` or job `enrich_decision_makers` with an organization id or a batch limit. There is no HTTP trigger.
+2. `ContactEnrichmentService` builds a typed request from the stored organization plus website-enrichment evidence (`ownership_signal`, provider count, official website, and public business contact facts). Missing website facts stay unknown.
+3. The `DecisionMakerEnrichmentProvider` is the only integration boundary. CI and local runs use `StubDecisionMakerEnrichmentProvider`, which returns no contacts and never invents names, titles, emails, phones, roles, or confidence.
+4. Provider results are classified and ranked: Owner/Physician Owner, Practice Administrator, Practice Manager, Office Manager, Executive Director, COO, CEO (only for smaller independent groups), Revenue Cycle Manager, Billing Manager, Operations Manager. Irrelevant clinical contacts are dropped unless owner/operator evidence is present.
+5. Only professional/business fields are stored on `contacts`: name, title, role category, business email/phone if supplied, source provider, source timestamp, confidence, verification status, and provenance. Unknown values remain unknown. Contacts are deduplicated across reruns.
+6. Each run writes `enrichment_runs`, `source_evidence`, and an `activities` row. No outbound actions occur. A live paid adapter is not wired; expected future env vars are documented in `.env.example` and are not required for tests.
 
 ### Event flow
 1. Practice discovered.

@@ -46,6 +46,13 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Store source URL, extracted value, confidence, timestamp, and evidence snippet for each claim.
 - Official website is persisted only after a conservative NPPES match (`verified`). Ambiguous and no-match runs leave `organizations.website` unchanged.
 
+## Decision-maker contact enrichment
+- Do not call a live paid contact provider in CI or local tests. The stub returns no invented people.
+- Do not scrape LinkedIn or bypass provider terms.
+- Store professional/business contact fields only. Do not invent names, titles, emails, phones, roles, or confidence. Unknown stays unknown.
+- Drop irrelevant clinical contacts unless the record includes owner/operator evidence.
+- Contact enrichment is not outreach. `OUTBOUND_ENABLED` remains false by default and operator halt semantics are unchanged.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

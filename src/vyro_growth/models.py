@@ -3,7 +3,17 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -35,6 +45,13 @@ class Organization(TimestampMixin, Base):
 
 class Contact(TimestampMixin, Base):
     __tablename__ = "contacts"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "dedupe_key",
+            name="uq_contacts_organization_dedupe_key",
+        ),
+    )
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
     full_name: Mapped[str] = mapped_column(String(255))
@@ -42,6 +59,14 @@ class Contact(TimestampMixin, Base):
     email: Mapped[str | None] = mapped_column(String(320), index=True)
     phone: Mapped[str | None] = mapped_column(String(50))
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    role_category: Mapped[str | None] = mapped_column(String(64), index=True)
+    role_rank: Mapped[int | None] = mapped_column(Integer)
+    source_provider: Mapped[str | None] = mapped_column(String(64), index=True)
+    source_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    confidence: Mapped[float | None] = mapped_column(Float)
+    verification_status: Mapped[str | None] = mapped_column(String(32))
+    provenance_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    dedupe_key: Mapped[str | None] = mapped_column(String(512))
 
 
 class Lead(TimestampMixin, Base):
@@ -162,6 +187,7 @@ class SourceEvidence(TimestampMixin, Base):
     enrichment_run_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("enrichment_runs.id"), index=True
     )
+    contact_id: Mapped[UUID | None] = mapped_column(ForeignKey("contacts.id"), index=True)
     metadata_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     discovery_run: Mapped[DiscoveryRun | None] = relationship(back_populates="evidence")
     enrichment_run: Mapped[EnrichmentRun | None] = relationship(back_populates="evidence")
@@ -180,6 +206,8 @@ class EnrichmentRun(TimestampMixin, Base):
     facts_extracted: Mapped[int] = mapped_column(default=0)
     pages_fetched: Mapped[int] = mapped_column(default=0)
     candidates_considered: Mapped[int] = mapped_column(default=0)
+    contacts_upserted: Mapped[int] = mapped_column(default=0)
+    contacts_skipped: Mapped[int] = mapped_column(default=0)
     input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

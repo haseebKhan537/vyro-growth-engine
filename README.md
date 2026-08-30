@@ -170,6 +170,42 @@ Each run writes:
 - an `enrichment_runs` audit row
 - an `activities` audit row
 
+## Phase 3B — Decision-maker and contact enrichment foundation
+
+Persist professional decision-maker candidates behind a provider interface. This layer does not send email, place calls, scrape LinkedIn, or call a live paid contact API. Tests and CI use a stub that returns no invented people.
+
+CLI:
+```bash
+vyro-growth enrich-contacts --organization-id <uuid>
+vyro-growth enrich-contacts --limit 25 --state TX
+```
+
+Worker job name: `enrich_decision_makers`
+
+Roles are ranked in this order and stored only when the provider (or a test double) actually supplied them:
+
+- Owner / Physician Owner
+- Practice Administrator
+- Practice Manager
+- Office Manager
+- Executive Director
+- COO
+- CEO for smaller independent groups
+- Revenue Cycle Manager
+- Billing Manager
+- Operations Manager
+
+Clinical contacts are skipped unless owner/operator evidence is present. Missing emails, phones, titles, and confidence stay unknown. Reruns upsert by a durable dedupe key instead of creating duplicates.
+
+Each run writes:
+
+- `contacts` rows with professional fields, role category, source provider, source timestamp, confidence, verification status, and provenance
+- `source_evidence` rows for each persisted contact
+- an `enrichment_runs` audit row
+- an `activities` audit row
+
+A live paid adapter is not implemented. Tests do not require provider credentials. Expected future env vars (unused): `CONTACT_ENRICHMENT_API_KEY`, `CONTACT_ENRICHMENT_API_BASE_URL`.
+
 ## Phase 1
 
 Production foundation:

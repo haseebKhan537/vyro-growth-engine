@@ -8,6 +8,15 @@ from vyro_growth.providers.base import (
     SendResult,
     VoiceProvider,
 )
+from vyro_growth.providers.decision_makers import (
+    DecisionMakerCandidate,
+    DecisionMakerEnrichmentProvider,
+    DecisionMakerEnrichmentRequest,
+    DecisionMakerEnrichmentResult,
+    StaticDecisionMakerEnrichmentProvider,
+    StubDecisionMakerEnrichmentProvider,
+    build_decision_maker_provider,
+)
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
     GuardedEmailProvider,
@@ -46,6 +55,10 @@ from vyro_growth.providers.website_client import HttpPublicPageFetcher, build_pu
 __all__ = [
     "CalendarProvider",
     "CallResult",
+    "DecisionMakerCandidate",
+    "DecisionMakerEnrichmentProvider",
+    "DecisionMakerEnrichmentRequest",
+    "DecisionMakerEnrichmentResult",
     "EmailProvider",
     "EnrichmentProvider",
     "GuardedCalendarProvider",
@@ -56,6 +69,7 @@ __all__ = [
     "HttpPublicPageFetcher",
     "PublicPage",
     "PublicPageFetcher",
+    "StaticDecisionMakerEnrichmentProvider",
     "StaticPublicPageFetcher",
     "StaticWebsiteSearchProvider",
     "NARROW_FILTER_ERROR",
@@ -67,6 +81,7 @@ __all__ = [
     "NppesSearchQuery",
     "SendResult",
     "StubCalendarProvider",
+    "StubDecisionMakerEnrichmentProvider",
     "StubEmailProvider",
     "StubEnrichmentProvider",
     "StubVoiceProvider",
@@ -75,6 +90,7 @@ __all__ = [
     "WebsiteFetchError",
     "WebsiteSearchProvider",
     "WebsiteSearchQuery",
+    "build_decision_maker_provider",
     "build_nppes_provider",
     "build_public_page_fetcher",
     "clean_optional_text",
