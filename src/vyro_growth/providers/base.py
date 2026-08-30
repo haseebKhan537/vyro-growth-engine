@@ -27,3 +27,15 @@ class CalendarProvider(Protocol):
 
 class EnrichmentProvider(Protocol):
     def enrich_organization(self, *, name: str, website: str | None) -> dict[str, object]: ...
+
+
+@dataclass(frozen=True)
+class CallResult:
+    provider_call_id: str
+    accepted: bool
+
+
+class VoiceProvider(Protocol):
+    """Consent-based callback interface. Implementations must not cold-dial."""
+
+    def place_consent_callback(self, *, phone: str, consent_to_call: bool) -> CallResult: ...

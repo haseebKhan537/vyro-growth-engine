@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from vyro_growth.providers.base import SendResult
+from vyro_growth.providers.base import CallResult, SendResult
 
 
 class StubEmailProvider:
@@ -34,3 +34,10 @@ class StubEnrichmentProvider:
             "provider": "stub",
             "evidence": [],
         }
+
+
+class StubVoiceProvider:
+    """Placeholder only. Does not place external calls."""
+
+    def place_consent_callback(self, *, phone: str, consent_to_call: bool) -> CallResult:
+        return CallResult(provider_call_id=f"stub-call:{phone}:{consent_to_call}", accepted=True)

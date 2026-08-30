@@ -1,41 +1,125 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings
-from vyro_growth.providers.guarded import GuardedEmailProvider
-from vyro_growth.providers.stubs import StubEmailProvider
+from vyro_growth.models import Suppression
+from vyro_growth.providers.guarded import (
+    GuardedCalendarProvider,
+    GuardedEmailProvider,
+    GuardedVoiceProvider,
+)
+from vyro_growth.providers.stubs import StubCalendarProvider, StubEmailProvider, StubVoiceProvider
+from vyro_growth.services.operator_halt import set_operator_halt
 from vyro_growth.services.outbound_guard import OutboundBlockedError, OutboundGuard
 
 
-def test_guarded_email_provider_blocks_when_outbound_disabled() -> None:
+def _cleared_guard(db: Session) -> OutboundGuard:
+    set_operator_halt(db, halted=False, reason="test_clear")
+    return OutboundGuard(Settings(outbound_enabled=True, outbound_halted=False))
+
+
+def test_guarded_email_provider_blocks_when_outbound_disabled(db_session: Session) -> None:
     guard = OutboundGuard(Settings(outbound_enabled=False))
-    provider = GuardedEmailProvider(StubEmailProvider(), guard, MagicMock(spec=Session))
+    provider = GuardedEmailProvider(StubEmailProvider(), guard, db_session)
 
     with pytest.raises(OutboundBlockedError, match="global_outbound_disabled"):
         provider.send_email(to="owner@clinic.com", subject="Hello", body="Test")
 
 
-def test_guarded_email_provider_blocks_when_suppressed() -> None:
-    guard = OutboundGuard(Settings(outbound_enabled=True))
-    db = MagicMock(spec=Session)
-    db.scalar.return_value = "suppression-id"
-    provider = GuardedEmailProvider(StubEmailProvider(), guard, db)
+def test_guarded_email_provider_blocks_when_halted(db_session: Session) -> None:
+    set_operator_halt(db_session, halted=True, reason="incident")
+    guard = OutboundGuard(Settings(outbound_enabled=True, outbound_halted=False))
+    provider = GuardedEmailProvider(StubEmailProvider(), guard, db_session)
+
+    with pytest.raises(OutboundBlockedError, match="operator_global_halt"):
+        provider.send_email(to="owner@clinic.com", subject="Hello", body="Test")
+
+
+def test_guarded_email_provider_blocks_when_suppressed(db_session: Session) -> None:
+    guard = _cleared_guard(db_session)
+    db_session.add(
+        Suppression(email="blocked@clinic.com", reason="unsubscribe", permanent=True)
+    )
+    db_session.flush()
+    provider = GuardedEmailProvider(StubEmailProvider(), guard, db_session)
 
     with pytest.raises(OutboundBlockedError, match="suppressed"):
         provider.send_email(to="blocked@clinic.com", subject="Hello", body="Test")
 
 
-def test_guarded_email_provider_delegates_when_allowed() -> None:
-    guard = OutboundGuard(Settings(outbound_enabled=True))
-    db = MagicMock(spec=Session)
-    db.scalar.return_value = None
-    provider = GuardedEmailProvider(StubEmailProvider(), guard, db)
+def test_guarded_email_provider_delegates_when_allowed(db_session: Session) -> None:
+    provider = GuardedEmailProvider(StubEmailProvider(), _cleared_guard(db_session), db_session)
 
     result = provider.send_email(to="owner@clinic.com", subject="Hello", body="Test")
 
     assert result.accepted is True
     assert result.provider_message_id == "stub-email:owner@clinic.com"
+
+
+def test_guarded_calendar_provider_fails_closed_when_disabled(db_session: Session) -> None:
+    provider = GuardedCalendarProvider(
+        StubCalendarProvider(),
+        OutboundGuard(Settings(outbound_enabled=False)),
+        db_session,
+    )
+
+    with pytest.raises(OutboundBlockedError, match="global_outbound_disabled"):
+        provider.create_meeting(
+            attendee_email="owner@clinic.com",
+            starts_at_iso="2026-09-01T15:00:00+00:00",
+            duration_minutes=30,
+            title="Intro",
+        )
+
+
+def test_guarded_calendar_provider_fails_closed_when_halted(db_session: Session) -> None:
+    set_operator_halt(db_session, halted=True, reason="incident")
+    provider = GuardedCalendarProvider(
+        StubCalendarProvider(),
+        OutboundGuard(Settings(outbound_enabled=True, outbound_halted=False)),
+        db_session,
+    )
+
+    with pytest.raises(OutboundBlockedError, match="operator_global_halt"):
+        provider.create_meeting(
+            attendee_email="owner@clinic.com",
+            starts_at_iso="2026-09-01T15:00:00+00:00",
+            duration_minutes=30,
+            title="Intro",
+        )
+
+
+def test_guarded_voice_provider_fails_closed_without_consent(db_session: Session) -> None:
+    provider = GuardedVoiceProvider(
+        StubVoiceProvider(),
+        _cleared_guard(db_session),
+        db_session,
+    )
+
+    with pytest.raises(OutboundBlockedError, match="voice_consent_required"):
+        provider.place_consent_callback(phone="5551112222", consent_to_call=False)
+
+
+def test_guarded_voice_provider_fails_closed_when_suppressed(db_session: Session) -> None:
+    guard = _cleared_guard(db_session)
+    db_session.add(Suppression(phone="5551112222", reason="do_not_call", permanent=True))
+    db_session.flush()
+    provider = GuardedVoiceProvider(StubVoiceProvider(), guard, db_session)
+
+    with pytest.raises(OutboundBlockedError, match="suppressed"):
+        provider.place_consent_callback(phone="555-111-2222", consent_to_call=True)
+
+
+def test_guarded_voice_provider_delegates_when_allowed(db_session: Session) -> None:
+    provider = GuardedVoiceProvider(
+        StubVoiceProvider(),
+        _cleared_guard(db_session),
+        db_session,
+    )
+
+    result = provider.place_consent_callback(phone="5551112222", consent_to_call=True)
+
+    assert result.accepted is True
+    assert result.provider_call_id == "stub-call:5551112222:True"

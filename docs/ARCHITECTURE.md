@@ -9,7 +9,7 @@ Vyro Growth Engine is an event-driven sales automation platform. Core business r
 FastAPI exposes health, operator controls, webhook endpoints, and later dashboard/API resources.
 
 ### Database
-PostgreSQL is the system of record for organizations, contacts, leads, evidence, outreach, conversations, meetings, activities, and suppressions.
+PostgreSQL is the system of record for organizations, contacts, leads, evidence, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
 
 ### Workers
 Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical.
@@ -31,7 +31,7 @@ Integrations are isolated behind interfaces so providers can be replaced without
 3. Evidence-backed enrichment completed.
 4. Decision-maker/contact identified and verified.
 5. Lead qualified/scored.
-6. Suppression and global-send gates checked.
+6. Central outbound guard checked: `OUTBOUND_ENABLED`, operator halt, action policy, then suppressions.
 7. Outreach created/sent.
 8. Replies arrive through provider webhook.
 9. Reply agent classifies and responds within policy.
@@ -43,7 +43,7 @@ Integrations are isolated behind interfaces so providers can be replaced without
 
 ## Non-negotiable invariants
 - No patient PHI.
-- Outbound defaults off.
+- Outbound defaults off. Env enablement alone is not enough while the operator halt is active or unreadable.
 - Suppression is checked immediately before external contact.
 - No fabricated prospect facts.
 - Material enrichment claims retain evidence/source URLs.
