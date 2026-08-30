@@ -5,6 +5,13 @@ from vyro_growth.services.discovery import (
     DiscoveryRunResult,
     NppesDiscoveryService,
 )
+from vyro_growth.services.lead_scoring import (
+    LeadScoringError,
+    LeadScoringService,
+    PersistedScoreResult,
+    ScoringResult,
+    score_snapshot,
+)
 from vyro_growth.services.operator_halt import (
     DatabaseHaltReader,
     HaltReader,
@@ -30,16 +37,21 @@ __all__ = [
     "DiscoveryRunResult",
     "HaltReader",
     "HaltStatus",
+    "LeadScoringError",
+    "LeadScoringService",
     "NppesDiscoveryService",
     "OutboundAction",
     "OutboundBlockedError",
     "OutboundDecision",
     "OutboundGuard",
+    "PersistedScoreResult",
+    "ScoringResult",
     "StaticHaltReader",
     "domain_from_email",
     "normalize_domain",
     "normalize_email",
     "normalize_phone",
     "read_operator_halt",
+    "score_snapshot",
     "set_operator_halt",
 ]
