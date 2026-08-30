@@ -30,6 +30,11 @@ from vyro_growth.services.outbound_guard import (
     normalize_email,
     normalize_phone,
 )
+from vyro_growth.services.website_enrichment import (
+    WebsiteEnrichmentError,
+    WebsiteEnrichmentResult,
+    WebsiteEnrichmentService,
+)
 
 __all__ = [
     "DatabaseHaltReader",
@@ -47,6 +52,9 @@ __all__ = [
     "PersistedScoreResult",
     "ScoringResult",
     "StaticHaltReader",
+    "WebsiteEnrichmentError",
+    "WebsiteEnrichmentResult",
+    "WebsiteEnrichmentService",
     "domain_from_email",
     "normalize_domain",
     "normalize_email",

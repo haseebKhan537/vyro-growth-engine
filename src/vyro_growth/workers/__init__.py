@@ -18,10 +18,16 @@ from vyro_growth.workers.scoring_handler import (
     SCORE_DISCOVERED_LEADS_JOB,
     ScoreDiscoveredLeadsHandler,
 )
+from vyro_growth.workers.website_enrichment_handler import (
+    ENRICH_ORGANIZATION_WEBSITES_JOB,
+    EnrichOrganizationWebsitesHandler,
+)
 
 __all__ = [
     "DISCOVER_NPPES_PRACTICES_JOB",
+    "ENRICH_ORGANIZATION_WEBSITES_JOB",
     "DiscoverNppesPracticesHandler",
+    "EnrichOrganizationWebsitesHandler",
     "InlineJobQueue",
     "InlineWorkerRunner",
     "Job",
