@@ -9,7 +9,6 @@ from uuid import UUID
 from vyro_growth.config import Settings, get_settings
 from vyro_growth.domain import VoiceConsentChannel, VoiceConsentSource
 from vyro_growth.providers.decision_makers import clean_optional_text, clip_text
-from vyro_growth.services.outbound_guard import normalize_phone
 
 STUB_PROVIDER_NAME = "stub"
 LIVE_PROVIDER_NAME = "voice_guarded"
@@ -117,7 +116,7 @@ class VoiceConsentProof:
     evidence_reference_id: str | None = None
 
     def to_audit(self) -> dict[str, object]:
-        phone = normalize_phone(self.permitted_phone) or self.permitted_phone
+        phone = _digits_only(self.permitted_phone) or self.permitted_phone
         return {
             "source": self.source.value,
             "channel": self.channel.value,
@@ -282,6 +281,13 @@ def parse_voice_qualification_result(
             if key not in allowed_facts or allowed_facts[key] != value:
                 raise MalformedVoicePlanOutput("voice result invented a qualification fact")
     return result
+
+
+def _digits_only(phone: str | None) -> str | None:
+    if phone is None:
+        return None
+    digits = "".join(character for character in phone if character.isdigit())
+    return digits or None
 
 
 def _value_has_phi(value: object) -> bool:

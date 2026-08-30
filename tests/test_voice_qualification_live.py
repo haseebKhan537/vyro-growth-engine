@@ -107,8 +107,8 @@ def test_live_adapter_without_client_is_not_implemented() -> None:
 def test_injected_client_keeps_dry_run_and_does_not_place_call() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         payload = request.read()
-        assert b'"place_call": false' in payload
-        assert b'"dry_run": true' in payload
+        assert b'"place_call":false' in payload
+        assert b'"dry_run":true' in payload
         return httpx.Response(
             200,
             json={
