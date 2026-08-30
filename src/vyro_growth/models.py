@@ -27,7 +27,9 @@ from vyro_growth.domain import (
     EnrichmentRunStatus,
     EnrollmentStatus,
     LeadStage,
+    OptimizerRunStatus,
     OutreachPlanRunStatus,
+    RecommendationApprovalStatus,
     ReplyClassificationOutcome,
     ReplyIntent,
     VoicePlanStatus,
@@ -491,3 +493,62 @@ class VoiceQualificationPlan(TimestampMixin, Base):
     consent_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     plan_run: Mapped[VoiceQualificationRun | None] = relationship(back_populates="plans")
+
+
+class OptimizerRun(TimestampMixin, Base):
+    __tablename__ = "optimizer_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "snapshot_fingerprint",
+            name="uq_optimizer_runs_snapshot_fingerprint",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(
+        String(32), default=OptimizerRunStatus.PENDING.value, index=True
+    )
+    model_version: Mapped[str] = mapped_column(String(64), default="growth-optimizer-v1")
+    snapshot_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    recommendation_count: Mapped[int] = mapped_column(default=0)
+    reused_count: Mapped[int] = mapped_column(default=0)
+    applied_count: Mapped[int] = mapped_column(default=0)
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    snapshot_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    recommendations: Mapped[list[OptimizerRecommendation]] = relationship(
+        back_populates="optimizer_run"
+    )
+
+
+class OptimizerRecommendation(TimestampMixin, Base):
+    __tablename__ = "optimizer_recommendations"
+    __table_args__ = (
+        UniqueConstraint(
+            "optimizer_run_id",
+            "recommendation_key",
+            name="uq_optimizer_recommendations_run_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    optimizer_run_id: Mapped[UUID] = mapped_column(ForeignKey("optimizer_runs.id"), index=True)
+    recommendation_key: Mapped[str] = mapped_column(String(255), index=True)
+    category: Mapped[str] = mapped_column(String(64), index=True)
+    priority: Mapped[str] = mapped_column(String(32), index=True)
+    confidence: Mapped[float] = mapped_column(Float)
+    title: Mapped[str] = mapped_column(String(255))
+    rationale: Mapped[str] = mapped_column(Text)
+    source_metrics_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    approval_status: Mapped[str] = mapped_column(
+        String(64),
+        default=RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+        index=True,
+    )
+    applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    optimizer_run: Mapped[OptimizerRun] = relationship(back_populates="recommendations")

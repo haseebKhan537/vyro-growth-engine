@@ -110,7 +110,7 @@ Future voice-agent work (not in this phase):
 - meeting scheduling from a call
 - cold AI robocalling remains forbidden
 
-## Phase 10 — Operator dashboard foundation (current)
+## Phase 10 — Operator dashboard foundation
 Read-only analytics over existing pipeline state. No outbound, booking, or live provider actions.
 - internal dashboard summary and safety endpoints
 - phase-by-phase counts and latest run status
@@ -125,12 +125,21 @@ Future dashboard work (not in this phase):
 - suppression search UI
 - agent/audit timeline UI
 
-## Phase 11 — Growth optimizer
+## Phase 11 — Growth optimizer foundation (current)
+Dry-run operator-review recommendations only. No automatic campaign, scoring, provider, calendar, or voice changes.
+- deterministic optimizer over stored dashboard/pipeline aggregates
+- persisted idempotent optimizer runs and recommendation drafts
+- categories: ICP thresholds, specialty/geography signals, enrichment and personalization gaps, outreach/reply patterns, booking/voice bottlenecks, safety flags
+- every recommendation includes category, priority, confidence, rationale, source metrics, generated timestamp, and `pending_operator_review`
+- CLI `recommend-growth`, worker job `generate_growth_recommendations`, and internal HTTP run/list routes
+- no live AI or paid/external provider calls
+
+Future optimizer work (not in this phase):
 - experiment framework
-- specialty/region/contact-role attribution
 - messaging tests
 - spend allocation
 - meeting/client conversion feedback
+- operator-approved apply/rollback of a recommendation
 
 ## Phase 12 — Production deployment
 - managed PostgreSQL/Supabase

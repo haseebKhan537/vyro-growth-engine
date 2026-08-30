@@ -122,6 +122,16 @@ The dashboard is read-only reporting over stored pipeline state. It does not sen
 4. Responses contain counts, statuses, and timestamps only. They do not include message bodies, draft copy, emails, phones, evidence snippets, or other prospect/PHI fields.
 5. No `activities`, meetings, enrollments, or outbound rows are written. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
 
+### Phase 11: dry-run growth optimizer recommendations
+The optimizer is an operator-review layer. It does not apply recommendations or change campaigns, scoring thresholds, provider settings, outbound behavior, calendars, or voice flows.
+
+1. Operator or worker submits `POST /internal/optimizer/run`, `vyro-growth recommend-growth`, or job `generate_growth_recommendations`. HTTP paths use the same `INTERNAL_API_KEY` gate as discovery and the dashboard. CLI and worker paths do not.
+2. `GrowthOptimizerService` reads `DashboardAnalyticsService` plus stored count aggregates (specialty/state stage mix, skip reasons, coverage gaps). It does not invent prospect facts or call live providers.
+3. Recommendations are persisted on `optimizer_runs` / `optimizer_recommendations`. An identical sanitized snapshot fingerprint reuses the existing run.
+4. Every recommendation includes category, priority, confidence, rationale, source metric references, generated timestamp, and `approval_status=pending_operator_review`. `applied` remains false.
+5. API/CLI output is titles, rationales, and counts only. It does not include message bodies, draft copy, emails, phones, evidence snippets, or PHI.
+6. No campaign, score, enrollment, meeting, calendar, or voice row is mutated except the optimizer tables and one audit activity. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
+
 ### Event flow
 1. Practice discovered.
 2. Practice normalized/deduplicated.

@@ -23,6 +23,7 @@ from vyro_growth.providers.website_client import build_public_page_fetcher
 from vyro_growth.services.booking_plan import BookingPlanService
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
+from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.personalization import PersonalizationService
@@ -216,6 +217,13 @@ def build_parser() -> argparse.ArgumentParser:
         "dashboard-summary",
         help="Print a read-only pipeline and safety summary (no outbound side effects)",
     )
+    subparsers.add_parser(
+        "recommend-growth",
+        help=(
+            "Generate dry-run growth optimizer recommendations for operator review "
+            "(does not apply changes or send outreach)"
+        ),
+    )
     return parser
 
 
@@ -278,6 +286,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "dashboard-summary":
         return _run_dashboard_summary()
+
+    if args.command == "recommend-growth":
+        return _run_recommend_growth()
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -703,6 +714,37 @@ def _print_dashboard_summary(summary: DashboardSummary) -> None:
             f"phase={run.phase}",
             f"status={run.status}",
             f"run_id={run.run_id or '-'}",
+        )
+
+
+def _run_recommend_growth() -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        result = GrowthOptimizerService().recommend(db, settings)
+    _print_optimizer_result(result)
+    return 0
+
+
+def _print_optimizer_result(result: OptimizerRunResult) -> None:
+    print(
+        "Optimizer run:",
+        f"id={result.optimizer_run_id}",
+        f"recommendations={result.recommendation_count}",
+        f"reused={result.reused_existing}",
+        f"applied={result.applied_count}",
+        "approval=pending_operator_review",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"status={result.status.value}",
+    )
+    for item in result.recommendations:
+        print(
+            "Recommendation:",
+            f"key={item.recommendation_key}",
+            f"category={item.category}",
+            f"priority={item.priority}",
+            f"confidence={item.confidence}",
+            f"approval={item.approval_status}",
+            f"applied={item.applied}",
         )
 
 
