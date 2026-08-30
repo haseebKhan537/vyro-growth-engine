@@ -15,7 +15,7 @@ PostgreSQL is the system of record for organizations, contacts, leads, evidence,
 Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical.
 
 ### Provider adapters
-Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Phase 3B adds a `DecisionMakerEnrichmentProvider` boundary for professional contact candidates; the default implementation is a stub that returns no invented contacts and does not call a paid provider. Planned future adapters include broader search/crawl, a live paid contact provider, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
+Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Phase 3B adds a `DecisionMakerEnrichmentProvider` boundary for professional contact candidates; the default implementation is a stub that returns no invented contacts and does not call a paid provider. Phase 5 adds a `PersonalizationProvider` boundary for evidence-grounded draft generation. The default implementation is a deterministic stub. A guarded OpenAI adapter exists but makes no live call unless `OPENAI_PERSONALIZATION_ENABLED` is explicitly true and a key is configured. Planned future adapters include broader search/crawl, a live paid contact provider, Smartlead, Google Calendar/Meet, and a consent-based voice provider.
 
 ### Phase 2 discovery flow
 1. Operator or worker submits a targeted NPPES query through the CLI, worker job, or the internal HTTP trigger. The HTTP path is authorization-gated; CLI and worker paths are not. State alone is not enough; a narrower filter (`city`, `taxonomy_description`, or `organization_name`) is required.
@@ -58,6 +58,16 @@ Contact enrichment identifies professional decision-makers. It does not send ema
 4. Provider results are classified and ranked: Owner/Physician Owner, Practice Administrator, Practice Manager, Office Manager, Executive Director, COO, CEO (only for smaller independent groups), Revenue Cycle Manager, Billing Manager, Operations Manager. Irrelevant clinical contacts are dropped unless owner/operator evidence is present.
 5. Only professional/business fields are stored on `contacts`: name, title, role category, business email/phone if supplied, source provider, source timestamp, confidence, verification status, and provenance. Unknown values remain unknown. Contacts are deduplicated across reruns.
 6. Each run writes `enrichment_runs`, `source_evidence`, and an `activities` row. No outbound actions occur. A live paid adapter is not wired; expected future env vars are documented in `.env.example` and are not required for tests.
+
+### Phase 5: evidence-grounded personalization
+Personalization is dry-run only. It does not send email, place calls, book meetings, enroll leads, or call live paid providers by default.
+
+1. Operator or worker submits `vyro-growth personalize-leads` or job `personalize_scored_leads` with a lead id, organization id, or batch limit. There is no HTTP trigger.
+2. `PersonalizationService` builds an evidence pack from stored organization fields, `source_evidence`, the latest lead score/factors, and professional contact name/title/role only. Missing facts stay unknown.
+3. The `PersonalizationProvider` is the only generation boundary. CI and local runs use `StubPersonalizationProvider`, which interpolates stored values and never invents business facts. A guarded OpenAI adapter with structured JSON schema, prompt versioning, token/cost placeholders, and retry/backoff exists but does not run unless explicitly enabled with a key.
+4. Output is a structured draft: practice summary, why Vyro may be relevant, opening line, outreach angle, suggested offer (default Complimentary Revenue Leakage Analysis), missing-data notes, evidence references, confidence, and readiness.
+5. Every material claim must map to stored evidence, a scoring factor, or an organization field. Ungrounded or malformed provider output fails the run without persisting a draft.
+6. Identical evidence fingerprints reuse the existing draft. Each attempt writes `enrichment_runs` and `activities`. No outreach rows are created. `OUTBOUND_ENABLED` remains false by default.
 
 ### Event flow
 1. Practice discovered.

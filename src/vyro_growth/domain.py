@@ -58,6 +58,22 @@ class ContactFactType(StrEnum):
     DECISION_MAKER_CONTACT = "decision_maker_contact"
 
 
+class PersonalizationReadiness(StrEnum):
+    READY = "ready"
+    NEEDS_MORE_EVIDENCE = "needs_more_evidence"
+    BLOCKED = "blocked"
+
+
+class PersonalizationFactType(StrEnum):
+    PERSONALIZATION_DRAFT = "personalization_draft"
+
+
+class PersonalizationReferenceKind(StrEnum):
+    SOURCE_EVIDENCE = "source_evidence"
+    SCORING_FACTOR = "scoring_factor"
+    ORGANIZATION_FIELD = "organization_field"
+
+
 class LeadStage(StrEnum):
     DISCOVERED = "discovered"
     ENRICHING = "enriching"

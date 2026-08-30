@@ -41,6 +41,9 @@ class Organization(TimestampMixin, Base):
     website_match_status: Mapped[str | None] = mapped_column(String(32), index=True)
     leads: Mapped[list[Lead]] = relationship(back_populates="organization")
     enrichment_runs: Mapped[list[EnrichmentRun]] = relationship(back_populates="organization")
+    personalization_drafts: Mapped[list[PersonalizationDraft]] = relationship(
+        back_populates="organization"
+    )
 
 
 class Contact(TimestampMixin, Base):
@@ -188,6 +191,9 @@ class SourceEvidence(TimestampMixin, Base):
         ForeignKey("enrichment_runs.id"), index=True
     )
     contact_id: Mapped[UUID | None] = mapped_column(ForeignKey("contacts.id"), index=True)
+    personalization_draft_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("personalization_drafts.id"), index=True
+    )
     metadata_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     discovery_run: Mapped[DiscoveryRun | None] = relationship(back_populates="evidence")
     enrichment_run: Mapped[EnrichmentRun | None] = relationship(back_populates="evidence")
@@ -214,3 +220,36 @@ class EnrichmentRun(TimestampMixin, Base):
     error_message: Mapped[str | None] = mapped_column(Text)
     organization: Mapped[Organization] = relationship(back_populates="enrichment_runs")
     evidence: Mapped[list[SourceEvidence]] = relationship(back_populates="enrichment_run")
+
+
+class PersonalizationDraft(TimestampMixin, Base):
+    __tablename__ = "personalization_drafts"
+    __table_args__ = (
+        UniqueConstraint(
+            "lead_id",
+            "evidence_fingerprint",
+            name="uq_personalization_drafts_lead_fingerprint",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    enrichment_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("enrichment_runs.id"), index=True
+    )
+    readiness_status: Mapped[str] = mapped_column(String(32), index=True)
+    prompt_version: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    provider_name: Mapped[str] = mapped_column(String(64), index=True)
+    practice_summary: Mapped[str] = mapped_column(Text)
+    why_vyro_relevant: Mapped[str] = mapped_column(Text)
+    opening_line: Mapped[str] = mapped_column(Text)
+    outreach_angle: Mapped[str] = mapped_column(Text)
+    suggested_offer: Mapped[str] = mapped_column(String(255))
+    missing_data_notes: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    evidence_references: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    confidence: Mapped[float] = mapped_column(Float)
+    content_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    evidence_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    organization: Mapped[Organization] = relationship(back_populates="personalization_drafts")

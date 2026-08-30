@@ -20,6 +20,7 @@ PHASE_ONE_MODELS = (
     models.DiscoveryRun,
     models.EnrichmentRun,
     models.OperatorControl,
+    models.PersonalizationDraft,
 )
 
 

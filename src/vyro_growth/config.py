@@ -45,6 +45,28 @@ class Settings(BaseSettings):
     website_user_agent: str = Field(
         default="VyroGrowthEngine/0.1 (+https://github.com/haseebKhan537/vyro-growth-engine)"
     )
+    openai_personalization_enabled: bool = Field(
+        default=False,
+        description=(
+            "Explicit opt-in for live OpenAI personalization. Default false; CI and local "
+            "development use the deterministic stub and never require a live key."
+        ),
+    )
+    openai_api_key: str = Field(
+        default="",
+        description="Live OpenAI API key. Unused unless openai_personalization_enabled is true.",
+    )
+    openai_api_base_url: str = Field(default="https://api.openai.com/v1")
+    openai_personalization_model: str = Field(default="gpt-4o-mini")
+    openai_timeout_seconds: float = Field(default=20.0, ge=1.0)
+    openai_max_retries: int = Field(default=3, ge=0)
+    openai_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
+    openai_max_output_tokens: int = Field(default=800, ge=1)
+    openai_max_input_tokens: int = Field(default=4000, ge=1)
+    openai_estimated_cost_usd_limit: float | None = Field(
+        default=None,
+        description="Placeholder cost ceiling for a future live adapter. Not enforced yet.",
+    )
 
 
 @lru_cache

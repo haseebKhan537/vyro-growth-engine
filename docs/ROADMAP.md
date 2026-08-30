@@ -43,13 +43,14 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - idempotent reruns with no outbound side effects
 - live paid contact adapter remains future work (not started; no credentials required)
 
-## Phase 5 — AI qualification and scoring
-- deterministic base scoring (started in Phase 3; upgraded in Phase 4; remain local-only until AI rationale is grounded)
-- AI-assisted rationale
-- structured outputs
-- evidence grounding
-- specialty experiments
-- lead budget allocation
+## Phase 5 — Evidence-grounded personalization
+- provider interface plus deterministic stub for CI/local dry-run drafts
+- guarded OpenAI adapter boundary with structured JSON schema (disabled by default; no live key required)
+- prompt/schema version audit metadata, token/cost limit placeholders, retry/backoff for future live calls
+- persistence for personalization drafts with evidence references and idempotent reruns
+- no invented practice facts; unknown stays unknown
+- outbound remains disabled; no email, calls, calendar, or enrollment
+- specialty experiments and lead budget allocation remain future work
 
 ## Phase 6 — Autonomous email outreach
 - Smartlead adapter

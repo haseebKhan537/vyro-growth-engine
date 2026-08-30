@@ -5,7 +5,12 @@ from uuid import uuid4
 import pytest
 
 from vyro_growth.cli import build_parser, main
-from vyro_growth.domain import DiscoveryRunStatus, EnrichmentRunStatus, WebsiteMatchStatus
+from vyro_growth.domain import (
+    DiscoveryRunStatus,
+    EnrichmentRunStatus,
+    PersonalizationReadiness,
+    WebsiteMatchStatus,
+)
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
 from vyro_growth.services.discovery import DiscoveryRunResult
 from vyro_growth.services.lead_scoring import (
@@ -14,6 +19,7 @@ from vyro_growth.services.lead_scoring import (
     ScoreBand,
     ScoringResult,
 )
+from vyro_growth.services.personalization import PersonalizationJobResult
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentResult
 
 
@@ -272,6 +278,84 @@ def test_cli_main_runs_contact_enrichment(
     assert "skipped=1" in output
     assert "provider=stub" in output
     assert "enriched=1" in output
+
+
+def test_parser_accepts_personalize_leads() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["personalize-leads", "--limit", "7", "--state", "TX"])
+
+    assert args.command == "personalize-leads"
+    assert args.limit == 7
+    assert args.state == "TX"
+    assert args.lead_id is None
+
+
+def test_cli_main_runs_personalization(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    result = PersonalizationJobResult(
+        enrichment_run_id=uuid4(),
+        lead_id=uuid4(),
+        organization_id=uuid4(),
+        draft_id=uuid4(),
+        readiness_status=PersonalizationReadiness.READY,
+        provider_name="stub",
+        status=EnrichmentRunStatus.COMPLETED,
+        reused_existing_draft=False,
+        live_call_attempted=False,
+        outbound_attempted=False,
+    )
+
+    class DummyService:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+        def personalize_batch(
+            self,
+            _db: object,
+            *,
+            limit: int,
+            state: str | None,
+            city: str | None,
+        ) -> tuple[PersonalizationJobResult, ...]:
+            assert limit == 4
+            assert state == "TX"
+            assert city == "AUSTIN"
+            return (result,)
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.PersonalizationService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+
+    exit_code = main(["personalize-leads", "--limit", "4", "--state", "TX", "--city", "AUSTIN"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"lead_id={result.lead_id}" in output
+    assert "readiness=ready" in output
+    assert "provider=stub" in output
+    assert "outbound_attempted=False" in output
+    assert "personalized=1" in output
+
+
+def test_cli_personalize_leads_rejects_both_ids() -> None:
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "personalize-leads",
+                "--lead-id",
+                str(uuid4()),
+                "--organization-id",
+                str(uuid4()),
+            ]
+        )
 
 
 def test_cli_enrich_websites_requires_org_for_candidate_url() -> None:
