@@ -1,11 +1,27 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Protocol
 
 NPPES_API_VERSION = "2.1"
 NPPES_ORGANIZATION_ENUMERATION = "NPI-2"
 NPPES_MAX_PAGE_SIZE = 200
+NPPES_MAX_SKIP = 1000
+
+NPI_MAX_LENGTH = 20
+ORGANIZATION_NAME_MAX_LENGTH = 255
+CITY_MAX_LENGTH = 120
+STATE_MAX_LENGTH = 2
+SPECIALTY_MAX_LENGTH = 255
+
+NARROW_FILTER_ERROR = (
+    "NPPES discovery requires a narrow filter "
+    "(city, taxonomy_description, or organization_name); state alone is not sufficient"
+)
+
+
+class NppesQueryError(ValueError):
+    """Raised when an NPPES query is missing required targeting filters."""
 
 
 @dataclass(frozen=True)
@@ -17,15 +33,15 @@ class NppesSearchQuery:
     limit: int = NPPES_MAX_PAGE_SIZE
     skip: int = 0
 
+    def has_narrow_filter(self) -> bool:
+        return any((self.city, self.taxonomy_description, self.organization_name))
+
     def has_targeting_filter(self) -> bool:
-        return any(
-            (
-                self.state,
-                self.city,
-                self.taxonomy_description,
-                self.organization_name,
-            )
-        )
+        return self.has_narrow_filter()
+
+    def require_valid(self) -> None:
+        if not self.has_narrow_filter():
+            raise NppesQueryError(NARROW_FILTER_ERROR)
 
     def with_skip(self, skip: int) -> NppesSearchQuery:
         return replace(self, skip=skip)
@@ -60,6 +76,7 @@ class NormalizedNppesOrganization:
     specialty: str | None
     source_url: str
     query_metadata: dict[str, object]
+    business_record: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

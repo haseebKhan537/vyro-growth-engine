@@ -5,6 +5,7 @@ import sys
 
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
 from vyro_growth.database import SessionLocal
+from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,11 +29,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "discover-nppes":
-        if not any([args.state, args.city, args.taxonomy_description, args.organization_name]):
-            parser.error(
-                "At least one discovery filter is required: "
-                "--state, --city, --taxonomy-description, or --organization-name"
-            )
+        query = NppesSearchQuery(
+            state=args.state,
+            city=args.city,
+            taxonomy_description=args.taxonomy_description,
+            organization_name=args.organization_name,
+        )
+        if not query.has_narrow_filter():
+            parser.error(NARROW_FILTER_ERROR)
 
         request = NppesDiscoveryRequest(
             state=args.state,

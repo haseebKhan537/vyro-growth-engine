@@ -8,6 +8,7 @@ from vyro_growth.config import Settings
 from vyro_growth.models import DiscoveryRun, Organization
 from vyro_growth.providers.nppes import (
     NormalizedNppesOrganization,
+    NppesQueryError,
     NppesSearchPage,
     NppesSearchQuery,
 )
@@ -66,3 +67,23 @@ def test_worker_handler_runs_discovery_job(
     assert run.records_fetched == 1
     assert organization is not None
     assert organization.name == "100 CHIRO CORONA LLC"
+
+
+def test_worker_handler_rejects_state_only_payload(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(discovery_max_records_per_run=100)
+    monkeypatch.setattr(
+        "vyro_growth.workers.discovery_handler.build_nppes_provider",
+        lambda **_kwargs: HandlerFakeProvider(),
+    )
+    handler = DiscoverNppesPracticesHandler(db=db_session, settings=settings)
+
+    with pytest.raises(NppesQueryError, match="state alone is not sufficient"):
+        handler.handle(
+            Job(
+                name=DISCOVER_NPPES_PRACTICES_JOB,
+                payload={"state": "TX", "max_records": 5},
+            )
+        )

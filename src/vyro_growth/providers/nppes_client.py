@@ -7,14 +7,16 @@ from urllib.parse import urlencode
 import httpx
 
 from vyro_growth.providers.nppes import (
+    NPPES_MAX_SKIP,
     NormalizedNppesOrganization,
     NppesProvider,
+    NppesQueryError,
     NppesSearchPage,
     NppesSearchQuery,
 )
 from vyro_growth.providers.nppes_normalize import normalize_nppes_record
 
-RETRYABLE_STATUS_CODES = {429, 502, 503, 504}
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 class NppesProviderError(RuntimeError):
@@ -38,15 +40,19 @@ class HttpNppesProvider:
         self._client = client
 
     def search_organizations(self, query: NppesSearchQuery) -> NppesSearchPage:
-        if not query.has_targeting_filter():
+        try:
+            query.require_valid()
+        except NppesQueryError as exc:
+            raise NppesProviderError(str(exc)) from exc
+        if query.skip > NPPES_MAX_SKIP:
             raise NppesProviderError(
-                "NPPES search requires at least one targeting filter "
-                "(state, city, taxonomy_description, or organization_name)"
+                f"NPPES skip {query.skip} exceeds the API ceiling of {NPPES_MAX_SKIP}"
             )
 
         params = query.to_params()
         source_url = f"{self._base_url}?{urlencode(params)}"
         payload = self._request(params)
+        _raise_for_nppes_errors(payload)
         raw_results = payload.get("results")
         if not isinstance(raw_results, list):
             raw_results = []
@@ -62,7 +68,7 @@ class HttpNppesProvider:
         result_count = payload.get("result_count")
         return NppesSearchPage(
             results=tuple(normalized),
-            result_count=int(result_count) if isinstance(result_count, int) else len(normalized),
+            result_count=int(result_count) if isinstance(result_count, int) else len(raw_results),
             page_size=len(raw_results),
             source_url=source_url,
         )
@@ -84,10 +90,14 @@ class HttpNppesProvider:
                 if not isinstance(payload, dict):
                     raise NppesProviderError("NPPES response was not a JSON object")
                 return payload
-            except httpx.TimeoutException as exc:
+            except NppesProviderError:
+                raise
+            except httpx.TransportError as exc:
                 last_error = exc
                 if attempt == self._max_retries:
-                    raise NppesProviderError("NPPES request timed out") from exc
+                    if isinstance(exc, httpx.TimeoutException):
+                        raise NppesProviderError("NPPES request timed out") from exc
+                    raise NppesProviderError("NPPES request failed") from exc
                 self._sleep(attempt)
             except httpx.HTTPError as exc:
                 raise NppesProviderError("NPPES request failed") from exc
@@ -105,6 +115,23 @@ class HttpNppesProvider:
     def _sleep(self, attempt: int) -> None:
         delay = self._retry_backoff_seconds * (2**attempt)
         time.sleep(delay)
+
+
+def _raise_for_nppes_errors(payload: dict[str, Any]) -> None:
+    errors = payload.get("Errors")
+    if errors is None:
+        errors = payload.get("errors")
+    if not isinstance(errors, list) or not errors:
+        return
+
+    messages: list[str] = []
+    for item in errors:
+        if isinstance(item, dict):
+            description = item.get("description") or item.get("field") or str(item)
+            messages.append(str(description))
+        else:
+            messages.append(str(item))
+    raise NppesProviderError("NPPES API error: " + "; ".join(messages))
 
 
 def build_nppes_provider(

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings, get_settings
-from vyro_growth.providers.nppes import NppesSearchQuery
+from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 from vyro_growth.providers.nppes_client import build_nppes_provider
 from vyro_growth.services.discovery import DiscoveryRunResult, NppesDiscoveryService
 
@@ -21,14 +21,15 @@ class NppesDiscoveryRequest(BaseModel):
     discovery_run_id: UUID | None = None
 
     @model_validator(mode="after")
-    def require_targeting_filter(self) -> Self:
-        if not any(
-            (self.state, self.city, self.taxonomy_description, self.organization_name)
-        ):
-            raise ValueError(
-                "At least one discovery filter is required: "
-                "state, city, taxonomy_description, or organization_name"
-            )
+    def require_narrow_filter(self) -> Self:
+        query = NppesSearchQuery(
+            state=self.state,
+            city=self.city,
+            taxonomy_description=self.taxonomy_description,
+            organization_name=self.organization_name,
+        )
+        if not query.has_narrow_filter():
+            raise ValueError(NARROW_FILTER_ERROR)
         return self
 
 

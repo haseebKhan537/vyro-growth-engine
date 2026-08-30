@@ -10,7 +10,7 @@ from tests.fixtures.nppes_records import (
     SAMPLE_ORG_RECORD,
     SAMPLE_ORG_RECORD_2,
 )
-from vyro_growth.providers.nppes import NppesSearchQuery
+from vyro_growth.providers.nppes import NPPES_MAX_SKIP, NppesSearchQuery
 from vyro_growth.providers.nppes_client import HttpNppesProvider, NppesProviderError
 
 
@@ -60,7 +60,7 @@ def test_search_organizations_uses_raw_page_size_when_records_are_filtered() -> 
     client = httpx.Client(transport=MockTransport([handler]))
     provider = HttpNppesProvider(client=client, max_retries=0)
 
-    page = provider.search_organizations(NppesSearchQuery(state="TX"))
+    page = provider.search_organizations(NppesSearchQuery(state="TX", city="Austin"))
 
     assert page.page_size == 2
     assert len(page.results) == 1
@@ -88,8 +88,8 @@ def test_search_organizations_paginates_with_skip() -> None:
     client = httpx.Client(transport=MockTransport([page_one, page_two]))
     provider = HttpNppesProvider(client=client, max_retries=0)
 
-    first = provider.search_organizations(NppesSearchQuery(state="TX", skip=0))
-    second = provider.search_organizations(NppesSearchQuery(state="TX", skip=1))
+    first = provider.search_organizations(NppesSearchQuery(state="TX", city="Austin", skip=0))
+    second = provider.search_organizations(NppesSearchQuery(state="TX", city="Austin", skip=1))
 
     assert first.results[0].npi == "1487448189"
     assert second.results[0].npi == "1234567890"
@@ -115,7 +115,7 @@ def test_search_organizations_retries_retryable_status() -> None:
         retry_backoff_seconds=0,
     )
 
-    page = provider.search_organizations(NppesSearchQuery(state="TX"))
+    page = provider.search_organizations(NppesSearchQuery(state="TX", city="Austin"))
 
     assert calls["count"] == 2
     assert len(page.results) == 1
@@ -133,11 +133,98 @@ def test_search_organizations_raises_after_retry_exhaustion() -> None:
     )
 
     with pytest.raises(NppesProviderError, match="503"):
-        provider.search_organizations(NppesSearchQuery(state="TX"))
+        provider.search_organizations(NppesSearchQuery(state="TX", city="Austin"))
 
 
-def test_search_organizations_requires_a_targeting_filter() -> None:
+def test_search_organizations_retries_http_500() -> None:
+    calls = {"count": 0}
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return httpx.Response(500, json={"error": "internal"})
+        return httpx.Response(
+            200,
+            json={"result_count": 1, "results": [SAMPLE_ORG_RECORD]},
+        )
+
+    client = httpx.Client(transport=MockTransport([handler, handler]))
+    provider = HttpNppesProvider(
+        client=client,
+        max_retries=2,
+        retry_backoff_seconds=0,
+    )
+
+    page = provider.search_organizations(NppesSearchQuery(state="TX", city="Austin"))
+
+    assert calls["count"] == 2
+    assert len(page.results) == 1
+
+
+def test_search_organizations_retries_connect_error() -> None:
+    calls = {"count": 0}
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise httpx.ConnectError("connection refused")
+        return httpx.Response(
+            200,
+            json={"result_count": 1, "results": [SAMPLE_ORG_RECORD]},
+        )
+
+    client = httpx.Client(transport=MockTransport([handler, handler]))
+    provider = HttpNppesProvider(
+        client=client,
+        max_retries=2,
+        retry_backoff_seconds=0,
+    )
+
+    page = provider.search_organizations(NppesSearchQuery(state="TX", city="Austin"))
+
+    assert calls["count"] == 2
+    assert len(page.results) == 1
+
+
+def test_search_organizations_fails_on_errors_payload() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "result_count": 0,
+                "Errors": [
+                    {
+                        "description": (
+                            "If the only search criterion is state, "
+                            "additional criteria are required."
+                        ),
+                        "field": "state",
+                        "number": "05",
+                    }
+                ],
+            },
+        )
+
+    client = httpx.Client(transport=MockTransport([handler]))
+    provider = HttpNppesProvider(client=client, max_retries=0)
+
+    with pytest.raises(NppesProviderError, match="additional criteria are required"):
+        provider.search_organizations(NppesSearchQuery(state="TX", city="Austin"))
+
+
+def test_search_organizations_rejects_skip_above_ceiling() -> None:
     provider = HttpNppesProvider(max_retries=0)
 
-    with pytest.raises(NppesProviderError, match="targeting filter"):
+    with pytest.raises(NppesProviderError, match="skip"):
+        provider.search_organizations(
+            NppesSearchQuery(state="TX", city="Austin", skip=NPPES_MAX_SKIP + 1)
+        )
+
+
+def test_search_organizations_requires_a_narrow_filter() -> None:
+    provider = HttpNppesProvider(max_retries=0)
+
+    with pytest.raises(NppesProviderError, match="narrow filter"):
         provider.search_organizations(NppesSearchQuery())
+    with pytest.raises(NppesProviderError, match="state alone is not sufficient"):
+        provider.search_organizations(NppesSearchQuery(state="TX"))

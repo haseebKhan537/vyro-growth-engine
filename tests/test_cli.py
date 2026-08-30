@@ -49,7 +49,7 @@ def test_cli_main_runs_discovery(
 
     monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
 
-    exit_code = main(["discover-nppes", "--state", "TX", "--max-records", "5"])
+    exit_code = main(["discover-nppes", "--state", "TX", "--city", "Austin", "--max-records", "5"])
 
     assert exit_code == 0
     output = capsys.readouterr().out
@@ -60,3 +60,8 @@ def test_cli_main_runs_discovery(
 def test_cli_main_requires_filter() -> None:
     with pytest.raises(SystemExit):
         main(["discover-nppes"])
+
+
+def test_cli_main_rejects_state_only() -> None:
+    with pytest.raises(SystemExit):
+        main(["discover-nppes", "--state", "TX"])

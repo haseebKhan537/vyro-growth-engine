@@ -32,6 +32,7 @@ class DiscoverNppesPracticesHandler:
             max_records_per_run=settings.discovery_max_records_per_run,
         )
         query = _query_from_payload(job.payload)
+        query.require_valid()
         discovery_run_id = _optional_uuid(job.payload.get("discovery_run_id"))
         max_records = _optional_int(job.payload.get("max_records"))
         service.run(

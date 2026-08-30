@@ -8,8 +8,11 @@ from vyro_growth.providers.base import (
 )
 from vyro_growth.providers.guarded import GuardedEmailProvider
 from vyro_growth.providers.nppes import (
+    NARROW_FILTER_ERROR,
+    NPPES_MAX_SKIP,
     NormalizedNppesOrganization,
     NppesProvider,
+    NppesQueryError,
     NppesSearchPage,
     NppesSearchQuery,
 )
@@ -26,8 +29,11 @@ __all__ = [
     "EnrichmentProvider",
     "GuardedEmailProvider",
     "HttpNppesProvider",
+    "NARROW_FILTER_ERROR",
+    "NPPES_MAX_SKIP",
     "NormalizedNppesOrganization",
     "NppesProvider",
+    "NppesQueryError",
     "NppesSearchPage",
     "NppesSearchQuery",
     "SendResult",

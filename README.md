@@ -91,6 +91,8 @@ curl -X POST http://localhost:8000/internal/discovery/nppes \
 
 Worker job name: `discover_nppes_practices`
 
+Queries require a narrow filter (`city`, `taxonomy_description`, or `organization_name`). State alone is rejected.
+
 Each run writes:
 - deduplicated `organizations` rows keyed by NPI
 - `source_evidence` rows with NPPES query/source metadata

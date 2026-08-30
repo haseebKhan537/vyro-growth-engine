@@ -74,6 +74,49 @@ def test_normalize_does_not_copy_authorized_official_fields() -> None:
     )
 
     assert result is not None
-    serialized = str(result.query_metadata)
+    serialized = str(result.query_metadata) + str(result.business_record)
     assert "CHRIS" not in serialized
     assert "5126388544" not in serialized
+    assert "authorized_official" not in serialized
+    assert set(result.business_record) == {
+        "npi",
+        "enumeration_type",
+        "organization_name",
+        "status",
+        "city",
+        "state",
+        "specialty",
+    }
+
+
+def test_normalize_truncates_fields_to_db_lengths() -> None:
+    record = {
+        "number": "1487448189",
+        "enumeration_type": "NPI-2",
+        "basic": {
+            "organization_name": "N" * 400,
+            "status": "A",
+        },
+        "addresses": [
+            {
+                "address_purpose": "LOCATION",
+                "city": "C" * 200,
+                "state": "texas",
+            }
+        ],
+        "taxonomies": [{"desc": "S" * 400, "primary": True}],
+    }
+
+    result = normalize_nppes_record(
+        record,
+        source_url="https://example.test",
+        query=NppesSearchQuery(state="TX", city="Austin"),
+    )
+
+    assert result is not None
+    assert len(result.name) == 255
+    assert result.city is not None
+    assert len(result.city) == 120
+    assert result.state == "TE"
+    assert result.specialty is not None
+    assert len(result.specialty) == 255

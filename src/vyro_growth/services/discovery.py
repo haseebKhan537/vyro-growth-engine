@@ -10,12 +10,24 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.domain import DiscoveryRunStatus
 from vyro_growth.models import Activity, DiscoveryRun, Organization, SourceEvidence
-from vyro_growth.providers.nppes import NormalizedNppesOrganization, NppesProvider, NppesSearchQuery
+from vyro_growth.providers.nppes import (
+    CITY_MAX_LENGTH,
+    NARROW_FILTER_ERROR,
+    NPI_MAX_LENGTH,
+    NPPES_MAX_SKIP,
+    ORGANIZATION_NAME_MAX_LENGTH,
+    SPECIALTY_MAX_LENGTH,
+    STATE_MAX_LENGTH,
+    NormalizedNppesOrganization,
+    NppesProvider,
+    NppesQueryError,
+    NppesSearchQuery,
+)
 
 logger = structlog.get_logger(__name__)
 
 
-class DiscoveryQueryError(ValueError):
+class DiscoveryQueryError(NppesQueryError):
     """Raised when a discovery job is missing required targeting filters."""
 
 
@@ -41,11 +53,8 @@ class NppesDiscoveryService:
         discovery_run_id: UUID | None = None,
         max_records: int | None = None,
     ) -> DiscoveryRunResult:
-        if not query.has_targeting_filter():
-            raise DiscoveryQueryError(
-                "At least one discovery filter is required: "
-                "state, city, taxonomy_description, or organization_name"
-            )
+        if not query.has_narrow_filter():
+            raise DiscoveryQueryError(NARROW_FILTER_ERROR)
 
         run_limit = min(max_records or self._max_records_per_run, self._max_records_per_run)
         discovery_run = self._get_or_create_run(db, query, discovery_run_id)
@@ -62,8 +71,16 @@ class NppesDiscoveryService:
 
         try:
             while fetched < run_limit:
-                remaining = run_limit - fetched
-                page_query = query.with_skip(skip).with_limit(min(query.limit, remaining))
+                if skip > NPPES_MAX_SKIP:
+                    logger.info(
+                        "nppes_discovery_skip_ceiling_reached",
+                        discovery_run_id=str(discovery_run.id),
+                        skip=skip,
+                        max_skip=NPPES_MAX_SKIP,
+                    )
+                    break
+
+                page_query = query.with_skip(skip)
                 page = self._provider.search_organizations(page_query)
                 if page.page_size == 0:
                     break
@@ -165,13 +182,19 @@ class NppesDiscoveryService:
         organization = db.scalar(select(Organization).where(Organization.npi == record.npi))
         created = organization is None
         if organization is None:
-            organization = Organization(npi=record.npi, name=record.name)
+            organization = Organization(
+                npi=_clip(record.npi, NPI_MAX_LENGTH),
+                name=_clip(record.name, ORGANIZATION_NAME_MAX_LENGTH),
+            )
             db.add(organization)
 
-        organization.name = record.name
-        organization.city = record.city
-        organization.state = record.state
-        organization.specialty = record.specialty
+        organization.name = _clip(record.name, ORGANIZATION_NAME_MAX_LENGTH)
+        if record.city is not None:
+            organization.city = _clip(record.city, CITY_MAX_LENGTH)
+        if record.state is not None:
+            organization.state = _clip(record.state, STATE_MAX_LENGTH)
+        if record.specialty is not None:
+            organization.specialty = _clip(record.specialty, SPECIALTY_MAX_LENGTH)
         db.flush()
         return created
 
@@ -198,6 +221,7 @@ class NppesDiscoveryService:
                 "state": record.state,
                 "specialty": record.specialty,
                 "query_metadata": record.query_metadata,
+                "business_record": record.business_record,
                 "created_on_upsert": created,
             },
         )
@@ -218,3 +242,7 @@ class NppesDiscoveryService:
                 details=details,
             )
         )
+
+
+def _clip(value: str, max_length: int) -> str:
+    return value[:max_length]

@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from vyro_growth.providers.nppes import (
+    CITY_MAX_LENGTH,
+    NPI_MAX_LENGTH,
     NPPES_ORGANIZATION_ENUMERATION,
+    ORGANIZATION_NAME_MAX_LENGTH,
+    SPECIALTY_MAX_LENGTH,
+    STATE_MAX_LENGTH,
     NormalizedNppesOrganization,
     NppesSearchQuery,
 )
@@ -23,11 +28,22 @@ def _as_list(value: object) -> list[object]:
     return []
 
 
+def _clip(value: str, max_length: int) -> str:
+    return value[:max_length]
+
+
+def _clip_optional(value: str | None, max_length: int) -> str | None:
+    if value is None:
+        return None
+    clipped = _clip(value, max_length)
+    return clipped or None
+
+
 def _normalize_npi(value: object) -> str | None:
     if isinstance(value, int) and not isinstance(value, bool) and value > 0:
-        return str(value)
+        return _clip(str(value), NPI_MAX_LENGTH)
     if isinstance(value, str) and value.strip().isdigit():
-        return value.strip()
+        return _clip(value.strip(), NPI_MAX_LENGTH)
     return None
 
 
@@ -61,6 +77,26 @@ def _primary_taxonomy(taxonomies: list[object]) -> str | None:
     return fallback
 
 
+def to_business_record(
+    *,
+    npi: str,
+    name: str,
+    status: str | None,
+    city: str | None,
+    state: str | None,
+    specialty: str | None,
+) -> dict[str, object]:
+    return {
+        "npi": npi,
+        "enumeration_type": NPPES_ORGANIZATION_ENUMERATION,
+        "organization_name": name,
+        "status": status,
+        "city": city,
+        "state": state,
+        "specialty": specialty,
+    }
+
+
 def normalize_nppes_record(
     record: dict[str, object],
     *,
@@ -80,20 +116,42 @@ def normalize_nppes_record(
         return None
 
     address = _location_address(_as_list(record.get("addresses")))
-    city = _optional_text(address.get("city"))
-    state = _optional_text(address.get("state"))
-    specialty = _primary_taxonomy(_as_list(record.get("taxonomies")))
+    city = _clip_optional(
+        _optional_text(address.get("city")),
+        CITY_MAX_LENGTH,
+    )
+    if city is not None:
+        city = city.upper()
+    state = _clip_optional(
+        _optional_text(address.get("state")),
+        STATE_MAX_LENGTH,
+    )
+    if state is not None:
+        state = state.upper()
+    specialty = _clip_optional(
+        _primary_taxonomy(_as_list(record.get("taxonomies"))),
+        SPECIALTY_MAX_LENGTH,
+    )
+    name = _clip(organization_name, ORGANIZATION_NAME_MAX_LENGTH)
 
     return NormalizedNppesOrganization(
         npi=npi,
-        name=organization_name,
-        city=city.upper() if city is not None else None,
-        state=state.upper() if state is not None else None,
+        name=name,
+        city=city,
+        state=state,
         specialty=specialty,
         source_url=source_url,
         query_metadata={
             "query": query.to_params(),
-            "enumeration_type": record.get("enumeration_type"),
+            "enumeration_type": NPPES_ORGANIZATION_ENUMERATION,
             "npi": npi,
         },
+        business_record=to_business_record(
+            npi=npi,
+            name=name,
+            status=status.upper() if status is not None else None,
+            city=city,
+            state=state,
+            specialty=specialty,
+        ),
     )

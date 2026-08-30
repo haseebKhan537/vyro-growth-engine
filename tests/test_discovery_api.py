@@ -84,7 +84,7 @@ def test_discovery_api_rejects_non_development(
 
     response = api_client.post(
         "/internal/discovery/nppes",
-        json={"state": "TX", "max_records": 1},
+        json={"state": "TX", "city": "Austin", "max_records": 1},
     )
 
     assert response.status_code == 403
@@ -92,5 +92,14 @@ def test_discovery_api_rejects_non_development(
 
 def test_discovery_api_requires_a_targeting_filter(api_client: TestClient) -> None:
     response = api_client.post("/internal/discovery/nppes", json={"max_records": 1})
+
+    assert response.status_code == 422
+
+
+def test_discovery_api_rejects_state_only(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/internal/discovery/nppes",
+        json={"state": "TX", "max_records": 1},
+    )
 
     assert response.status_code == 422
