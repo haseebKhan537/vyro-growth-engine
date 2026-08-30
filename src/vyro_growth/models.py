@@ -3,13 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
-from vyro_growth.domain import DiscoveryRunStatus, LeadStage
+from vyro_growth.domain import DiscoveryRunStatus, EnrichmentRunStatus, LeadStage
 
 
 class TimestampMixin:
@@ -28,7 +28,9 @@ class Organization(TimestampMixin, Base):
     specialty: Mapped[str | None] = mapped_column(String(255), index=True)
     city: Mapped[str | None] = mapped_column(String(120))
     state: Mapped[str | None] = mapped_column(String(2), index=True)
+    website_match_status: Mapped[str | None] = mapped_column(String(32), index=True)
     leads: Mapped[list[Lead]] = relationship(back_populates="organization")
+    enrichment_runs: Mapped[list[EnrichmentRun]] = relationship(back_populates="organization")
 
 
 class Contact(TimestampMixin, Base):
@@ -155,5 +157,32 @@ class SourceEvidence(TimestampMixin, Base):
     source_url: Mapped[str] = mapped_column(String(1000))
     claim_type: Mapped[str] = mapped_column(String(120), index=True)
     extracted_value: Mapped[str | None] = mapped_column(Text)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    evidence_snippet: Mapped[str | None] = mapped_column(Text)
+    enrichment_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("enrichment_runs.id"), index=True
+    )
     metadata_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     discovery_run: Mapped[DiscoveryRun | None] = relationship(back_populates="evidence")
+    enrichment_run: Mapped[EnrichmentRun | None] = relationship(back_populates="evidence")
+
+
+class EnrichmentRun(TimestampMixin, Base):
+    __tablename__ = "enrichment_runs"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    source: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(
+        String(32), default=EnrichmentRunStatus.PENDING.value, index=True
+    )
+    match_status: Mapped[str | None] = mapped_column(String(32), index=True)
+    official_website: Mapped[str | None] = mapped_column(String(500))
+    facts_extracted: Mapped[int] = mapped_column(default=0)
+    pages_fetched: Mapped[int] = mapped_column(default=0)
+    candidates_considered: Mapped[int] = mapped_column(default=0)
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    organization: Mapped[Organization] = relationship(back_populates="enrichment_runs")
+    evidence: Mapped[list[SourceEvidence]] = relationship(back_populates="enrichment_run")
