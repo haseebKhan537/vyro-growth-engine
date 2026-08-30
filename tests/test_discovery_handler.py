@@ -87,3 +87,23 @@ def test_worker_handler_rejects_state_only_payload(
                 payload={"state": "TX", "max_records": 5},
             )
         )
+
+
+def test_worker_handler_rejects_whitespace_only_city(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(discovery_max_records_per_run=100)
+    monkeypatch.setattr(
+        "vyro_growth.workers.discovery_handler.build_nppes_provider",
+        lambda **_kwargs: HandlerFakeProvider(),
+    )
+    handler = DiscoverNppesPracticesHandler(db=db_session, settings=settings)
+
+    with pytest.raises(NppesQueryError, match="state alone is not sufficient"):
+        handler.handle(
+            Job(
+                name=DISCOVER_NPPES_PRACTICES_JOB,
+                payload={"state": "TX", "city": "   ", "max_records": 5},
+            )
+        )

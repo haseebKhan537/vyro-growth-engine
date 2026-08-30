@@ -24,6 +24,13 @@ class NppesQueryError(ValueError):
     """Raised when an NPPES query is missing required targeting filters."""
 
 
+def clean_optional_text(value: str | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
 @dataclass(frozen=True)
 class NppesSearchQuery:
     state: str | None = None
@@ -32,6 +39,14 @@ class NppesSearchQuery:
     organization_name: str | None = None
     limit: int = NPPES_MAX_PAGE_SIZE
     skip: int = 0
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "state", clean_optional_text(self.state))
+        object.__setattr__(self, "city", clean_optional_text(self.city))
+        object.__setattr__(
+            self, "taxonomy_description", clean_optional_text(self.taxonomy_description)
+        )
+        object.__setattr__(self, "organization_name", clean_optional_text(self.organization_name))
 
     def has_narrow_filter(self) -> bool:
         return any((self.city, self.taxonomy_description, self.organization_name))

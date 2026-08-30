@@ -103,3 +103,12 @@ def test_discovery_api_rejects_state_only(api_client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_discovery_api_rejects_whitespace_only_city(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/internal/discovery/nppes",
+        json={"state": "TX", "city": "   ", "max_records": 1},
+    )
+
+    assert response.status_code == 422

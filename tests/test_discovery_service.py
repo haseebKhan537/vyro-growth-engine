@@ -15,6 +15,7 @@ from vyro_growth.providers.nppes import (
     NppesSearchPage,
     NppesSearchQuery,
 )
+from vyro_growth.providers.nppes_normalize import normalize_nppes_record
 from vyro_growth.services.discovery import DiscoveryQueryError, NppesDiscoveryService
 
 
@@ -234,13 +235,34 @@ def test_discovery_service_rejects_state_only_query(db_session: Session) -> None
         service.run(db_session, query=NppesSearchQuery(state="TX"))
 
 
+def test_discovery_service_rejects_whitespace_only_narrow_filters(db_session: Session) -> None:
+    service = NppesDiscoveryService(FakeNppesProvider([]), max_records_per_run=500)
+
+    with pytest.raises(DiscoveryQueryError, match="state alone is not sufficient"):
+        service.run(db_session, query=NppesSearchQuery(state="TX", city="   "))
+
+
 def test_discovery_service_does_not_persist_authorized_official_pii(
     db_session: Session,
 ) -> None:
+    query = NppesSearchQuery(state="TX", city="Austin")
+    normalized = normalize_nppes_record(
+        SAMPLE_ORG_RECORD,
+        source_url="https://example.test",
+        query=query,
+    )
+    assert normalized is not None
+    assert SAMPLE_ORG_RECORD["basic"]["authorized_official_first_name"] == "CHRIS"
+    assert SAMPLE_ORG_RECORD["basic"]["authorized_official_telephone_number"] == "5126388544"
+    assert "CHRIS" not in str(normalized.business_record)
+    assert "5126388544" not in str(normalized.business_record)
+    assert "authorized_official" not in str(normalized.business_record)
+    assert "CHRIS" not in str(normalized.query_metadata)
+
     provider = FakeNppesProvider(
         [
             NppesSearchPage(
-                results=(_normalized(SAMPLE_ORG_RECORD, "1487448189", "100 CHIRO CORONA LLC"),),
+                results=(normalized,),
                 result_count=1,
                 page_size=1,
                 source_url="https://example.test",
@@ -248,15 +270,21 @@ def test_discovery_service_does_not_persist_authorized_official_pii(
         ]
     )
     service = NppesDiscoveryService(provider, max_records_per_run=500)
-    service.run(db_session, query=NppesSearchQuery(state="TX", city="Austin"))
+    service.run(db_session, query=query)
 
     evidence = db_session.scalar(select(SourceEvidence))
+    organization = db_session.scalar(select(Organization).where(Organization.npi == "1487448189"))
     assert evidence is not None
+    assert organization is not None
     dumped = str(evidence.metadata_json)
     assert "authorized_official" not in dumped
+    assert "CHRIS" not in dumped
     assert "5126388544" not in dumped
+    assert "Owner" not in dumped
     assert evidence.metadata_json["npi"] == "1487448189"
+    assert evidence.metadata_json["business_record"]["organization_name"] == "100 CHIRO CORONA LLC"
     assert evidence.source_url == "https://example.test"
+    assert organization.name == "100 CHIRO CORONA LLC"
 
 
 def test_discovery_continues_when_raw_page_has_no_kept_rows(db_session: Session) -> None:

@@ -65,3 +65,8 @@ def test_cli_main_requires_filter() -> None:
 def test_cli_main_rejects_state_only() -> None:
     with pytest.raises(SystemExit):
         main(["discover-nppes", "--state", "TX"])
+
+
+def test_cli_main_rejects_whitespace_only_city() -> None:
+    with pytest.raises(SystemExit):
+        main(["discover-nppes", "--state", "TX", "--city", "   "])
