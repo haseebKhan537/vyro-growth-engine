@@ -7,6 +7,17 @@ from vyro_growth.providers.base import (
     SendResult,
 )
 from vyro_growth.providers.guarded import GuardedEmailProvider
+from vyro_growth.providers.nppes import (
+    NARROW_FILTER_ERROR,
+    NPPES_MAX_SKIP,
+    NormalizedNppesOrganization,
+    NppesProvider,
+    NppesQueryError,
+    NppesSearchPage,
+    NppesSearchQuery,
+    clean_optional_text,
+)
+from vyro_growth.providers.nppes_client import HttpNppesProvider, build_nppes_provider
 from vyro_growth.providers.stubs import (
     StubCalendarProvider,
     StubEmailProvider,
@@ -18,8 +29,18 @@ __all__ = [
     "EmailProvider",
     "EnrichmentProvider",
     "GuardedEmailProvider",
+    "HttpNppesProvider",
+    "NARROW_FILTER_ERROR",
+    "NPPES_MAX_SKIP",
+    "NormalizedNppesOrganization",
+    "NppesProvider",
+    "NppesQueryError",
+    "NppesSearchPage",
+    "NppesSearchQuery",
     "SendResult",
     "StubCalendarProvider",
     "StubEmailProvider",
     "StubEnrichmentProvider",
+    "build_nppes_provider",
+    "clean_optional_text",
 ]

@@ -17,6 +17,7 @@ PHASE_ONE_MODELS = (
     models.Activity,
     Suppression,
     models.SourceEvidence,
+    models.DiscoveryRun,
 )
 
 
