@@ -37,6 +37,14 @@ class Settings(BaseSettings):
             "Required outside development; empty is fail-closed in those environments."
         ),
     )
+    website_fetch_timeout_seconds: float = Field(default=8.0, ge=1.0)
+    website_fetch_max_bytes: int = Field(default=524_288, ge=1024)
+    website_fetch_max_redirects: int = Field(default=3, ge=0)
+    website_max_pages_per_org: int = Field(default=5, ge=1)
+    website_rate_limit_seconds: float = Field(default=0.5, ge=0.0)
+    website_user_agent: str = Field(
+        default="VyroGrowthEngine/0.1 (+https://github.com/haseebKhan537/vyro-growth-engine)"
+    )
 
 
 @lru_cache

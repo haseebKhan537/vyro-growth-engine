@@ -8,6 +8,33 @@ class DiscoveryRunStatus(StrEnum):
     FAILED = "failed"
 
 
+class EnrichmentRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class WebsiteMatchStatus(StrEnum):
+    VERIFIED = "verified"
+    AMBIGUOUS = "ambiguous"
+    NO_MATCH = "no_match"
+
+
+class WebsiteFactType(StrEnum):
+    WEBSITE_MATCH = "website_match"
+    OFFICIAL_WEBSITE = "official_website"
+    SPECIALTY_SERVICES = "specialty_services"
+    LOCATION = "location"
+    PRACTICE_SIZE_SIGNAL = "practice_size_signal"
+    PROVIDER_COUNT = "provider_count"
+    OWNERSHIP_SIGNAL = "ownership_signal"
+    CONTACT_PAGE_URL = "contact_page_url"
+    BUSINESS_PHONE = "business_phone"
+    BUSINESS_EMAIL = "business_email"
+    BILLING_SIGNAL = "billing_signal"
+
+
 class LeadStage(StrEnum):
     DISCOVERED = "discovered"
     ENRICHING = "enriching"

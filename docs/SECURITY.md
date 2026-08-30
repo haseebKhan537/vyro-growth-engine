@@ -35,6 +35,17 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `.env` is gitignored.
 - Loggers must redact credentials and authorization headers, including `X-Internal-Api-Key`.
 
+## Official website fetching
+- Website enrichment may fetch public HTTP(S) pages only. It is not outreach.
+- Block login, portal, patient, appointment, billing-portal, and review paths.
+- Reject private/reserved hosts and IP literals. Do not follow redirects into those targets.
+- Bound every request with timeout, max bytes, max redirects, and inter-request delay.
+- Do not send credentials, cookies, or authenticated session material.
+- Do not scrape, store, or process patient data, portal data, appointment data, or reviews that include health details.
+- Extract only allowlisted public B2B facts. Never invent a missing phone, email, count, or billing signal.
+- Store source URL, extracted value, confidence, timestamp, and evidence snippet for each claim.
+- Official website is persisted only after a conservative NPPES match (`verified`). Ambiguous and no-match runs leave `organizations.website` unchanged.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.
