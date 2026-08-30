@@ -30,6 +30,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
     src_root = Path("src/vyro_growth")
     openai_boundary = {
         "config.py",
+        "observability.py",
         "personalization.py",
         "personalization_openai.py",
         "personalization_handler.py",

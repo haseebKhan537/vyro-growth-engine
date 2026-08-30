@@ -461,6 +461,7 @@ class PersonalizationService:
                 confidence=row.confidence,
             )
             for row in evidence_rows
+            if row.claim_type != PersonalizationFactType.PERSONALIZATION_DRAFT.value
         )
         return PersonalizationEvidencePack(
             organization=OrganizationContext(
