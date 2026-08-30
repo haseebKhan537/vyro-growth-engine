@@ -17,6 +17,7 @@ from vyro_growth.workers.outbound import (
     SafetyCheckedWorkerRunner,
 )
 from vyro_growth.workers.scoring_handler import SCORE_DISCOVERED_LEADS_JOB
+from vyro_growth.workers.website_enrichment_handler import ENRICH_ORGANIZATION_WEBSITES_JOB
 
 
 @dataclass
@@ -143,6 +144,22 @@ def test_safety_checked_runner_allows_scoring_jobs_without_guard(db_session: Ses
     job = Job(name=SCORE_DISCOVERED_LEADS_JOB, payload={"limit": 1})
     runner = SafetyCheckedWorkerRunner(
         InlineWorkerRunner({SCORE_DISCOVERED_LEADS_JOB: handler}),
+        OutboundGuard(Settings(outbound_enabled=False)),
+        db_session,
+    )
+
+    runner.run(job)
+
+    assert handler.handled == [job]
+
+
+def test_safety_checked_runner_allows_website_enrichment_without_guard(
+    db_session: Session,
+) -> None:
+    handler = EchoHandler()
+    job = Job(name=ENRICH_ORGANIZATION_WEBSITES_JOB, payload={"limit": 1})
+    runner = SafetyCheckedWorkerRunner(
+        InlineWorkerRunner({ENRICH_ORGANIZATION_WEBSITES_JOB: handler}),
         OutboundGuard(Settings(outbound_enabled=False)),
         db_session,
     )

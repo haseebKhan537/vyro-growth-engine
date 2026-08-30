@@ -18,6 +18,7 @@ PHASE_ONE_MODELS = (
     Suppression,
     models.SourceEvidence,
     models.DiscoveryRun,
+    models.EnrichmentRun,
     models.OperatorControl,
 )
 
