@@ -35,6 +35,29 @@ class WebsiteFactType(StrEnum):
     BILLING_SIGNAL = "billing_signal"
 
 
+class ContactRoleCategory(StrEnum):
+    OWNER_PHYSICIAN_OWNER = "owner_physician_owner"
+    PRACTICE_ADMINISTRATOR = "practice_administrator"
+    PRACTICE_MANAGER = "practice_manager"
+    OFFICE_MANAGER = "office_manager"
+    EXECUTIVE_DIRECTOR = "executive_director"
+    COO = "coo"
+    CEO_INDEPENDENT = "ceo_independent"
+    REVENUE_CYCLE_MANAGER = "revenue_cycle_manager"
+    BILLING_MANAGER = "billing_manager"
+    OPERATIONS_MANAGER = "operations_manager"
+
+
+class ContactVerificationStatus(StrEnum):
+    UNKNOWN = "unknown"
+    UNVERIFIED = "unverified"
+    PROVIDER_VERIFIED = "provider_verified"
+
+
+class ContactFactType(StrEnum):
+    DECISION_MAKER_CONTACT = "decision_maker_contact"
+
+
 class LeadStage(StrEnum):
     DISCOVERED = "discovered"
     ENRICHING = "enriching"
