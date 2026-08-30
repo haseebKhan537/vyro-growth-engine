@@ -10,6 +10,7 @@ SENSITIVE_KEYS = {
     "api_key",
     "apikey",
     "openai_api_key",
+    "smartlead_api_key",
     "internal_api_key",
     "password",
     "secret",

@@ -10,10 +10,12 @@ from vyro_growth.database import SessionLocal
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 from vyro_growth.providers.personalization import build_personalization_provider
+from vyro_growth.providers.smartlead import build_smartlead_provider
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.lead_scoring import LeadScoringService
+from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.personalization import PersonalizationService
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentService
 
@@ -98,6 +100,25 @@ def build_parser() -> argparse.ArgumentParser:
         default=50,
         help="Maximum organizations to personalize when no id is provided",
     )
+
+    outreach = subparsers.add_parser(
+        "plan-outreach",
+        help="Create a dry-run Smartlead enrollment plan without sending email",
+    )
+    outreach.add_argument("--lead-id", help="Existing lead UUID")
+    outreach.add_argument("--campaign-id", help="Existing campaign UUID")
+    outreach.add_argument(
+        "--campaign-name",
+        help="Campaign name to reuse or create (default: phase-6-dry-run)",
+    )
+    outreach.add_argument("--state", help="Limit batch planning to a two-letter state code")
+    outreach.add_argument("--city", help="Limit batch planning to a city")
+    outreach.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum leads to plan when no lead id is provided",
+    )
     return parser
 
 
@@ -145,6 +166,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "personalize-leads":
         return _run_personalize_leads(parser, args)
+
+    if args.command == "plan-outreach":
+        return _run_plan_outreach(args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -280,6 +304,40 @@ def _run_personalize_leads(parser: argparse.ArgumentParser, args: argparse.Names
             f"status={item.status.value}",
         )
     print(f"personalized={len(results)}")
+    return 0
+
+
+def _run_plan_outreach(args: argparse.Namespace) -> int:
+    campaign_id = UUID(args.campaign_id) if args.campaign_id else None
+    service = OutreachEnrollmentService(build_smartlead_provider())
+    with SessionLocal() as db:
+        if args.lead_id:
+            result = service.plan_lead(
+                db,
+                UUID(args.lead_id),
+                campaign_id=campaign_id,
+                campaign_name=args.campaign_name,
+            )
+        else:
+            result = service.plan_batch(
+                db,
+                limit=args.limit,
+                state=args.state,
+                city=args.city,
+                campaign_id=campaign_id,
+                campaign_name=args.campaign_name,
+            )
+    print(
+        "Outreach plan:",
+        f"id={result.outreach_plan_run_id}",
+        f"campaign_id={result.campaign_id}",
+        f"planned={result.planned_count}",
+        f"skipped={result.skipped_count}",
+        f"suppressed={result.suppressed_count}",
+        f"blocked={result.blocked_count}",
+        f"reused={result.reused_count}",
+        f"status={result.status.value}",
+    )
     return 0
 
 

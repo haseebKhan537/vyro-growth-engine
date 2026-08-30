@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Never
+from uuid import UUID
 
 from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -25,6 +26,7 @@ class OutboundAction(StrEnum):
     EMAIL_SEND = "email_send"
     CALENDAR_SCHEDULE = "calendar_schedule"
     PHONE_DIAL = "phone_dial"
+    CAMPAIGN_ENROLL = "campaign_enroll"
 
 
 @dataclass(frozen=True)
@@ -82,7 +84,11 @@ def _action_policy_reason(
     consent_to_call: bool,
 ) -> OutboundDecision | None:
     match action:
-        case OutboundAction.EMAIL_SEND | OutboundAction.CALENDAR_SCHEDULE:
+        case (
+            OutboundAction.EMAIL_SEND
+            | OutboundAction.CALENDAR_SCHEDULE
+            | OutboundAction.CAMPAIGN_ENROLL
+        ):
             return None
         case OutboundAction.PHONE_DIAL:
             if not consent_to_call:
@@ -90,6 +96,38 @@ def _action_policy_reason(
             return None
         case _:
             return _unreachable(action)
+
+
+def suppression_status(
+    db: Session,
+    *,
+    email: str | None = None,
+    domain: str | None = None,
+    phone: str | None = None,
+    organization_id: UUID | None = None,
+) -> OutboundDecision:
+    """Fail-closed suppression lookup used by dry-run planning and live outbound."""
+    email_n = normalize_email(email)
+    domain_n = normalize_domain(domain) or domain_from_email(email_n)
+    phone_n = normalize_phone(phone)
+    conditions = []
+    if email_n:
+        conditions.append(Suppression.email == email_n)
+    if domain_n:
+        conditions.append(Suppression.domain == domain_n)
+    if phone_n:
+        conditions.append(Suppression.phone == phone_n)
+    if organization_id is not None:
+        conditions.append(Suppression.organization_id == organization_id)
+    if not conditions:
+        return OutboundDecision(False, "target_unidentified")
+    try:
+        suppressed = db.scalar(select(Suppression.id).where(or_(*conditions)).limit(1))
+    except SQLAlchemyError:
+        return OutboundDecision(False, "suppression_check_unavailable")
+    if suppressed is not None:
+        return OutboundDecision(False, "suppressed")
+    return OutboundDecision(True, "allowed")
 
 
 class OutboundGuard:
@@ -112,6 +150,7 @@ class OutboundGuard:
         email: str | None = None,
         domain: str | None = None,
         phone: str | None = None,
+        organization_id: UUID | None = None,
         consent_to_call: bool = False,
     ) -> OutboundDecision:
         if not self._settings.outbound_enabled:
@@ -138,7 +177,13 @@ class OutboundGuard:
         if email_n is None and domain_n is None and phone_n is None:
             return OutboundDecision(False, "target_unidentified")
 
-        return self._suppression_decision(db, email=email_n, domain=domain_n, phone=phone_n)
+        return self._suppression_decision(
+            db,
+            email=email_n,
+            domain=domain_n,
+            phone=phone_n,
+            organization_id=organization_id,
+        )
 
     def require_allowed(
         self,
@@ -148,6 +193,7 @@ class OutboundGuard:
         email: str | None = None,
         domain: str | None = None,
         phone: str | None = None,
+        organization_id: UUID | None = None,
         consent_to_call: bool = False,
     ) -> None:
         decision = self.evaluate(
@@ -156,6 +202,7 @@ class OutboundGuard:
             email=email,
             domain=domain,
             phone=phone,
+            organization_id=organization_id,
             consent_to_call=consent_to_call,
         )
         if not decision.allowed:
@@ -168,22 +215,12 @@ class OutboundGuard:
         email: str | None,
         domain: str | None,
         phone: str | None,
+        organization_id: UUID | None = None,
     ) -> OutboundDecision:
-        conditions = []
-        if email:
-            conditions.append(Suppression.email == email)
-        if domain:
-            conditions.append(Suppression.domain == domain)
-        if phone:
-            conditions.append(Suppression.phone == phone)
-
-        if not conditions:
-            return OutboundDecision(False, "target_unidentified")
-
-        try:
-            suppressed = db.scalar(select(Suppression.id).where(or_(*conditions)).limit(1))
-        except SQLAlchemyError:
-            return OutboundDecision(False, "suppression_check_unavailable")
-        if suppressed is not None:
-            return OutboundDecision(False, "suppressed")
-        return OutboundDecision(True, "allowed")
+        return suppression_status(
+            db,
+            email=email,
+            domain=domain,
+            phone=phone,
+            organization_id=organization_id,
+        )

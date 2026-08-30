@@ -53,13 +53,12 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - specialty experiments and lead budget allocation remain future work
 
 ## Phase 6 — Autonomous email outreach
-- Smartlead adapter
-- campaign assignment
-- personalization grounded in evidence
-- cadence engine
-- send guardrails
-- bounce/unsubscribe webhooks
-- audit trail
+- Smartlead provider interface plus deterministic stub (dry-run enrollment planning; no live send)
+- guarded live Smartlead adapter boundary, disabled by default and not used in CI
+- campaign/enrollment persistence with idempotent reruns
+- suppression checks for email, domain, and organization
+- operator halt / `OUTBOUND_ENABLED` enforcement before any live outbound-like action
+- cadence engine, bounce/unsubscribe webhooks, and live campaign enrollment remain future work
 
 ## Phase 7 — Reply agent
 - inbound webhook processing

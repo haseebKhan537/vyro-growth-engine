@@ -19,7 +19,13 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
-from vyro_growth.domain import DiscoveryRunStatus, EnrichmentRunStatus, LeadStage
+from vyro_growth.domain import (
+    DiscoveryRunStatus,
+    EnrichmentRunStatus,
+    EnrollmentStatus,
+    LeadStage,
+    OutreachPlanRunStatus,
+)
 
 
 class TimestampMixin:
@@ -95,6 +101,12 @@ class Campaign(TimestampMixin, Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(255), unique=True)
     active: Mapped[bool] = mapped_column(Boolean, default=False)
+    channel: Mapped[str] = mapped_column(String(32), default="email")
+    provider: Mapped[str] = mapped_column(String(64), default="smartlead")
+    provider_campaign_key: Mapped[str | None] = mapped_column(String(255))
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    enrollments: Mapped[list[CampaignEnrollment]] = relationship(back_populates="campaign")
+    outreach_plan_runs: Mapped[list[OutreachPlanRun]] = relationship(back_populates="campaign")
 
 
 class OutreachMessage(TimestampMixin, Base):
@@ -142,6 +154,9 @@ class Suppression(TimestampMixin, Base):
     email: Mapped[str | None] = mapped_column(String(320), unique=True, index=True)
     domain: Mapped[str | None] = mapped_column(String(255), index=True)
     phone: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
+    organization_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("organizations.id"), index=True
+    )
     reason: Mapped[str] = mapped_column(String(120))
     permanent: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -253,3 +268,56 @@ class PersonalizationDraft(TimestampMixin, Base):
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     evidence_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
     organization: Mapped[Organization] = relationship(back_populates="personalization_drafts")
+
+
+class OutreachPlanRun(TimestampMixin, Base):
+    __tablename__ = "outreach_plan_runs"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    campaign_id: Mapped[UUID] = mapped_column(ForeignKey("campaigns.id"), index=True)
+    status: Mapped[str] = mapped_column(
+        String(32), default=OutreachPlanRunStatus.PENDING.value, index=True
+    )
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    planned_count: Mapped[int] = mapped_column(default=0)
+    skipped_count: Mapped[int] = mapped_column(default=0)
+    suppressed_count: Mapped[int] = mapped_column(default=0)
+    blocked_count: Mapped[int] = mapped_column(default=0)
+    reused_count: Mapped[int] = mapped_column(default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    campaign: Mapped[Campaign] = relationship(back_populates="outreach_plan_runs")
+    enrollments: Mapped[list[CampaignEnrollment]] = relationship(back_populates="plan_run")
+
+
+class CampaignEnrollment(TimestampMixin, Base):
+    __tablename__ = "campaign_enrollments"
+    __table_args__ = (
+        UniqueConstraint(
+            "idempotency_key",
+            name="uq_campaign_enrollments_idempotency_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    campaign_id: Mapped[UUID] = mapped_column(ForeignKey("campaigns.id"), index=True)
+    outreach_plan_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("outreach_plan_runs.id"), index=True
+    )
+    lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
+    contact_id: Mapped[UUID | None] = mapped_column(ForeignKey("contacts.id"), index=True)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    personalization_draft_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("personalization_drafts.id"), index=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(32), default=EnrollmentStatus.SKIPPED.value, index=True
+    )
+    skip_reason: Mapped[str | None] = mapped_column(String(64), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    provider_name: Mapped[str] = mapped_column(String(64), default="stub")
+    provider_enrollment_id: Mapped[str | None] = mapped_column(String(255))
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=True)
+    live_send_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    details_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    campaign: Mapped[Campaign] = relationship(back_populates="enrollments")
+    plan_run: Mapped[OutreachPlanRun | None] = relationship(back_populates="enrollments")

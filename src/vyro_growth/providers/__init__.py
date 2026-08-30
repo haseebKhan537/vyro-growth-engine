@@ -20,6 +20,7 @@ from vyro_growth.providers.decision_makers import (
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
     GuardedEmailProvider,
+    GuardedSmartleadProvider,
     GuardedVoiceProvider,
 )
 from vyro_growth.providers.nppes import (
@@ -41,6 +42,14 @@ from vyro_growth.providers.personalization import (
     StaticPersonalizationProvider,
     StubPersonalizationProvider,
     build_personalization_provider,
+)
+from vyro_growth.providers.smartlead import (
+    SmartleadLeadPayload,
+    SmartleadPlanResult,
+    SmartleadProvider,
+    StaticSmartleadProvider,
+    StubSmartleadProvider,
+    build_smartlead_provider,
 )
 from vyro_growth.providers.stubs import (
     StubCalendarProvider,
@@ -72,6 +81,7 @@ __all__ = [
     "EnrichmentProvider",
     "GuardedCalendarProvider",
     "GuardedEmailProvider",
+    "GuardedSmartleadProvider",
     "GuardedVoiceProvider",
     "HeuristicWebsiteSearchProvider",
     "HttpNppesProvider",
@@ -81,6 +91,7 @@ __all__ = [
     "StaticDecisionMakerEnrichmentProvider",
     "StaticPersonalizationProvider",
     "StaticPublicPageFetcher",
+    "StaticSmartleadProvider",
     "StaticWebsiteSearchProvider",
     "NARROW_FILTER_ERROR",
     "NPPES_MAX_SKIP",
@@ -94,11 +105,15 @@ __all__ = [
     "PersonalizationProviderResult",
     "PersonalizationRequest",
     "SendResult",
+    "SmartleadLeadPayload",
+    "SmartleadPlanResult",
+    "SmartleadProvider",
     "StubCalendarProvider",
     "StubDecisionMakerEnrichmentProvider",
     "StubEmailProvider",
     "StubEnrichmentProvider",
     "StubPersonalizationProvider",
+    "StubSmartleadProvider",
     "StubVoiceProvider",
     "VoiceProvider",
     "WebsiteCandidate",
@@ -109,5 +124,6 @@ __all__ = [
     "build_nppes_provider",
     "build_personalization_provider",
     "build_public_page_fetcher",
+    "build_smartlead_provider",
     "clean_optional_text",
 ]

@@ -67,6 +67,26 @@ class Settings(BaseSettings):
         default=None,
         description="Placeholder cost ceiling for a future live adapter. Not enforced yet.",
     )
+    smartlead_live_enabled: bool = Field(
+        default=False,
+        description=(
+            "Explicit opt-in for the live Smartlead adapter boundary. Default false; "
+            "CI and local development use the deterministic stub and never enroll or send. "
+            "Phase 6 does not perform live HTTP even when this flag is true unless a test "
+            "injects a client."
+        ),
+    )
+    smartlead_api_key: str = Field(
+        default="",
+        description="Live Smartlead API key. Unused unless a future owner-approved live step.",
+    )
+    smartlead_api_base_url: str = Field(
+        default="",
+        description="Live Smartlead API base URL. Unused by default; not required for tests.",
+    )
+    smartlead_timeout_seconds: float = Field(default=10.0, ge=1.0)
+    smartlead_max_retries: int = Field(default=3, ge=0)
+    smartlead_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
 
 
 @lru_cache

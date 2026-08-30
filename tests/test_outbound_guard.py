@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings
-from vyro_growth.models import Suppression
+from vyro_growth.models import Organization, Suppression
 from vyro_growth.services.operator_halt import (
     HaltStatus,
     StaticHaltReader,
@@ -163,6 +163,27 @@ def test_phone_suppression_is_honored(db_session: Session) -> None:
         action=OutboundAction.PHONE_DIAL,
         phone="(555) 111-2222",
         consent_to_call=True,
+    )
+
+    assert decision.allowed is False
+    assert decision.reason == "suppressed"
+
+
+def test_organization_suppression_is_honored(db_session: Session) -> None:
+    guard = _cleared_guard(db_session)
+    organization = Organization(name="Blocked Clinic", npi="1487448189", state="TX")
+    db_session.add(organization)
+    db_session.flush()
+    db_session.add(
+        Suppression(organization_id=organization.id, reason="org_block", permanent=True)
+    )
+    db_session.flush()
+
+    decision = guard.evaluate(
+        db_session,
+        action=OutboundAction.CAMPAIGN_ENROLL,
+        email="owner@clinic.com",
+        organization_id=organization.id,
     )
 
     assert decision.allowed is False

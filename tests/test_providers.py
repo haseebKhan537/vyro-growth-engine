@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 import pytest
 from sqlalchemy.orm import Session
 
@@ -8,7 +10,13 @@ from vyro_growth.models import Suppression
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
     GuardedEmailProvider,
+    GuardedSmartleadProvider,
     GuardedVoiceProvider,
+)
+from vyro_growth.providers.smartlead import (
+    LiveSmartleadDisabledError,
+    SmartleadLeadPayload,
+    StubSmartleadProvider,
 )
 from vyro_growth.providers.stubs import StubCalendarProvider, StubEmailProvider, StubVoiceProvider
 from vyro_growth.services.operator_halt import set_operator_halt
@@ -123,3 +131,41 @@ def test_guarded_voice_provider_delegates_when_allowed(db_session: Session) -> N
 
     assert result.accepted is True
     assert result.provider_call_id == "stub-call:5551112222:True"
+
+
+def _smartlead_payload() -> SmartleadLeadPayload:
+    return SmartleadLeadPayload(
+        campaign_key="phase-6-dry-run",
+        email="owner@clinic.com",
+        company_name="Clinic",
+        idempotency_key="key",
+        organization_id=uuid4(),
+    )
+
+
+def test_guarded_smartlead_blocks_when_live_disabled(db_session: Session) -> None:
+    inner = StubSmartleadProvider()
+    settings = Settings(outbound_enabled=True, smartlead_live_enabled=False)
+    provider = GuardedSmartleadProvider(
+        inner,
+        _cleared_guard(db_session),
+        db_session,
+        settings,
+    )
+    with pytest.raises(LiveSmartleadDisabledError, match="smartlead_live_disabled"):
+        provider.plan_enrollment(_smartlead_payload())
+    assert inner.requests == []
+
+
+def test_guarded_smartlead_blocks_when_outbound_disabled(db_session: Session) -> None:
+    inner = StubSmartleadProvider()
+    settings = Settings(outbound_enabled=False, smartlead_live_enabled=True)
+    provider = GuardedSmartleadProvider(
+        inner,
+        OutboundGuard(settings),
+        db_session,
+        settings,
+    )
+    with pytest.raises(OutboundBlockedError, match="global_outbound_disabled"):
+        provider.plan_enrollment(_smartlead_payload())
+    assert inner.requests == []
