@@ -328,6 +328,37 @@ class VoiceSkipReason(StrEnum):
     COLD_CALL_FORBIDDEN = "cold_call_forbidden"
 
 
+class OptimizerRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class RecommendationCategory(StrEnum):
+    ICP_SCORING_THRESHOLD = "icp_scoring_threshold"
+    SPECIALTY_GEOGRAPHY_SIGNAL = "specialty_geography_signal"
+    WEBSITE_ENRICHMENT_GAP = "website_enrichment_gap"
+    DECISION_MAKER_COVERAGE_GAP = "decision_maker_coverage_gap"
+    PERSONALIZATION_READINESS_GAP = "personalization_readiness_gap"
+    OUTREACH_PLAN_PATTERN = "outreach_plan_pattern"
+    REPLY_INTENT_TREND = "reply_intent_trend"
+    BOOKING_PLAN_BOTTLENECK = "booking_plan_bottleneck"
+    VOICE_PLAN_BOTTLENECK = "voice_plan_bottleneck"
+    SAFETY_RISK = "safety_risk"
+
+
+class RecommendationPriority(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class RecommendationApprovalStatus(StrEnum):
+    PENDING_OPERATOR_REVIEW = "pending_operator_review"
+
+
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(
     {
         LeadStage.MEETING_BOOKED,

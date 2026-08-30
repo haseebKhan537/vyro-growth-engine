@@ -28,6 +28,8 @@ PHASE_ONE_MODELS = (
     models.BookingPlan,
     models.VoiceQualificationRun,
     models.VoiceQualificationPlan,
+    models.OptimizerRun,
+    models.OptimizerRecommendation,
 )
 
 

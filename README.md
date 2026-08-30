@@ -404,6 +404,36 @@ The summary includes:
 
 Responses are counts and statuses only. They do not include message bodies, draft copy, emails, phones, or PHI. The service does not write pipeline rows, send email, place calls, book meetings, or call live providers. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 11 — Growth optimizer foundation (dry-run)
+
+Analyze stored dashboard/pipeline metrics and produce recommendation drafts for operator review. This layer does not apply recommendations, change campaigns or scoring thresholds, send email, place calls, book meetings, or call live providers.
+
+CLI:
+```bash
+vyro-growth recommend-growth
+```
+
+Worker job name: `generate_growth_recommendations`
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl -X POST http://localhost:8000/internal/optimizer/run \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/optimizer/recommendations \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Each recommendation includes:
+
+- category (ICP thresholds, specialty/geography signals, website or decision-maker coverage, personalization readiness, outreach plan patterns, reply intent trends, booking/voice bottlenecks, or safety risk)
+- priority, confidence, rationale, and source metric references
+- generated timestamp
+- `approval_status=pending_operator_review`
+- `applied=false`
+
+Identical sanitized snapshots reuse the existing optimizer run. Output is counts and review text only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged. No live AI or paid/external provider is called.
+
 ## Phase 1
 
 Production foundation:

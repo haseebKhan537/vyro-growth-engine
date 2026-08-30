@@ -62,6 +62,8 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "reply_classification_openai.py",
         "reply_classification_handler.py",
         "dashboard.py",
+        "growth_optimizer.py",
+        "optimizer.py",
     }
     calendar_boundary = {
         "config.py",
@@ -76,6 +78,8 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "domain.py",
         "__init__.py",
         "dashboard.py",
+        "growth_optimizer.py",
+        "optimizer.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -90,6 +94,8 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "domain.py",
         "__init__.py",
         "dashboard.py",
+        "growth_optimizer.py",
+        "optimizer.py",
     }
     forbidden = (
         "apollo",
@@ -182,6 +188,22 @@ def test_voice_stub_and_planner_do_not_use_httpx() -> None:
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "VOICE_LIVE_ENABLED=false" in env_example
+
+
+def test_growth_optimizer_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/growth_optimizer.py"),
+        Path("src/vyro_growth/api/optimizer.py"),
+        Path("src/vyro_growth/workers/growth_optimizer_handler.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "google.calendar" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
 
 
 def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:

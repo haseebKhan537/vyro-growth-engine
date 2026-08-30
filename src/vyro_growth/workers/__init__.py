@@ -13,6 +13,10 @@ from vyro_growth.workers.discovery_handler import (
     DISCOVER_NPPES_PRACTICES_JOB,
     DiscoverNppesPracticesHandler,
 )
+from vyro_growth.workers.growth_optimizer_handler import (
+    GENERATE_GROWTH_RECOMMENDATIONS_JOB,
+    GenerateGrowthRecommendationsHandler,
+)
 from vyro_growth.workers.outbound import (
     OUTBOUND_JOB_ACTIONS,
     PLACE_CONSENT_CALLBACK_JOB,
@@ -49,6 +53,8 @@ from vyro_growth.workers.website_enrichment_handler import (
 
 __all__ = [
     "CLASSIFY_INBOUND_REPLIES_JOB",
+    "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
+    "GenerateGrowthRecommendationsHandler",
     "PLAN_BOOKING_SLOTS_JOB",
     "PlanBookingSlotsHandler",
     "DISCOVER_NPPES_PRACTICES_JOB",

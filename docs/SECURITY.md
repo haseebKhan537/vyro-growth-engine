@@ -119,6 +119,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not invent prospect facts to fill empty metrics. Missing pipeline state is reported as zero or `not_started`.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is displayed and must not be lifted by dashboard reads.
 
+## Growth optimizer integrity
+- Phase 11 recommendations are dry-run drafts for operator review. They are never auto-applied.
+- Do not change campaigns, scoring thresholds, provider settings, outbound behavior, calendars, or voice flows from this layer.
+- Use only stored dashboard/pipeline counts and public/business aggregates. Do not invent prospect facts, emails, phones, message copy, or conversion outcomes.
+- Do not return message bodies, personalization copy, emails, phones, evidence snippets, or PHI in API/CLI output.
+- Do not call live AI, Smartlead, Google Calendar, voice, or other paid/external providers. No optimizer AI provider is wired.
+- Do not send email, generate sendable autonomous replies, place calls, book meetings, create Google Meet links, create calendar events, or enroll campaigns.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by the optimizer.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

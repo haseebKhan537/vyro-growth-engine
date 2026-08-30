@@ -15,6 +15,11 @@ from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
 )
+from vyro_growth.api.optimizer import (
+    OptimizerRunResponse,
+    build_latest_optimizer_response,
+    build_optimizer_run_response,
+)
 from vyro_growth.config import Settings, get_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
@@ -69,6 +74,26 @@ def dashboard_safety(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_dashboard_summary_response(db, active_settings).safety
+
+
+@app.post("/internal/optimizer/run", tags=["internal"])
+def run_growth_optimizer(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> OptimizerRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_optimizer_run_response(db, active_settings)
+
+
+@app.get("/internal/optimizer/recommendations", tags=["internal"])
+def latest_growth_recommendations(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> OptimizerRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_latest_optimizer_response(db)
 
 
 @app.post("/internal/discovery/nppes", tags=["internal"])

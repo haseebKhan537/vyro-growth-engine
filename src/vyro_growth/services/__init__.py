@@ -21,6 +21,11 @@ from vyro_growth.services.discovery import (
     DiscoveryRunResult,
     NppesDiscoveryService,
 )
+from vyro_growth.services.growth_optimizer import (
+    GrowthOptimizerService,
+    OptimizerRecommendationView,
+    OptimizerRunResult,
+)
 from vyro_growth.services.lead_scoring import (
     LeadScoringError,
     LeadScoringService,
@@ -87,6 +92,9 @@ __all__ = [
     "ContactEnrichmentService",
     "DashboardAnalyticsService",
     "DashboardSummary",
+    "GrowthOptimizerService",
+    "OptimizerRecommendationView",
+    "OptimizerRunResult",
     "DatabaseHaltReader",
     "DiscoveryQueryError",
     "DiscoveryRunResult",

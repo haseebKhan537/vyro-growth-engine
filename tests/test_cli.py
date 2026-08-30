@@ -10,8 +10,10 @@ from vyro_growth.domain import (
     BookingPlanRunStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
+    OptimizerRunStatus,
     OutreachPlanRunStatus,
     PersonalizationReadiness,
+    RecommendationApprovalStatus,
     ReplyClassificationOutcome,
     ReplyIntent,
     VoiceQualificationRunStatus,
@@ -35,6 +37,10 @@ from vyro_growth.services.dashboard import (
     WebsiteEnrichmentSummary,
 )
 from vyro_growth.services.discovery import DiscoveryRunResult
+from vyro_growth.services.growth_optimizer import (
+    OptimizerRecommendationView,
+    OptimizerRunResult,
+)
 from vyro_growth.services.lead_scoring import (
     MODEL_VERSION,
     PersistedScoreResult,
@@ -857,3 +863,72 @@ def test_cli_main_runs_dashboard_summary(
     assert "planned=1" in output
     assert "calls_placed=0" in output
     assert "phi_fields_present=False" in output
+
+
+def test_parser_accepts_recommend_growth() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["recommend-growth"])
+
+    assert args.command == "recommend-growth"
+
+
+def test_cli_main_runs_recommend_growth(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    recommendation = OptimizerRecommendationView(
+        id=uuid4(),
+        recommendation_key="website_enrichment_gap",
+        category="website_enrichment_gap",
+        priority="medium",
+        confidence=0.72,
+        title="Review website enrichment coverage gaps",
+        rationale="2 of 3 organizations lack a verified official website match.",
+        source_metrics={"organizations": 3, "orgs_without_verified_website": 2},
+        generated_at=datetime.now(tz=UTC),
+        approval_status=RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+        applied=False,
+    )
+    result = OptimizerRunResult(
+        optimizer_run_id=uuid4(),
+        status=OptimizerRunStatus.COMPLETED,
+        model_version="growth-optimizer-v1",
+        snapshot_fingerprint="abc123",
+        recommendation_count=1,
+        reused_existing=False,
+        applied_count=0,
+        dry_run_only=True,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        generated_at=datetime.now(tz=UTC),
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        recommendations=(recommendation,),
+    )
+
+    class DummyService:
+        def recommend(self, _db: object, _settings: object) -> OptimizerRunResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.GrowthOptimizerService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["recommend-growth"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"id={result.optimizer_run_id}" in output
+    assert "recommendations=1" in output
+    assert "applied=0" in output
+    assert "outbound_attempted=False" in output
+    assert "approval=pending_operator_review" in output
+    assert "key=website_enrichment_gap" in output
+    assert "applied=False" in output
