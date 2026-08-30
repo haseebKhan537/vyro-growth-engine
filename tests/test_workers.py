@@ -10,6 +10,7 @@ from vyro_growth.models import Suppression
 from vyro_growth.services.operator_halt import set_operator_halt
 from vyro_growth.services.outbound_guard import OutboundBlockedError, OutboundGuard
 from vyro_growth.workers import InlineJobQueue, InlineWorkerRunner, Job, UnknownJobError
+from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.outbound import (
     PLACE_CONSENT_CALLBACK_JOB,
     SCHEDULE_MEETING_JOB,
@@ -160,6 +161,22 @@ def test_safety_checked_runner_allows_website_enrichment_without_guard(
     job = Job(name=ENRICH_ORGANIZATION_WEBSITES_JOB, payload={"limit": 1})
     runner = SafetyCheckedWorkerRunner(
         InlineWorkerRunner({ENRICH_ORGANIZATION_WEBSITES_JOB: handler}),
+        OutboundGuard(Settings(outbound_enabled=False)),
+        db_session,
+    )
+
+    runner.run(job)
+
+    assert handler.handled == [job]
+
+
+def test_safety_checked_runner_allows_contact_enrichment_without_guard(
+    db_session: Session,
+) -> None:
+    handler = EchoHandler()
+    job = Job(name=ENRICH_DECISION_MAKERS_JOB, payload={"limit": 1})
+    runner = SafetyCheckedWorkerRunner(
+        InlineWorkerRunner({ENRICH_DECISION_MAKERS_JOB: handler}),
         OutboundGuard(Settings(outbound_enabled=False)),
         db_session,
     )
