@@ -15,7 +15,7 @@ PostgreSQL is the system of record for organizations, contacts, leads, evidence,
 Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical.
 
 ### Provider adapters
-Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Phase 3B adds a `DecisionMakerEnrichmentProvider` boundary for professional contact candidates; the default implementation is a stub that returns no invented contacts and does not call a paid provider. Phase 5 adds a `PersonalizationProvider` boundary for evidence-grounded draft generation. The default implementation is a deterministic stub. A guarded OpenAI adapter exists but makes no live call unless `OPENAI_PERSONALIZATION_ENABLED` is explicitly true and a key is configured. Planned future adapters include broader search/crawl, a live paid contact provider, Smartlead, Google Calendar/Meet, and a consent-based voice provider.
+Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Phase 3B adds a `DecisionMakerEnrichmentProvider` boundary for professional contact candidates; the default implementation is a stub that returns no invented contacts and does not call a paid provider. Phase 5 adds a `PersonalizationProvider` boundary for evidence-grounded draft generation. The default implementation is a deterministic stub. A guarded OpenAI adapter exists but makes no live call unless `OPENAI_PERSONALIZATION_ENABLED` is explicitly true and a key is configured. Phase 6 adds a `SmartleadProvider` boundary for dry-run campaign enrollment planning. The default implementation is a stub. A guarded live adapter exists but is not selected by `build_smartlead_provider()` and does not open a default HTTP session. Planned future adapters include broader search/crawl, a live paid contact provider, Google Calendar/Meet, and a consent-based voice provider.
 
 ### Phase 2 discovery flow
 1. Operator or worker submits a targeted NPPES query through the CLI, worker job, or the internal HTTP trigger. The HTTP path is authorization-gated; CLI and worker paths are not. State alone is not enough; a narrower filter (`city`, `taxonomy_description`, or `organization_name`) is required.
@@ -67,7 +67,18 @@ Personalization is dry-run only. It does not send email, place calls, book meeti
 3. The `PersonalizationProvider` is the only generation boundary. CI and local runs use `StubPersonalizationProvider`, which interpolates stored values and never invents business facts. A guarded OpenAI adapter with structured JSON schema, prompt versioning, token/cost placeholders, and retry/backoff exists but does not run unless explicitly enabled with a key.
 4. Output is a structured draft: practice summary, why Vyro may be relevant, opening line, outreach angle, suggested offer (default Complimentary Revenue Leakage Analysis), missing-data notes, evidence references, confidence, and readiness.
 5. Every material claim must map to stored evidence, a scoring factor, or an organization field. Ungrounded or malformed provider output fails the run without persisting a draft.
-6. Identical evidence fingerprints reuse the existing draft. Each attempt writes `enrichment_runs` and `activities`. No outreach rows are created. `OUTBOUND_ENABLED` remains false by default.
+6. Each run writes `enrichment_runs` and `activities`. No outreach rows are created. `OUTBOUND_ENABLED` remains false by default.
+
+### Phase 6: dry-run Smartlead enrollment planning
+Outreach planning is dry-run only. It does not send email, enroll a live Smartlead campaign, place calls, or book meetings.
+
+1. Operator or worker submits `vyro-growth plan-outreach` or job `plan_outreach_enrollments` with a lead id or batch limit. There is no HTTP trigger.
+2. `OutreachEnrollmentService` loads stored scored leads, professional contacts with business email, and Phase 5 personalization drafts with `readiness_status=ready`. Missing data stays missing; facts are not invented.
+3. Eligibility requires stage `qualified` or `ready_for_outreach` and a score band of `hot`, `high`, or `medium`. Email, domain, and organization suppressions skip the lead with an audited reason.
+4. The `SmartleadProvider` is the only enrollment boundary. CI and local runs use `StubSmartleadProvider`, which returns a dry-run plan id and never calls Smartlead. `build_smartlead_provider()` always returns the stub.
+5. A guarded live adapter exists as a future boundary. It requires `SMARTLEAD_LIVE_ENABLED`, outbound enablement, and a lifted operator halt, and still refuses to open HTTP unless a test injects a client.
+6. Re-running the same campaign/lead/contact key reuses the planned enrollment. Lead stage is not advanced to `contacted`. No `outreach_messages` rows are written.
+7. `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 
 ### Event flow
 1. Practice discovered.

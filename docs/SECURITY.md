@@ -13,8 +13,8 @@ This repository is a sales/prospecting system. It must not ingest, store, proces
 - If a suppression lookup cannot be completed, the guard fails closed (`suppression_check_unavailable`).
 - Actions without an identifiable email, domain, or phone fail closed (`target_unidentified`).
 - Consent-based phone actions fail closed unless the caller passes `consent_to_call=True`. This is a gate only; there is no live dialer.
-- Email, domain, and phone suppressions are checked immediately before every outbound action.
-- Future email, calendar, and consent-based phone adapters/workers must call `OutboundGuard.require_allowed` (or use the guarded wrappers / `SafetyCheckedWorkerRunner`) before sending, scheduling, or dialing.
+- Email, domain, organization, and phone suppressions are checked immediately before every outbound action.
+- Future email, calendar, Smartlead, and consent-based phone adapters/workers must call `OutboundGuard.require_allowed` (or use the guarded wrappers / `SafetyCheckedWorkerRunner`) before sending, scheduling, enrolling, or dialing.
 - Permanent unsubscribe records must be durable and honored across campaigns.
 - Every external action must create an audit/activity record.
 
@@ -69,6 +69,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not send email, place calls, book calendar events, or enroll leads.
 - Do not call Apollo, Smartlead, Google, Twilio, Vapi, Retell, or any live paid/external provider from this layer.
 - The OpenAI adapter is a guarded boundary. Default `OPENAI_PERSONALIZATION_ENABLED=false`. CI and local tests use the stub and do not require a live key. Never commit API keys.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
+## Smartlead outreach planning
+- Phase 6 plans dry-run campaign enrollments only. It does not send email or enroll leads into a live Smartlead campaign.
+- Use only stored public/business evidence, scored leads, professional contacts, and Phase 5 personalization drafts. Do not invent practice facts, contacts, emails, phones, pain points, revenue, denial rates, A/R, payer mix, billing software, testimonials, or Vyro performance claims.
+- Honor email, domain, and organization-level suppressions. Fail closed if a suppression lookup cannot be completed.
+- The default provider is a stub. `build_smartlead_provider()` never returns the live adapter. `SMARTLEAD_LIVE_ENABLED=false` by default. CI and local tests do not require a live key.
+- The guarded live adapter still requires outbound enablement and a lifted operator halt. Phase 6 does not open a default HTTP session; a future owner-approved step must inject a live client.
+- Do not place calls, book calendar events, scrape patient data, or collect PHI.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 
 ## Enrichment integrity

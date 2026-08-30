@@ -34,6 +34,13 @@ from vyro_growth.services.outbound_guard import (
     normalize_domain,
     normalize_email,
     normalize_phone,
+    suppression_status,
+)
+from vyro_growth.services.outreach_enrollment import (
+    EnrollmentItemResult,
+    OutreachEnrollmentError,
+    OutreachEnrollmentService,
+    OutreachPlanResult,
 )
 from vyro_growth.services.personalization import (
     PersonalizationError,
@@ -62,6 +69,10 @@ __all__ = [
     "OutboundBlockedError",
     "OutboundDecision",
     "OutboundGuard",
+    "OutreachEnrollmentError",
+    "OutreachEnrollmentService",
+    "OutreachPlanResult",
+    "EnrollmentItemResult",
     "PersonalizationError",
     "PersonalizationJobResult",
     "PersonalizationService",
@@ -78,4 +89,5 @@ __all__ = [
     "read_operator_halt",
     "score_snapshot",
     "set_operator_halt",
+    "suppression_status",
 ]

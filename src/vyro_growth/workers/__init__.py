@@ -17,6 +17,10 @@ from vyro_growth.workers.outbound import (
     SafetyCheckedWorkerRunner,
     outbound_action_for_job,
 )
+from vyro_growth.workers.outreach_enrollment_handler import (
+    PLAN_OUTREACH_ENROLLMENTS_JOB,
+    PlanOutreachEnrollmentsHandler,
+)
 from vyro_growth.workers.personalization_handler import (
     PERSONALIZE_SCORED_LEADS_JOB,
     PersonalizeScoredLeadsHandler,
@@ -47,6 +51,8 @@ __all__ = [
     "OUTBOUND_JOB_ACTIONS",
     "PERSONALIZE_SCORED_LEADS_JOB",
     "PLACE_CONSENT_CALLBACK_JOB",
+    "PLAN_OUTREACH_ENROLLMENTS_JOB",
+    "PlanOutreachEnrollmentsHandler",
     "SCHEDULE_MEETING_JOB",
     "SCORE_DISCOVERED_LEADS_JOB",
     "SEND_EMAIL_JOB",

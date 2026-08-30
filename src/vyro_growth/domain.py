@@ -74,6 +74,42 @@ class PersonalizationReferenceKind(StrEnum):
     ORGANIZATION_FIELD = "organization_field"
 
 
+class OutreachPlanRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class EnrollmentStatus(StrEnum):
+    PLANNED = "planned"
+    SKIPPED = "skipped"
+    SUPPRESSED = "suppressed"
+    BLOCKED = "blocked"
+
+
+class EnrollmentSkipReason(StrEnum):
+    INELIGIBLE_STAGE = "ineligible_stage"
+    MISSING_LEAD_SCORE = "missing_lead_score"
+    INELIGIBLE_SCORE = "ineligible_score"
+    MISSING_CONTACT_EMAIL = "missing_contact_email"
+    MISSING_PERSONALIZATION = "missing_personalization"
+    PERSONALIZATION_NOT_READY = "personalization_not_ready"
+    SUPPRESSED = "suppressed"
+    SUPPRESSION_CHECK_UNAVAILABLE = "suppression_check_unavailable"
+    MALFORMED_PROVIDER_OUTPUT = "malformed_provider_output"
+    PROVIDER_RETRYABLE_ERROR = "provider_retryable_error"
+    PROVIDER_NON_RETRYABLE_ERROR = "provider_non_retryable_error"
+    PROVIDER_NOT_ACCEPTED = "provider_not_accepted"
+    LIVE_SEND_REJECTED = "live_send_rejected"
+    SMARTLEAD_LIVE_DISABLED = "smartlead_live_disabled"
+    GLOBAL_OUTBOUND_DISABLED = "global_outbound_disabled"
+    OPERATOR_GLOBAL_HALT = "operator_global_halt"
+    OPERATOR_HALT_UNAVAILABLE = "operator_halt_unavailable"
+    TARGET_UNIDENTIFIED = "target_unidentified"
+    LIVE_SMARTLEAD_NOT_IMPLEMENTED = "live_smartlead_not_implemented"
+
+
 class LeadStage(StrEnum):
     DISCOVERED = "discovered"
     ENRICHING = "enriching"

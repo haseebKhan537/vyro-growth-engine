@@ -21,6 +21,8 @@ PHASE_ONE_MODELS = (
     models.EnrichmentRun,
     models.OperatorControl,
     models.PersonalizationDraft,
+    models.OutreachPlanRun,
+    models.CampaignEnrollment,
 )
 
 

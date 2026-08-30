@@ -9,6 +9,7 @@ def test_redacts_sensitive_top_level_keys() -> None:
             "authorization": "Bearer secret",
             "internal_api_key": "internal-secret",
             "openai_api_key": "placeholder-key",
+            "smartlead_api_key": "placeholder-smartlead-key",
             "message": "ok",
         }
     )
@@ -16,6 +17,7 @@ def test_redacts_sensitive_top_level_keys() -> None:
     assert event["authorization"] == "[REDACTED]"
     assert event["internal_api_key"] == "[REDACTED]"
     assert event["openai_api_key"] == "[REDACTED]"
+    assert event["smartlead_api_key"] == "[REDACTED]"
     assert event["message"] == "ok"
 
 

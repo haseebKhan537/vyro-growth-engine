@@ -249,6 +249,36 @@ Each run writes:
 
 No email is sent, no calls are placed, no calendar events are booked, and leads are not enrolled in outreach tools. `OUTBOUND_ENABLED` remains false by default. Live OpenAI is gated behind `OPENAI_PERSONALIZATION_ENABLED=false` unless explicitly enabled with a key; tests never require that key.
 
+## Phase 6 — Dry-run Smartlead enrollment planning
+
+Prepare and audit campaign enrollment intent without sending email or contacting prospects. CI and default local development use a deterministic Smartlead stub. Live Smartlead is not called.
+
+CLI:
+```bash
+vyro-growth plan-outreach --lead-id <uuid>
+vyro-growth plan-outreach --limit 25 --state TX --campaign-name phase-6-dry-run
+```
+
+Worker job name: `plan_outreach_enrollments`
+
+Eligible leads need:
+
+- stage `qualified` or `ready_for_outreach`
+- a stored score band of `hot`, `high`, or `medium`
+- a professional contact with a business email
+- a Phase 5 personalization draft with `readiness_status=ready`
+
+Missing personalization, ineligible scores/stages, and email/domain/organization suppressions are skipped with audited reasons. Re-running the same campaign/lead/contact plan reuses the existing enrollment row.
+
+Each run writes:
+
+- a dry-run `campaigns` row when the named campaign does not exist (`active=false`, `dry_run_only=true`)
+- `campaign_enrollments` rows (`planned`, `skipped`, `suppressed`, or `blocked`)
+- an `outreach_plan_runs` audit row
+- `activities` audit rows
+
+No email is sent, no live Smartlead campaign enrollment occurs, lead stage is not advanced to `contacted`, and no `outreach_messages` rows are created. `OUTBOUND_ENABLED` remains false by default. `SMARTLEAD_LIVE_ENABLED=false`; tests never require a live key.
+
 ## Phase 1
 
 Production foundation:

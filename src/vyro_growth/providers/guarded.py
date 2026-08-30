@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from vyro_growth.config import Settings
 from vyro_growth.providers.base import (
     CalendarProvider,
     CallResult,
     EmailProvider,
     SendResult,
     VoiceProvider,
+)
+from vyro_growth.providers.smartlead import (
+    LiveSmartleadDisabledError,
+    SmartleadLeadPayload,
+    SmartleadPlanResult,
+    SmartleadProvider,
 )
 from vyro_growth.services.outbound_guard import (
     OutboundAction,
@@ -95,3 +102,33 @@ class GuardedVoiceProvider:
             consent_to_call=consent_to_call,
         )
         return self._inner.place_consent_callback(phone=phone, consent_to_call=consent_to_call)
+
+
+class GuardedSmartleadProvider:
+    """Live Smartlead boundary that enforces outbound and live-enablement gates."""
+
+    live = True
+
+    def __init__(
+        self,
+        inner: SmartleadProvider,
+        guard: OutboundGuard,
+        db: Session,
+        settings: Settings,
+    ) -> None:
+        self._inner = inner
+        self._guard = guard
+        self._db = db
+        self._settings = settings
+
+    def plan_enrollment(self, payload: SmartleadLeadPayload) -> SmartleadPlanResult:
+        if not self._settings.smartlead_live_enabled:
+            raise LiveSmartleadDisabledError("smartlead_live_disabled")
+        self._guard.require_allowed(
+            self._db,
+            action=OutboundAction.CAMPAIGN_ENROLL,
+            email=payload.email,
+            domain=domain_from_email(payload.email),
+            organization_id=payload.organization_id,
+        )
+        return self._inner.plan_enrollment(payload)

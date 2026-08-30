@@ -17,6 +17,7 @@ from vyro_growth.workers.outbound import (
     SEND_EMAIL_JOB,
     SafetyCheckedWorkerRunner,
 )
+from vyro_growth.workers.outreach_enrollment_handler import PLAN_OUTREACH_ENROLLMENTS_JOB
 from vyro_growth.workers.personalization_handler import PERSONALIZE_SCORED_LEADS_JOB
 from vyro_growth.workers.scoring_handler import SCORE_DISCOVERED_LEADS_JOB
 from vyro_growth.workers.website_enrichment_handler import ENRICH_ORGANIZATION_WEBSITES_JOB
@@ -194,6 +195,22 @@ def test_safety_checked_runner_allows_personalization_without_guard(
     job = Job(name=PERSONALIZE_SCORED_LEADS_JOB, payload={"limit": 1})
     runner = SafetyCheckedWorkerRunner(
         InlineWorkerRunner({PERSONALIZE_SCORED_LEADS_JOB: handler}),
+        OutboundGuard(Settings(outbound_enabled=False)),
+        db_session,
+    )
+
+    runner.run(job)
+
+    assert handler.handled == [job]
+
+
+def test_safety_checked_runner_allows_outreach_plan_without_guard(
+    db_session: Session,
+) -> None:
+    handler = EchoHandler()
+    job = Job(name=PLAN_OUTREACH_ENROLLMENTS_JOB, payload={"limit": 1})
+    runner = SafetyCheckedWorkerRunner(
+        InlineWorkerRunner({PLAN_OUTREACH_ENROLLMENTS_JOB: handler}),
         OutboundGuard(Settings(outbound_enabled=False)),
         db_session,
     )
