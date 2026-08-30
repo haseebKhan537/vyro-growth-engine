@@ -53,6 +53,14 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Drop irrelevant clinical contacts unless the record includes owner/operator evidence.
 - Contact enrichment is not outreach. `OUTBOUND_ENABLED` remains false by default and operator halt semantics are unchanged.
 
+## ICP scoring integrity
+- Score only stored public/business evidence. Do not invent practice size, revenue, denials, A/R, payer mix, billing software, decision-makers, emails, phones, score evidence, or confidence.
+- Unknown, missing, ambiguous, and conflicting facts remain unknown. Website-derived ICP signals require a verified website match.
+- Billing/revenue-cycle points require an explicit stored claim. Do not infer billing software or financials.
+- Scoring is not outreach. It must not send email, place calls, book calendar events, or contact prospects.
+- Do not call Apollo, Smartlead, OpenAI, Google, Twilio, Vapi, Retell, or any live paid/external provider from scoring.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

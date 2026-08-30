@@ -35,15 +35,16 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - confidence scoring
 - decision-maker/contact enrichment provider foundation (stub only; no live paid provider, no outreach)
 
-## Phase 4 — Decision-maker and contact enrichment
-- live paid contact adapter (requires purchased credentials; not started)
-- practice manager/administrator/owner targeting
-- business email enrichment
-- email verification
-- suppression before qualification/outreach
+## Phase 4 — Advanced ICP qualification
+- explainable deterministic scoring from stored NPPES, website, contact, and public-business evidence
+- score bands: HOT, HIGH, MEDIUM, LOW, RESEARCH, DISQUALIFIED
+- positive and negative reason codes linked to stored source evidence
+- graceful handling of missing, ambiguous, and conflicting facts
+- idempotent reruns with no outbound side effects
+- live paid contact adapter remains future work (not started; no credentials required)
 
 ## Phase 5 — AI qualification and scoring
-- deterministic base scoring (started in Phase 3; remain local-only until AI rationale is grounded)
+- deterministic base scoring (started in Phase 3; upgraded in Phase 4; remain local-only until AI rationale is grounded)
 - AI-assisted rationale
 - structured outputs
 - evidence grounding
