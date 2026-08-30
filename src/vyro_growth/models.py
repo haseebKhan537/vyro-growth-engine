@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
-from vyro_growth.domain import LeadStage
+from vyro_growth.domain import DiscoveryRunStatus, LeadStage
 
 
 class TimestampMixin:
@@ -115,11 +115,32 @@ class Suppression(TimestampMixin, Base):
     permanent: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class DiscoveryRun(TimestampMixin, Base):
+    __tablename__ = "discovery_runs"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    source: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(
+        String(32), default=DiscoveryRunStatus.PENDING.value, index=True
+    )
+    query_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    records_fetched: Mapped[int] = mapped_column(default=0)
+    records_upserted: Mapped[int] = mapped_column(default=0)
+    records_skipped: Mapped[int] = mapped_column(default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    evidence: Mapped[list[SourceEvidence]] = relationship(back_populates="discovery_run")
+
+
 class SourceEvidence(TimestampMixin, Base):
     __tablename__ = "source_evidence"
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
     organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    discovery_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("discovery_runs.id"), index=True
+    )
     source_url: Mapped[str] = mapped_column(String(1000))
     claim_type: Mapped[str] = mapped_column(String(120), index=True)
     extracted_value: Mapped[str | None] = mapped_column(Text)
     metadata_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    discovery_run: Mapped[DiscoveryRun | None] = relationship(back_populates="evidence")

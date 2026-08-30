@@ -65,6 +65,43 @@ mypy src
 pytest -q
 ```
 
+## Phase 2 — NPPES practice discovery
+
+Phase 2 ingests public NPPES organization records only. It does not send outbound messages, enrich contacts beyond registry data, or call Apollo/scraping/OpenAI/calendar/voice integrations.
+
+### Run a bounded discovery job
+
+Start PostgreSQL and apply migrations first:
+```bash
+docker compose up --build -d postgres
+alembic upgrade head
+```
+
+CLI:
+```bash
+vyro-growth discover-nppes --state TX --city Austin --max-records 50
+```
+
+Development API trigger:
+```bash
+curl -X POST http://localhost:8000/internal/discovery/nppes \
+  -H "Content-Type: application/json" \
+  -d '{"state":"TX","city":"Austin","max_records":25}'
+```
+
+Worker job name: `discover_nppes_practices`
+
+Each run writes:
+- deduplicated `organizations` rows keyed by NPI
+- `source_evidence` rows with NPPES query/source metadata
+- a `discovery_runs` audit row with counts, timestamps, and status
+- an `activities` audit row for completed or failed runs
+
+Optional live NPPES integration test:
+```bash
+NPPES_INTEGRATION_TESTS=1 pytest -q -m integration
+```
+
 ## Phase 1
 
 Production foundation:
