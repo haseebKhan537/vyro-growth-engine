@@ -9,11 +9,13 @@ from vyro_growth.domain import DiscoveryRunStatus
 from vyro_growth.services.discovery import DiscoveryRunResult
 
 
-def test_parser_requires_a_targeting_filter() -> None:
+def test_parser_accepts_discover_nppes_without_filters() -> None:
     parser = build_parser()
+    args = parser.parse_args(["discover-nppes"])
 
-    with pytest.raises(SystemExit):
-        parser.parse_args(["discover-nppes"])
+    assert args.command == "discover-nppes"
+    assert args.state is None
+    assert args.city is None
 
 
 def test_parser_accepts_state_and_city() -> None:
