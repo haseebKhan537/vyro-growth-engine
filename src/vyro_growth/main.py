@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.dashboard import (
@@ -20,9 +21,10 @@ from vyro_growth.api.optimizer import (
     build_latest_optimizer_response,
     build_optimizer_run_response,
 )
-from vyro_growth.config import Settings, get_settings
+from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
+from vyro_growth.services.readiness import HealthPayload, assess_readiness, build_health_payload
 
 settings = get_settings()
 
@@ -30,6 +32,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     configure_logging(settings.log_level)
+    require_valid_runtime_settings(get_settings())
     yield
 
 
@@ -39,12 +42,14 @@ DbSession = Annotated[Session, Depends(get_db)]
 
 
 @app.get("/health", tags=["system"])
-def health() -> dict[str, str | bool]:
-    return {
-        "status": "ok",
-        "environment": settings.environment,
-        "outbound_enabled": settings.outbound_enabled,
-    }
+def health() -> HealthPayload:
+    return build_health_payload(get_settings())
+
+
+@app.get("/ready", tags=["system"])
+def ready(db: DbSession) -> JSONResponse:
+    status_code, payload = assess_readiness(get_settings(), db)
+    return JSONResponse(status_code=status_code, content=payload)
 
 
 def _require_internal_key(active_settings: Settings, provided_key: str | None) -> None:

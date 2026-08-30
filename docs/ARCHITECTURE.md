@@ -6,13 +6,13 @@ Vyro Growth Engine is an event-driven sales automation platform. Core business r
 ## Major components
 
 ### API
-FastAPI exposes health, operator controls, webhook endpoints, and internal dashboard summaries. Internal operator routes such as `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, and `GET /internal/dashboard/safety` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing. Dashboard routes are read-only.
+FastAPI exposes health, readiness, operator controls, webhook endpoints, and internal dashboard summaries. `GET /health` is liveness-only. `GET /ready` checks database connectivity and runtime config and does not call live providers. Internal operator routes such as `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, and `GET /internal/dashboard/safety` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing. Dashboard routes are read-only. Outside development, a missing `INTERNAL_API_KEY` or `DATABASE_URL` also fails process start.
 
 ### Database
 PostgreSQL is the system of record for organizations, contacts, leads, evidence, enrichment runs, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
 
 ### Workers
-Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical.
+Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical. Phase 12 documents an in-process (`inline`) runner only: operators or external cron invoke CLI commands. There is no durable queue and no autonomous outbound loop. `send_email`, `schedule_meeting`, and `place_consent_callback` remain undeployed fail-closed guards.
 
 ### Provider adapters
 Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Phase 3B adds a `DecisionMakerEnrichmentProvider` boundary for professional contact candidates; the default implementation is a stub that returns no invented contacts and does not call a paid provider. Phase 5 adds a `PersonalizationProvider` boundary for evidence-grounded draft generation. The default implementation is a deterministic stub. A guarded OpenAI adapter exists but makes no live call unless `OPENAI_PERSONALIZATION_ENABLED` is explicitly true and a key is configured. Phase 6 adds a `SmartleadProvider` boundary for dry-run campaign enrollment planning. The default implementation is a stub. A guarded live adapter exists but is not selected by `build_smartlead_provider()` and does not open a default HTTP session. Phase 7 adds a `ReplyClassifierProvider` boundary for inbound-reply intent classification. The default implementation is a deterministic rule stub. A guarded OpenAI adapter exists but makes no live call unless `OPENAI_REPLY_CLASSIFICATION_ENABLED` is explicitly true and a key is configured. Phase 8 adds a `BookingCalendarProvider` boundary for dry-run booking plans. The default implementation is a stub. A guarded Google Calendar / Meet adapter exists but is not selected by `build_booking_calendar_provider()` and does not open a default HTTP session. Phase 9 adds a `VoiceQualificationProvider` boundary for dry-run consent-based voice qualification plans. The default implementation is a stub. A guarded live voice adapter exists but is not selected by `build_voice_qualification_provider()` and does not open a default HTTP session. Planned future adapters include broader search/crawl, a live paid contact provider, live Google Calendar/Meet booking, and a live consent-based voice provider.
@@ -131,6 +131,14 @@ The optimizer is an operator-review layer. It does not apply recommendations or 
 4. Every recommendation includes category, priority, confidence, rationale, source metric references, generated timestamp, and `approval_status=pending_operator_review`. `applied` remains false.
 5. API/CLI output is titles, rationales, and counts only. It does not include message bodies, draft copy, emails, phones, evidence snippets, or PHI.
 6. No campaign, score, enrollment, meeting, calendar, or voice row is mutated except the optimizer tables and one audit activity. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
+
+### Phase 12: production deployment foundation
+Deployment is configuration, containers, probes, and runbooks only. It does not send email, enroll campaigns, book meetings, place calls, or call paid providers.
+
+1. `require_valid_runtime_settings` runs at API start and via `vyro-growth check-config` / `vyro-growth worker --check`. Outside development, `INTERNAL_API_KEY` and `DATABASE_URL` are required. A live-provider flag without its key also fails closed.
+2. `GET /health` reports process liveness, `OUTBOUND_ENABLED`, and whether any live-provider flag is on. `GET /ready` adds a `SELECT 1` database check and config issues.
+3. The API image runs as a non-root user, defaults every live-provider flag to false, and probes `/health`. Compose `ops` profiles run `alembic upgrade head` and a worker catalog check without executing outbound jobs.
+4. Operators follow `docs/DEPLOYMENT.md` for migration order, worker/cron assumptions, backup/restore, and rollback. Persistent operator halt is unchanged.
 
 ### Event flow
 1. Practice discovered.

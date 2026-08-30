@@ -125,7 +125,7 @@ Future dashboard work (not in this phase):
 - suppression search UI
 - agent/audit timeline UI
 
-## Phase 11 — Growth optimizer foundation (current)
+## Phase 11 — Growth optimizer foundation
 Dry-run operator-review recommendations only. No automatic campaign, scoring, provider, calendar, or voice changes.
 - deterministic optimizer over stored dashboard/pipeline aggregates
 - persisted idempotent optimizer runs and recommendation drafts
@@ -141,14 +141,21 @@ Future optimizer work (not in this phase):
 - meeting/client conversion feedback
 - operator-approved apply/rollback of a recommendation
 
-## Phase 12 — Production deployment
-- managed PostgreSQL/Supabase
-- worker/runtime deployment
-- secret management
+## Phase 12 — Production deployment foundation (current)
+Deployable and operable without live outbound or paid-provider traffic.
+- production-safe Dockerfile and Compose ops profiles
+- fail-closed runtime validation for missing internal/security settings
+- `/health` liveness and `/ready` readiness probes
+- worker catalog, `check-config`, and startup/runbook documentation
+- backup/restore and rollback expectations
+- CI validation of container/compose configuration (no secrets, no live calls)
+
+Future deployment work (not in this phase):
+- managed PostgreSQL/Supabase provisioning
+- secret-manager wiring beyond environment variables
 - monitoring and alerting
-- backups
-- CI/CD
-- staged outbound rollout
+- automated off-site backups
+- staged outbound rollout after explicit owner approval
 
 ## Phase 13 — Additional acquisition channels
 - Google Ads

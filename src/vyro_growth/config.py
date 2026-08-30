@@ -145,6 +145,61 @@ class Settings(BaseSettings):
     voice_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
 
 
+class RuntimeConfigError(ValueError):
+    """Raised when required runtime or security settings are missing."""
+
+
+def is_development_environment(settings: Settings) -> bool:
+    return settings.environment == "development"
+
+
+def live_provider_flags(settings: Settings) -> dict[str, bool]:
+    """Explicit live-provider opt-in flags. All default false and stay unused in CI."""
+
+    return {
+        "openai_personalization": settings.openai_personalization_enabled,
+        "openai_reply_classification": settings.openai_reply_classification_enabled,
+        "smartlead": settings.smartlead_live_enabled,
+        "google_calendar": settings.google_calendar_live_enabled,
+        "voice": settings.voice_live_enabled,
+    }
+
+
+def any_live_provider_enabled(settings: Settings) -> bool:
+    return any(live_provider_flags(settings).values())
+
+
+def validate_runtime_settings(settings: Settings) -> tuple[str, ...]:
+    """Return fail-closed configuration issues. Does not call external providers."""
+
+    issues: list[str] = []
+    if not settings.database_url.strip():
+        issues.append("DATABASE_URL is required")
+    if not is_development_environment(settings) and not settings.internal_api_key.strip():
+        issues.append("INTERNAL_API_KEY is required outside development")
+    if settings.openai_personalization_enabled and not settings.openai_api_key.strip():
+        issues.append("OPENAI_API_KEY is required when OPENAI_PERSONALIZATION_ENABLED is true")
+    if settings.openai_reply_classification_enabled and not settings.openai_api_key.strip():
+        issues.append(
+            "OPENAI_API_KEY is required when OPENAI_REPLY_CLASSIFICATION_ENABLED is true"
+        )
+    if settings.smartlead_live_enabled and not settings.smartlead_api_key.strip():
+        issues.append("SMARTLEAD_API_KEY is required when SMARTLEAD_LIVE_ENABLED is true")
+    if settings.google_calendar_live_enabled and not settings.google_calendar_api_key.strip():
+        issues.append(
+            "GOOGLE_CALENDAR_API_KEY is required when GOOGLE_CALENDAR_LIVE_ENABLED is true"
+        )
+    if settings.voice_live_enabled and not settings.voice_api_key.strip():
+        issues.append("VOICE_API_KEY is required when VOICE_LIVE_ENABLED is true")
+    return tuple(issues)
+
+
+def require_valid_runtime_settings(settings: Settings) -> None:
+    issues = validate_runtime_settings(settings)
+    if issues:
+        raise RuntimeConfigError("; ".join(issues))
+
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

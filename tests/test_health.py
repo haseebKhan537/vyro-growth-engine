@@ -11,3 +11,4 @@ def test_health_defaults_outbound_off() -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert body["outbound_enabled"] is False
+    assert body["live_providers_enabled"] is False

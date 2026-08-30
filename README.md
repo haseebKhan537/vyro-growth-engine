@@ -54,9 +54,11 @@ docker compose up --build
 ### Verify
 ```bash
 curl http://localhost:8000/health
+curl http://localhost:8000/ready
+vyro-growth check-config
 ```
 
-Expected response includes `"outbound_enabled": false`.
+Expected `/health` includes `"outbound_enabled": false` and `"live_providers_enabled": false`. `/ready` is HTTP 200 only when the database is reachable and required settings are present.
 
 ### Quality checks
 ```bash
@@ -433,6 +435,19 @@ Each recommendation includes:
 - `applied=false`
 
 Identical sanitized snapshots reuse the existing optimizer run. Output is counts and review text only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged. No live AI or paid/external provider is called.
+
+## Phase 12 — Production deployment foundation
+
+Make the service deployable and operable without turning on live outreach. This phase adds fail-closed production config, health/readiness probes, a hardened container image, Compose ops profiles, and a runbook. It does not deploy to a public cloud or call paid providers.
+
+```bash
+vyro-growth check-config
+vyro-growth worker --check
+vyro-growth worker --list
+docker compose --profile ops run --rm migrate
+```
+
+See `docs/DEPLOYMENT.md` for required environment variables, migration order, worker/scheduler assumptions, backup/restore, and rollback. `OUTBOUND_ENABLED` and every live-provider flag remain false by default. Persistent operator halt is unchanged.
 
 ## Phase 1
 

@@ -21,6 +21,12 @@ This repository is a sales/prospecting system. It must not ingest, store, proces
 ## Voice
 Do not implement indiscriminate cold AI robocalling. Voice automation is restricted to inbound leads, requested callbacks, or prospects with documented permission/consent.
 
+## Production runtime validation
+- Outside `development`, process start fails closed unless `INTERNAL_API_KEY` and `DATABASE_URL` are set.
+- `vyro-growth check-config` performs the same validation without connecting to Smartlead, Apollo, OpenAI, Google Calendar, voice, or other paid providers.
+- If a live-provider flag is true, its corresponding key is required. Defaults keep every live flag false.
+- `/ready` reports config issues and database availability. It must not call live providers or return secrets.
+
 ## Internal HTTP triggers
 - `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, and `GET /internal/dashboard/safety` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
@@ -33,8 +39,9 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 ## Secrets
 - Never commit API keys, passwords, OAuth refresh tokens, SMTP credentials, or private keys.
 - Use environment variables or deployment secret stores.
-- `.env` is gitignored.
+- `.env` is gitignored. `.dockerignore` excludes `.env` from images.
 - Loggers must redact credentials and authorization headers, including `X-Internal-Api-Key`.
+- Container images and Compose defaults keep `OUTBOUND_ENABLED` and live-provider flags false.
 
 ## Official website fetching
 - Website enrichment may fetch public HTTP(S) pages only. It is not outreach.
@@ -127,6 +134,14 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not call live AI, Smartlead, Google Calendar, voice, or other paid/external providers. No optimizer AI provider is wired.
 - Do not send email, generate sendable autonomous replies, place calls, book meetings, create Google Meet links, create calendar events, or enroll campaigns.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by the optimizer.
+
+## Deployment integrity
+- Phase 12 is configuration, containers, probes, and runbooks only. It does not send email, enroll campaigns, create calendar events or Meet links, place calls, or enable autonomous replies.
+- Do not commit secrets or bake credentials into images. `.dockerignore` must exclude `.env`.
+- Production and other non-development environments fail closed when `INTERNAL_API_KEY` or `DATABASE_URL` is missing.
+- Keep `OUTBOUND_ENABLED=false` and all live-provider flags disabled in `.env.example`, Dockerfile, and Compose defaults.
+- Health and readiness checks must not call Smartlead, Apollo, OpenAI, Google Calendar, voice providers, or other paid/external services.
+- Persistent operator halt semantics are unchanged. Deployment tooling must not lift the halt.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

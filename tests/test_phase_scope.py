@@ -48,6 +48,12 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in env_example
     assert "VOICE_LIVE_ENABLED=false" in env_example
     assert "sk-" not in env_example
+    dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
+    compose = Path("docker-compose.yml").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in dockerfile
+    assert 'OUTBOUND_ENABLED: "false"' in compose
+    assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in dockerfile
+    assert "VOICE_LIVE_ENABLED=false" in dockerfile
 
 
 def test_current_phases_do_not_add_later_phase_integrations() -> None:
