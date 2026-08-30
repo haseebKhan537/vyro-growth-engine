@@ -30,6 +30,8 @@ from vyro_growth.domain import (
     OutreachPlanRunStatus,
     ReplyClassificationOutcome,
     ReplyIntent,
+    VoicePlanStatus,
+    VoiceQualificationRunStatus,
 )
 
 
@@ -423,3 +425,69 @@ class BookingPlan(TimestampMixin, Base):
     lead_stage_after: Mapped[str] = mapped_column(String(64))
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     plan_run: Mapped[BookingPlanRun | None] = relationship(back_populates="plans")
+
+
+class VoiceQualificationRun(TimestampMixin, Base):
+    __tablename__ = "voice_qualification_runs"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(
+        String(32), default=VoiceQualificationRunStatus.PENDING.value, index=True
+    )
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    planned_count: Mapped[int] = mapped_column(default=0)
+    skipped_count: Mapped[int] = mapped_column(default=0)
+    suppressed_count: Mapped[int] = mapped_column(default=0)
+    blocked_count: Mapped[int] = mapped_column(default=0)
+    reused_count: Mapped[int] = mapped_column(default=0)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    plans: Mapped[list[VoiceQualificationPlan]] = relationship(back_populates="plan_run")
+
+
+class VoiceQualificationPlan(TimestampMixin, Base):
+    __tablename__ = "voice_qualification_plans"
+    __table_args__ = (
+        UniqueConstraint(
+            "idempotency_key",
+            name="uq_voice_qualification_plans_idempotency_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    voice_qualification_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("voice_qualification_runs.id"), index=True
+    )
+    lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
+    contact_id: Mapped[UUID | None] = mapped_column(ForeignKey("contacts.id"), index=True)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    outreach_message_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("outreach_messages.id"), index=True
+    )
+    reply_classification_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("reply_classifications.id"), index=True
+    )
+    meeting_id: Mapped[UUID | None] = mapped_column(ForeignKey("meetings.id"), index=True)
+    booking_plan_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("booking_plans.id"), index=True
+    )
+    request_source: Mapped[str] = mapped_column(String(64), index=True)
+    request_key: Mapped[str] = mapped_column(String(255), index=True)
+    status: Mapped[str] = mapped_column(
+        String(32), default=VoicePlanStatus.SKIPPED.value, index=True
+    )
+    skip_reason: Mapped[str | None] = mapped_column(String(64), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    provider_name: Mapped[str] = mapped_column(String(64), default="stub")
+    provider_plan_id: Mapped[str | None] = mapped_column(String(255))
+    consent_source: Mapped[str | None] = mapped_column(String(64), index=True)
+    consent_channel: Mapped[str | None] = mapped_column(String(32), index=True)
+    consent_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    consent_evidence_id: Mapped[str | None] = mapped_column(String(255))
+    permitted_phone: Mapped[str | None] = mapped_column(String(50), index=True)
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=True)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    call_placed: Mapped[bool] = mapped_column(Boolean, default=False)
+    facts_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    consent_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    plan_run: Mapped[VoiceQualificationRun | None] = relationship(back_populates="plans")

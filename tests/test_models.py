@@ -26,6 +26,8 @@ PHASE_ONE_MODELS = (
     models.ReplyClassification,
     models.BookingPlanRun,
     models.BookingPlan,
+    models.VoiceQualificationRun,
+    models.VoiceQualificationPlan,
 )
 
 

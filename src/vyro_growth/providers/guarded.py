@@ -22,6 +22,12 @@ from vyro_growth.providers.smartlead import (
     SmartleadPlanResult,
     SmartleadProvider,
 )
+from vyro_growth.providers.voice_qualification import (
+    LiveVoiceDisabledError,
+    VoiceQualificationProvider,
+    VoiceQualificationRequest,
+    VoiceQualificationResult,
+)
 from vyro_growth.services.outbound_guard import (
     OutboundAction,
     OutboundGuard,
@@ -168,3 +174,33 @@ class GuardedGoogleCalendarProvider:
             organization_id=payload.organization_id,
         )
         return self._inner.plan_booking(payload)
+
+
+class GuardedVoiceQualificationProvider:
+    """Live voice boundary that enforces outbound, consent, and live-enablement gates."""
+
+    live = True
+
+    def __init__(
+        self,
+        inner: VoiceQualificationProvider,
+        guard: OutboundGuard,
+        db: Session,
+        settings: Settings,
+    ) -> None:
+        self._inner = inner
+        self._guard = guard
+        self._db = db
+        self._settings = settings
+
+    def plan_qualification(self, request: VoiceQualificationRequest) -> VoiceQualificationResult:
+        if not self._settings.voice_live_enabled:
+            raise LiveVoiceDisabledError("voice_live_disabled")
+        self._guard.require_allowed(
+            self._db,
+            action=OutboundAction.PHONE_DIAL,
+            phone=request.consent.permitted_phone,
+            organization_id=request.organization_id,
+            consent_to_call=True,
+        )
+        return self._inner.plan_qualification(request)

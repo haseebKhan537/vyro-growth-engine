@@ -16,6 +16,10 @@ from vyro_growth.providers.reply_classification import (
     build_reply_classifier,
 )
 from vyro_growth.providers.smartlead import StubSmartleadProvider, build_smartlead_provider
+from vyro_growth.providers.voice_qualification import (
+    StubVoiceQualificationProvider,
+    build_voice_qualification_provider,
+)
 
 
 def test_outbound_remains_disabled_by_default() -> None:
@@ -28,6 +32,8 @@ def test_outbound_remains_disabled_by_default() -> None:
     assert settings.openai_reply_classification_enabled is False
     assert settings.google_calendar_live_enabled is False
     assert settings.google_calendar_api_key == ""
+    assert settings.voice_live_enabled is False
+    assert settings.voice_api_key == ""
 
 
 def test_env_example_keeps_outbound_disabled() -> None:
@@ -40,6 +46,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "SMARTLEAD_LIVE_ENABLED=false" in env_example
     assert "OPENAI_REPLY_CLASSIFICATION_ENABLED=false" in env_example
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in env_example
+    assert "VOICE_LIVE_ENABLED=false" in env_example
     assert "sk-" not in env_example
 
 
@@ -150,6 +157,28 @@ def test_default_reply_classifier_is_stub() -> None:
     settings = Settings(openai_reply_classification_enabled=False)
     provider = build_reply_classifier(settings)
     assert isinstance(provider, StubReplyClassifier)
+
+
+def test_default_voice_qualification_provider_is_stub() -> None:
+    settings = Settings(voice_live_enabled=True, voice_api_key="placeholder")
+    provider = build_voice_qualification_provider(settings)
+    assert isinstance(provider, StubVoiceQualificationProvider)
+
+
+def test_voice_stub_and_planner_do_not_use_httpx() -> None:
+    paths = [
+        Path("src/vyro_growth/providers/voice_qualification.py"),
+        Path("src/vyro_growth/services/voice_qualification.py"),
+        Path("src/vyro_growth/workers/voice_qualification_handler.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "VOICE_LIVE_ENABLED=false" in env_example
 
 
 def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:

@@ -13,6 +13,7 @@ from vyro_growth.domain import (
     PersonalizationReadiness,
     ReplyClassificationOutcome,
     ReplyIntent,
+    VoiceQualificationRunStatus,
     WebsiteMatchStatus,
 )
 from vyro_growth.services.booking_plan import BookingPlanJobResult
@@ -27,6 +28,7 @@ from vyro_growth.services.lead_scoring import (
 from vyro_growth.services.outreach_enrollment import OutreachPlanResult
 from vyro_growth.services.personalization import PersonalizationJobResult
 from vyro_growth.services.reply_classification import ReplyClassificationJobResult
+from vyro_growth.services.voice_qualification import VoiceQualificationJobResult
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentResult
 
 
@@ -513,6 +515,76 @@ def test_cli_plan_booking_rejects_both_ids() -> None:
 def test_cli_plan_booking_operator_requires_lead() -> None:
     with pytest.raises(SystemExit):
         main(["plan-booking", "--operator-request"])
+
+
+def test_parser_accepts_plan_voice_qualification() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        ["plan-voice-qualification", "--limit", "8", "--operator-request"]
+    )
+
+    assert args.command == "plan-voice-qualification"
+    assert args.limit == 8
+    assert args.lead_id is None
+    assert args.operator_request is True
+
+
+def test_cli_main_runs_plan_voice_qualification(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    result = VoiceQualificationJobResult(
+        voice_qualification_run_id=uuid4(),
+        planned_count=1,
+        skipped_count=0,
+        suppressed_count=0,
+        blocked_count=0,
+        reused_count=0,
+        status=VoiceQualificationRunStatus.COMPLETED,
+        items=(),
+    )
+
+    class DummyService:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+        def plan_batch(
+            self,
+            _db: object,
+            *,
+            limit: int,
+            state: str | None,
+            city: str | None,
+        ) -> VoiceQualificationJobResult:
+            assert limit == 4
+            assert state == "TX"
+            assert city == "AUSTIN"
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.VoiceQualificationService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+
+    exit_code = main(
+        ["plan-voice-qualification", "--limit", "4", "--state", "TX", "--city", "AUSTIN"]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"id={result.voice_qualification_run_id}" in output
+    assert "planned=1" in output
+    assert "status=completed" in output
+
+
+def test_cli_plan_voice_qualification_operator_requires_lead() -> None:
+    with pytest.raises(SystemExit):
+        main(["plan-voice-qualification", "--operator-request"])
 
 
 def test_cli_classify_replies_rejects_both_ids() -> None:

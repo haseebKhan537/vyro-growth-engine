@@ -77,7 +77,7 @@ Future reply-agent work (not in this phase):
 - escalation rules
 - pricing/information/objection handling that sends mail
 
-## Phase 8 — Calendar and Google Meet booking foundation (current)
+## Phase 8 — Calendar and Google Meet booking foundation
 Dry-run booking plans only. No calendar events, Google Meet links, email, or calls.
 - booking/calendar provider interface plus deterministic stub
 - guarded Google Calendar / Meet adapter boundary, disabled by default and unused in CI
@@ -94,12 +94,21 @@ Future setter work (not in this phase):
 - attendee invitation
 - meeting brief generation
 
-## Phase 9 — Consent-based voice agent
-Only inbound leads, requested callbacks, or prospects with permission/consent to receive a call.
-- call qualification
-- meeting scheduling
+## Phase 9 — Consent-based voice qualification foundation (current)
+Dry-run voice qualification plans only. No calls, email, meetings, or campaign enrollment.
+- voice qualification provider interface plus deterministic stub
+- guarded live voice adapter boundary, disabled by default and unused in CI
+- persisted voice qualification plans with consent proof and idempotency
+- accept only explicit consent contexts: inbound call-request replies, operator requests with consent proof, or stored meeting/booking permission
+- store only safe B2B qualification facts; block suspected PHI
+- suppression, `OUTBOUND_ENABLED=false`, and persistent operator halt preserved
+- CLI `plan-voice-qualification` and worker job `plan_voice_qualifications`
+
+Future voice-agent work (not in this phase):
+- live call placement
 - transcript and summary
-- suppression/consent logging
+- meeting scheduling from a call
+- cold AI robocalling remains forbidden
 
 ## Phase 10 — Operator dashboard
 - funnel metrics

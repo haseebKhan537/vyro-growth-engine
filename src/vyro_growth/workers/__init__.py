@@ -38,6 +38,10 @@ from vyro_growth.workers.scoring_handler import (
     SCORE_DISCOVERED_LEADS_JOB,
     ScoreDiscoveredLeadsHandler,
 )
+from vyro_growth.workers.voice_qualification_handler import (
+    PLAN_VOICE_QUALIFICATIONS_JOB,
+    PlanVoiceQualificationsHandler,
+)
 from vyro_growth.workers.website_enrichment_handler import (
     ENRICH_ORGANIZATION_WEBSITES_JOB,
     EnrichOrganizationWebsitesHandler,
@@ -64,7 +68,9 @@ __all__ = [
     "PERSONALIZE_SCORED_LEADS_JOB",
     "PLACE_CONSENT_CALLBACK_JOB",
     "PLAN_OUTREACH_ENROLLMENTS_JOB",
+    "PLAN_VOICE_QUALIFICATIONS_JOB",
     "PlanOutreachEnrollmentsHandler",
+    "PlanVoiceQualificationsHandler",
     "SCHEDULE_MEETING_JOB",
     "SCORE_DISCOVERED_LEADS_JOB",
     "SEND_EMAIL_JOB",

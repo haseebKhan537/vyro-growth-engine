@@ -119,6 +119,29 @@ class Settings(BaseSettings):
     google_calendar_timeout_seconds: float = Field(default=10.0, ge=1.0)
     google_calendar_max_retries: int = Field(default=3, ge=0)
     google_calendar_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
+    voice_live_enabled: bool = Field(
+        default=False,
+        description=(
+            "Explicit opt-in for the live voice qualification adapter boundary. Default "
+            "false; CI and local development use the deterministic stub and never place "
+            "calls. Phase 9 does not perform live HTTP even when this flag is true unless "
+            "a test injects a client."
+        ),
+    )
+    voice_api_key: str = Field(
+        default="",
+        description=(
+            "Live voice provider credential placeholder. Unused unless a future "
+            "owner-approved live step."
+        ),
+    )
+    voice_api_base_url: str = Field(
+        default="",
+        description="Live voice API base URL. Unused by default; not required for tests.",
+    )
+    voice_timeout_seconds: float = Field(default=10.0, ge=1.0)
+    voice_max_retries: int = Field(default=3, ge=0)
+    voice_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
 
 
 @lru_cache

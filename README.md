@@ -339,6 +339,39 @@ Each run writes:
 
 No Google Calendar event is created, no Google Meet link is created, no email is sent, no calls are placed, and no live campaign enrollment occurs. Lead stage may move from `interested` or `qualification_pending` to `meeting_ready` and never to `meeting_booked`. `OUTBOUND_ENABLED` remains false by default. `GOOGLE_CALENDAR_LIVE_ENABLED=false`; tests never require a live key.
 
+## Phase 9 — Consent-based voice qualification (dry-run)
+
+Prepare and audit voice qualification drafts from already-consented contexts without placing calls. CI and default local development use a deterministic stub. Live voice providers are not called.
+
+CLI:
+```bash
+vyro-growth plan-voice-qualification --lead-id <uuid>
+vyro-growth plan-voice-qualification --message-id <uuid>
+vyro-growth plan-voice-qualification --meeting-id <uuid>
+vyro-growth plan-voice-qualification --lead-id <uuid> --operator-request \
+  --consent-timestamp 2026-08-30T15:00:00+00:00 --permitted-phone 5551112222 \
+  --consent-evidence-id ops-1 --request-key ops-1
+vyro-growth plan-voice-qualification --limit 25 --state TX
+```
+
+Worker job name: `plan_voice_qualifications`
+
+Eligible voice contexts need one of:
+
+- a stored inbound reply that explicitly requests or approves a call
+- an operator-created request with consent proof (`--operator-request` plus timestamp, channel/source, and permitted phone)
+- a stored meeting or booking plan that includes permission to call
+
+Mere `interested` or `meeting_request` replies without call-approval language are not enough. Missing consent proof, suppressions, operator halt on live adapters, and suspected PHI skip or block the plan with an audited reason. Re-running the same lead/contact/consent/request key reuses the existing plan.
+
+Each run writes:
+
+- `voice_qualification_plans` rows (`planned`, `skipped`, `suppressed`, or `blocked`) with consent proof fields, safe B2B facts, provider name, status, idempotency key, and audit JSON
+- a `voice_qualification_runs` audit row
+- `activities` audit rows
+
+No phone call is placed, no email is sent, no Google Calendar event or Meet link is created, no meeting is booked, and no live campaign enrollment occurs. `OUTBOUND_ENABLED` remains false by default. `VOICE_LIVE_ENABLED=false`; tests never require a live key.
+
 ## Phase 1
 
 Production foundation:

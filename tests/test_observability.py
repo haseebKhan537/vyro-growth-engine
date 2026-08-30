@@ -10,6 +10,7 @@ def test_redacts_sensitive_top_level_keys() -> None:
             "internal_api_key": "internal-secret",
             "openai_api_key": "placeholder-key",
             "smartlead_api_key": "placeholder-smartlead-key",
+            "voice_api_key": "placeholder-voice-key",
             "message": "ok",
         }
     )
@@ -18,6 +19,7 @@ def test_redacts_sensitive_top_level_keys() -> None:
     assert event["internal_api_key"] == "[REDACTED]"
     assert event["openai_api_key"] == "[REDACTED]"
     assert event["smartlead_api_key"] == "[REDACTED]"
+    assert event["voice_api_key"] == "[REDACTED]"
     assert event["message"] == "ok"
 
 
