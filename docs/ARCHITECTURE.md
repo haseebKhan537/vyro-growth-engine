@@ -6,7 +6,7 @@ Vyro Growth Engine is an event-driven sales automation platform. Core business r
 ## Major components
 
 ### API
-FastAPI exposes health, operator controls, webhook endpoints, and later dashboard/API resources. Internal operator routes such as `POST /internal/discovery/nppes` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing.
+FastAPI exposes health, operator controls, webhook endpoints, and internal dashboard summaries. Internal operator routes such as `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, and `GET /internal/dashboard/safety` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing. Dashboard routes are read-only.
 
 ### Database
 PostgreSQL is the system of record for organizations, contacts, leads, evidence, enrichment runs, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
@@ -112,6 +112,15 @@ Voice qualification planning is dry-run only. It does not place calls, send emai
 6. Only safe B2B qualification facts are stored (provider count, specialty, billing setup, voluntarily stated denial/A/R pain, decision-maker status, urgency, current vendor status, preferred follow-up). Facts are never invented. Suspected PHI in an input payload is blocked and audited without persisting the PHI text.
 7. Re-running the same lead/contact/consent/request key reuses the planned row. Lead stage is not advanced. No meetings, outbound messages, or campaign enrollments are created.
 8. `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
+### Phase 10: operator dashboard foundation
+The dashboard is read-only reporting over stored pipeline state. It does not send email, classify new replies, plan outreach, book meetings, place calls, or call live providers.
+
+1. Operator requests `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, or `vyro-growth dashboard-summary`. The HTTP paths use the same `INTERNAL_API_KEY` gate as discovery. CLI does not.
+2. `DashboardAnalyticsService` counts existing organizations, leads, enrichment runs, scores, drafts, outreach plans, reply classifications, booking plans, voice qualification plans, suppressions, and operator halt state.
+3. Safety cards report `OUTBOUND_ENABLED`, settings and persistent halt, live-provider flags, and planned/skipped/suppressed/blocked counts. Latest run timestamps/statuses are included per phase.
+4. Responses contain counts, statuses, and timestamps only. They do not include message bodies, draft copy, emails, phones, evidence snippets, or other prospect/PHI fields.
+5. No `activities`, meetings, enrollments, or outbound rows are written. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
 
 ### Event flow
 1. Practice discovered.

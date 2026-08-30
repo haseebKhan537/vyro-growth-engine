@@ -93,7 +93,7 @@ def test_discovery_api_rejects_non_development_without_key(
     )
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "Internal discovery trigger requires INTERNAL_API_KEY"
+    assert response.json()["detail"] == "Internal operator route requires INTERNAL_API_KEY"
 
 
 def test_discovery_api_rejects_missing_key(

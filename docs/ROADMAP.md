@@ -94,7 +94,7 @@ Future setter work (not in this phase):
 - attendee invitation
 - meeting brief generation
 
-## Phase 9 — Consent-based voice qualification foundation (current)
+## Phase 9 — Consent-based voice qualification foundation
 Dry-run voice qualification plans only. No calls, email, meetings, or campaign enrollment.
 - voice qualification provider interface plus deterministic stub
 - guarded live voice adapter boundary, disabled by default and unused in CI
@@ -110,15 +110,20 @@ Future voice-agent work (not in this phase):
 - meeting scheduling from a call
 - cold AI robocalling remains forbidden
 
-## Phase 10 — Operator dashboard
-- funnel metrics
-- qualified meetings
-- cost per meeting
-- campaign performance
-- source performance
-- kill switch
-- suppression search
-- agent/audit timeline
+## Phase 10 — Operator dashboard foundation (current)
+Read-only analytics over existing pipeline state. No outbound, booking, or live provider actions.
+- internal dashboard summary and safety endpoints
+- phase-by-phase counts and latest run status
+- safety cards: `OUTBOUND_ENABLED`, operator halt, live-provider flags, planned/skipped/suppressed/blocked counts
+- CLI `dashboard-summary`
+- no polished frontend in this phase
+
+Future dashboard work (not in this phase):
+- funnel visualization
+- qualified-meeting and cost-per-meeting reporting
+- campaign/source performance charts
+- suppression search UI
+- agent/audit timeline UI
 
 ## Phase 11 — Growth optimizer
 - experiment framework

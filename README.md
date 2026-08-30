@@ -372,6 +372,38 @@ Each run writes:
 
 No phone call is placed, no email is sent, no Google Calendar event or Meet link is created, no meeting is booked, and no live campaign enrollment occurs. `OUTBOUND_ENABLED` remains false by default. `VOICE_LIVE_ENABLED=false`; tests never require a live key.
 
+## Phase 10 — Operator dashboard foundation (read-only)
+
+Inspect pipeline health, dry-run activity, and safety status without enabling outreach, booking, or live providers. There is no frontend in this phase.
+
+CLI:
+```bash
+vyro-growth dashboard-summary
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/dashboard/summary \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/dashboard/safety \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The summary includes:
+
+- discovered organizations and leads, including lead-stage counts
+- website enrichment coverage and decision-maker contact counts
+- latest ICP score bands
+- personalization drafts
+- outreach, booking, and voice qualification plan counts (planned/skipped/suppressed/blocked)
+- reply classification intent/outcome counts
+- suppressions and persistent operator halt
+- latest run timestamp/status per phase
+- safety flags: `OUTBOUND_ENABLED`, live-provider defaults, live calendar/Meet/call artifact counts
+
+Responses are counts and statuses only. They do not include message bodies, draft copy, emails, phones, or PHI. The service does not write pipeline rows, send email, place calls, book meetings, or call live providers. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

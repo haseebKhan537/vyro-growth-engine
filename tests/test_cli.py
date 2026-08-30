@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -18,6 +19,21 @@ from vyro_growth.domain import (
 )
 from vyro_growth.services.booking_plan import BookingPlanJobResult
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
+from vyro_growth.services.dashboard import (
+    BookingPlanSummary,
+    DashboardSummary,
+    DecisionMakerSummary,
+    DiscoverySummary,
+    LatestRunSnapshot,
+    OutreachPlanSummary,
+    PersonalizationSummary,
+    ReplyClassificationSummary,
+    SafetyCard,
+    ScoringSummary,
+    SuppressionSummary,
+    VoiceQualificationSummary,
+    WebsiteEnrichmentSummary,
+)
 from vyro_growth.services.discovery import DiscoveryRunResult
 from vyro_growth.services.lead_scoring import (
     MODEL_VERSION,
@@ -691,3 +707,153 @@ def test_cli_main_runs_outreach_plan(
     assert f"id={result.outreach_plan_run_id}" in output
     assert "planned=1" in output
     assert "status=completed" in output
+
+
+def test_parser_accepts_dashboard_summary() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["dashboard-summary"])
+
+    assert args.command == "dashboard-summary"
+
+
+def test_cli_main_runs_dashboard_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    summary = DashboardSummary(
+        generated_at=datetime.now(tz=UTC),
+        read_only=True,
+        safety=SafetyCard(
+            outbound_enabled=False,
+            outbound_halted_settings=False,
+            operator_halt_status="halted",
+            operator_halt_reason="incident",
+            operator_halt_updated_at=None,
+            openai_personalization_enabled=False,
+            openai_reply_classification_enabled=False,
+            smartlead_live_enabled=False,
+            google_calendar_live_enabled=False,
+            voice_live_enabled=False,
+            planned_count=2,
+            skipped_count=1,
+            suppressed_count=0,
+            blocked_count=0,
+            suppression_records=1,
+            live_calendar_events=0,
+            live_meet_links=0,
+            live_phone_calls=0,
+            live_send_attempted_enrollments=0,
+            outbound_attempted_classifications=0,
+            booking_events_created=0,
+            booking_meet_links_created=0,
+            voice_calls_placed=0,
+            phi_fields_present=False,
+        ),
+        discovery=DiscoverySummary(
+            organizations=3,
+            leads=2,
+            leads_by_stage={"discovered": 2},
+            discovery_runs=1,
+            records_fetched=3,
+            records_upserted=3,
+            records_skipped=0,
+        ),
+        website_enrichment=WebsiteEnrichmentSummary(
+            organizations=3,
+            by_match_status={"verified": 1},
+            enrichment_runs=1,
+            by_run_status={"completed": 1},
+        ),
+        decision_maker_enrichment=DecisionMakerSummary(
+            contacts=1,
+            by_role_category={"practice_manager": 1},
+            enrichment_runs=1,
+            by_run_status={"completed": 1},
+        ),
+        scoring=ScoringSummary(scores_total=1, latest_scores=1, by_band={"hot": 1}),
+        personalization=PersonalizationSummary(
+            drafts=1,
+            by_readiness={"ready": 1},
+            enrichment_runs=1,
+        ),
+        outreach_plans=OutreachPlanSummary(
+            plan_runs=1,
+            enrollments=1,
+            by_status={"planned": 1},
+            planned_count=1,
+            skipped_count=0,
+            suppressed_count=0,
+            blocked_count=0,
+        ),
+        reply_classifications=ReplyClassificationSummary(
+            classifications=1,
+            by_intent={"meeting_request": 1},
+            by_outcome={"classified": 1},
+        ),
+        booking_plans=BookingPlanSummary(
+            plan_runs=1,
+            plans=1,
+            by_status={"planned": 1},
+            planned_count=1,
+            skipped_count=0,
+            suppressed_count=0,
+            blocked_count=0,
+            events_created=0,
+            meet_links_created=0,
+        ),
+        voice_qualification_plans=VoiceQualificationSummary(
+            plan_runs=1,
+            plans=1,
+            by_status={"planned": 1},
+            planned_count=1,
+            skipped_count=0,
+            suppressed_count=0,
+            blocked_count=0,
+            calls_placed=0,
+            live_call_attempted=0,
+        ),
+        suppressions=SuppressionSummary(
+            records=1,
+            by_reason={"unsubscribe": 1},
+            with_email=1,
+            with_domain=0,
+            with_phone=0,
+            with_organization=0,
+        ),
+        latest_runs=(
+            LatestRunSnapshot(
+                phase="discovery",
+                implemented=True,
+                status="completed",
+                started_at=None,
+                finished_at=None,
+                run_id=uuid4(),
+            ),
+        ),
+    )
+
+    class DummyService:
+        def summarize(self, _db: object, _settings: object) -> DashboardSummary:
+            return summary
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.DashboardAnalyticsService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["dashboard-summary"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "outbound_enabled=False" in output
+    assert "operator_halt=halted" in output
+    assert "organizations=3" in output
+    assert "planned=1" in output
+    assert "calls_placed=0" in output
+    assert "phi_fields_present=False" in output

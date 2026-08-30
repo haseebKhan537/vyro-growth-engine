@@ -5,12 +5,17 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException
 from sqlalchemy.orm import Session
 
+from vyro_growth.api.dashboard import (
+    DashboardSummaryResponse,
+    SafetyCardResponse,
+    build_dashboard_summary_response,
+)
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
 from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
 )
-from vyro_growth.config import get_settings
+from vyro_growth.config import Settings, get_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
 
@@ -37,6 +42,35 @@ def health() -> dict[str, str | bool]:
     }
 
 
+def _require_internal_key(active_settings: Settings, provided_key: str | None) -> None:
+    denied = internal_trigger_http_error(
+        evaluate_internal_http_trigger(active_settings, provided_key)
+    )
+    if denied is not None:
+        status_code, detail = denied
+        raise HTTPException(status_code=status_code, detail=detail)
+
+
+@app.get("/internal/dashboard/summary", tags=["internal"])
+def dashboard_summary(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> DashboardSummaryResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_dashboard_summary_response(db, active_settings)
+
+
+@app.get("/internal/dashboard/safety", tags=["internal"])
+def dashboard_safety(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SafetyCardResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_dashboard_summary_response(db, active_settings).safety
+
+
 @app.post("/internal/discovery/nppes", tags=["internal"])
 def trigger_nppes_discovery(
     request: NppesDiscoveryRequest,
@@ -44,12 +78,7 @@ def trigger_nppes_discovery(
     x_internal_api_key: Annotated[str | None, Header()] = None,
 ) -> dict[str, object]:
     active_settings = get_settings()
-    denied = internal_trigger_http_error(
-        evaluate_internal_http_trigger(active_settings, x_internal_api_key)
-    )
-    if denied is not None:
-        status_code, detail = denied
-        raise HTTPException(status_code=status_code, detail=detail)
+    _require_internal_key(active_settings, x_internal_api_key)
 
     result = run_nppes_discovery(db, request, settings=active_settings)
     return {
