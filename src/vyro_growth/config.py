@@ -15,6 +15,11 @@ class Settings(BaseSettings):
         description="Global kill switch. Must be explicitly enabled before any outbound action.",
     )
     log_level: str = "INFO"
+    nppes_api_base_url: str = "https://npiregistry.cms.hhs.gov/api/"
+    nppes_timeout_seconds: float = Field(default=10.0, ge=1.0)
+    nppes_max_retries: int = Field(default=3, ge=0)
+    nppes_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
+    discovery_max_records_per_run: int = Field(default=500, ge=1)
 
 
 @lru_cache

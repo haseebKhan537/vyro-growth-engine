@@ -15,7 +15,15 @@ PostgreSQL is the system of record for organizations, contacts, leads, evidence,
 Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical.
 
 ### Provider adapters
-Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Planned adapters include NPPES/CMS, Firecrawl/search, Apollo, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
+Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Planned future adapters include Firecrawl/search, Apollo, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
+
+### Phase 2 discovery flow
+1. Operator or worker submits an NPPES query (`state`, `city`, `taxonomy_description`, `organization_name`).
+2. `NppesDiscoveryService` creates a `discovery_runs` audit row and pages through the NPPES v2.1 API with timeout/retry/backoff.
+3. Each organization record is normalized to business/professional fields only and upserted into `organizations` by NPI.
+4. Provenance is stored in `source_evidence` with the source URL and query metadata.
+5. Duplicate NPIs within a run are skipped; reruns update existing organizations safely and append new evidence/audit history.
+6. No outbound actions occur in this phase.
 
 ### Event flow
 1. Practice discovered.

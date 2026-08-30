@@ -17,6 +17,13 @@ class LeadStage(StrEnum):
     SUPPRESSED = "suppressed"
 
 
+class DiscoveryRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 ALLOWED_TRANSITIONS: dict[LeadStage, set[LeadStage]] = {
     LeadStage.DISCOVERED: {LeadStage.ENRICHING, LeadStage.SUPPRESSED},
     LeadStage.ENRICHING: {LeadStage.QUALIFIED, LeadStage.LOST, LeadStage.SUPPRESSED},
