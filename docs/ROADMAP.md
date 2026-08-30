@@ -27,11 +27,11 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 
 ## Phase 3 — Research and enrichment
 - deterministic local lead scoring from existing organization/evidence fields (no external providers)
-- official website resolution
-- site crawling/search adapter
-- provider count and location extraction
-- ownership/management signals
-- evidence-backed enrichment only
+- official website resolution with verified / ambiguous / no-match outcomes
+- conservative public-page fetch adapter (timeout, rate limit, portal/PHI path blocks)
+- provider count, location, contact, and ownership-signal extraction
+- billing/revenue-cycle signals only when explicitly stated
+- evidence-backed enrichment only, with source URL, confidence, timestamp, and snippet
 - confidence scoring
 
 ## Phase 4 — Decision-maker and contact enrichment

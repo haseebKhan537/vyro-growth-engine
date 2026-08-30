@@ -134,6 +134,42 @@ Each run writes:
 
 Missing fields score 0 and are listed. Unknown specialty fit, unverified emails, and absent websites are not inferred.
 
+## Phase 3A — Official website discovery
+
+Resolve a discovered NPPES organization's official practice website and extract evidence-backed public business facts. This layer does not send email, place calls, create contacts, or call later-phase providers.
+
+CLI:
+```bash
+vyro-growth enrich-websites --organization-id <uuid>
+vyro-growth enrich-websites --organization-id <uuid> --candidate-url https://practice.example
+vyro-growth enrich-websites --limit 25 --state TX
+```
+
+Worker job name: `enrich_organization_websites`
+
+A page is stored as the official website only when it is `verified` against the NPPES organization (name plus conservative location/identity evidence). `ambiguous` and `no-match` outcomes are recorded and do not invent a website.
+
+When a site is verified, the extractor may persist only these public B2B facts, each with source URL, confidence, timestamp, and snippet:
+
+- specialty/services
+- locations
+- practice size signals
+- provider count
+- independent vs larger-group signals
+- contact page URL
+- public business phone
+- public business email if present
+- billing/revenue-cycle signals only when explicitly stated
+
+Patient portals, appointment flows, reviews, and other PHI-like pages are blocked. Tests use HTML fixtures and in-memory fetchers; CI does not call live websites.
+
+Each run writes:
+
+- `organizations.website` only on verified matches, plus `website_match_status`
+- `source_evidence` rows for the match outcome and each extracted fact
+- an `enrichment_runs` audit row
+- an `activities` audit row
+
 ## Phase 1
 
 Production foundation:

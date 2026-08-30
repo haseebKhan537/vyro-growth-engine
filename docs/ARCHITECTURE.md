@@ -9,13 +9,13 @@ Vyro Growth Engine is an event-driven sales automation platform. Core business r
 FastAPI exposes health, operator controls, webhook endpoints, and later dashboard/API resources. Internal operator routes such as `POST /internal/discovery/nppes` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing.
 
 ### Database
-PostgreSQL is the system of record for organizations, contacts, leads, evidence, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
+PostgreSQL is the system of record for organizations, contacts, leads, evidence, enrichment runs, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
 
 ### Workers
 Background workers perform discovery, enrichment, scoring, campaign orchestration, reply processing, scheduling, and optimization. Worker execution must be idempotent where practical.
 
 ### Provider adapters
-Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Planned future adapters include Firecrawl/search, Apollo, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
+Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Phase 3A adds `WebsiteSearchProvider` and `PublicPageFetcher` adapters for official-website resolution. Planned future adapters include broader search/crawl, Apollo, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
 
 ### Phase 2 discovery flow
 1. Operator or worker submits a targeted NPPES query through the CLI, worker job, or the internal HTTP trigger. The HTTP path is authorization-gated; CLI and worker paths are not. State alone is not enough; a narrower filter (`city`, `taxonomy_description`, or `organization_name`) is required.
@@ -33,6 +33,17 @@ Scoring uses only persisted local fields (`organizations`, `leads`, `contacts`, 
 3. The result is an integer 0–100 total plus an auditable rationale (`factors`, `missing_fields`, `used_fields`, `fabricated_facts: false`).
 4. A `lead_scores` row and an `activities` audit row are written. A missing lead for an organization is created in `discovered` and is not auto-qualified.
 5. No outbound actions occur.
+
+### Phase 3A: official website discovery
+Website enrichment is public-page-only. It does not contact prospects, create contacts, or call later-phase providers.
+
+1. Operator or worker submits `vyro-growth enrich-websites` or job `enrich_organization_websites` with an organization id, optional candidate URL, or a batch limit. There is no HTTP trigger.
+2. Candidates come from the operator URL, an existing `organizations.website`, and a `WebsiteSearchProvider`. The default search adapter is a name-heuristic generator, not a live search API.
+3. `HttpPublicPageFetcher` requests public HTTP(S) HTML only: timeouts, size caps, redirect limits, rate limits, portal/review path blocks, and private/reserved address rejection. Directory hosts are ignored.
+4. A page is `verified` only when the organization name and conservative location/identity evidence match. Otherwise the run is `ambiguous` or `no_match`. Facts are extracted only after a verified match.
+5. Extracted facts are allowlisted public B2B signals with source URL, value, confidence, timestamp, and snippet. Missing facts are omitted, never invented.
+6. `organizations.website` is set only on verified matches. Sparse reruns do not wipe an existing website. Each run writes `enrichment_runs`, `source_evidence`, and an `activities` row.
+7. No outbound actions occur.
 
 ### Event flow
 1. Practice discovered.
