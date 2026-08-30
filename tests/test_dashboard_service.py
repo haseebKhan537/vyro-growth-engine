@@ -190,7 +190,9 @@ def _pipeline_counts(db: Session) -> dict[str, int]:
         "enrollments": int(db.scalar(select(func.count()).select_from(CampaignEnrollment)) or 0),
         "messages": int(db.scalar(select(func.count()).select_from(OutreachMessage)) or 0),
         "booking_plans": int(db.scalar(select(func.count()).select_from(BookingPlan)) or 0),
-        "voice_plans": int(db.scalar(select(func.count()).select_from(VoiceQualificationPlan)) or 0),
+        "voice_plans": int(
+            db.scalar(select(func.count()).select_from(VoiceQualificationPlan)) or 0
+        ),
         "suppressions": int(db.scalar(select(func.count()).select_from(Suppression)) or 0),
     }
 
