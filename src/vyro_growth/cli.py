@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import sys
+from uuid import UUID
 
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
 from vyro_growth.database import SessionLocal
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
+from vyro_growth.services.lead_scoring import LeadScoringService
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,6 +23,19 @@ def build_parser() -> argparse.ArgumentParser:
     discover.add_argument("--taxonomy-description", help="Taxonomy/specialty description")
     discover.add_argument("--organization-name", help="Organization name")
     discover.add_argument("--max-records", type=int, help="Maximum records to import")
+
+    score = subparsers.add_parser(
+        "score-leads",
+        help="Score discovered organizations or leads from local data only",
+    )
+    score.add_argument("--lead-id", help="Existing lead UUID")
+    score.add_argument("--organization-id", help="Organization UUID")
+    score.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Maximum organizations to score when no id is provided",
+    )
     return parser
 
 
@@ -55,6 +70,29 @@ def main(argv: list[str] | None = None) -> int:
             f"skipped={result.records_skipped}",
             f"status={result.status.value}",
         )
+        return 0
+
+    if args.command == "score-leads":
+        if args.lead_id and args.organization_id:
+            parser.error("Provide --lead-id or --organization-id, not both")
+        service = LeadScoringService()
+        with SessionLocal() as db:
+            if args.lead_id:
+                results = [service.score_lead(db, UUID(args.lead_id))]
+            elif args.organization_id:
+                results = [service.score_organization(db, UUID(args.organization_id))]
+            else:
+                results = list(service.score_batch(db, limit=args.limit))
+        for item in results:
+            print(
+                "Scored lead:",
+                f"id={item.lead_id}",
+                f"organization_id={item.organization_id}",
+                f"score={item.scoring.total}",
+                f"band={item.scoring.band.value}",
+                f"model={item.scoring.model_version}",
+            )
+        print(f"scored={len(results)}")
         return 0
 
     parser.error(f"Unsupported command: {args.command}")

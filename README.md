@@ -114,6 +114,26 @@ Optional live NPPES integration test:
 NPPES_INTEGRATION_TESTS=1 pytest -q -m integration
 ```
 
+## Phase 3 foundation — deterministic lead scoring
+
+Local-only scoring of discovered organizations and leads. It uses persisted NPI, location, specialty, website, contact, and `source_evidence` fields. It does not call Apollo, scraping, OpenAI, Google, Smartlead, Twilio, Vapi, or NPPES, and it does not send outreach or qualify a lead.
+
+CLI:
+```bash
+vyro-growth score-leads --organization-id <uuid>
+vyro-growth score-leads --lead-id <uuid>
+vyro-growth score-leads --limit 50
+```
+
+Worker job name: `score_discovered_leads`
+
+Each run writes:
+- a `lead_scores` row with total score, `deterministic-v1` model version, and factor/reason rationale
+- an `activities` audit row (`lead_scored`)
+- a `discovered` lead for the organization if one does not already exist
+
+Missing fields score 0 and are listed. Unknown specialty fit, unverified emails, and absent websites are not inferred.
+
 ## Phase 1
 
 Production foundation:

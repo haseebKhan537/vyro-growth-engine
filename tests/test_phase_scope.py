@@ -18,7 +18,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "INTERNAL_API_KEY=" in env_example
 
 
-def test_phase_two_does_not_add_later_phase_integrations() -> None:
+def test_current_phases_do_not_add_later_phase_integrations() -> None:
     src_root = Path("src/vyro_growth")
     source = "\n".join(path.read_text(encoding="utf-8") for path in src_root.rglob("*.py"))
     forbidden = (

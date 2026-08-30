@@ -14,6 +14,10 @@ from vyro_growth.workers.outbound import (
     outbound_action_for_job,
 )
 from vyro_growth.workers.runner import InlineWorkerRunner, JobHandler, UnknownJobError, WorkerRunner
+from vyro_growth.workers.scoring_handler import (
+    SCORE_DISCOVERED_LEADS_JOB,
+    ScoreDiscoveredLeadsHandler,
+)
 
 __all__ = [
     "DISCOVER_NPPES_PRACTICES_JOB",
@@ -26,8 +30,10 @@ __all__ = [
     "OUTBOUND_JOB_ACTIONS",
     "PLACE_CONSENT_CALLBACK_JOB",
     "SCHEDULE_MEETING_JOB",
+    "SCORE_DISCOVERED_LEADS_JOB",
     "SEND_EMAIL_JOB",
     "SafetyCheckedWorkerRunner",
+    "ScoreDiscoveredLeadsHandler",
     "UnknownJobError",
     "WorkerRunner",
     "outbound_action_for_job",
