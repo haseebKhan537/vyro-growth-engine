@@ -82,10 +82,20 @@ CLI:
 vyro-growth discover-nppes --state TX --city Austin --max-records 50
 ```
 
-Development API trigger:
+Internal HTTP trigger (`POST /internal/discovery/nppes`) is not a public API. In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header. CLI and worker discovery jobs do not use this HTTP key.
+
+Development (no key configured):
 ```bash
 curl -X POST http://localhost:8000/internal/discovery/nppes \
   -H "Content-Type: application/json" \
+  -d '{"state":"TX","city":"Austin","max_records":25}'
+```
+
+Authorized internal trigger:
+```bash
+curl -X POST http://localhost:8000/internal/discovery/nppes \
+  -H "Content-Type: application/json" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
   -d '{"state":"TX","city":"Austin","max_records":25}'
 ```
 

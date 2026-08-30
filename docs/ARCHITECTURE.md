@@ -6,7 +6,7 @@ Vyro Growth Engine is an event-driven sales automation platform. Core business r
 ## Major components
 
 ### API
-FastAPI exposes health, operator controls, webhook endpoints, and later dashboard/API resources.
+FastAPI exposes health, operator controls, webhook endpoints, and later dashboard/API resources. Internal operator routes such as `POST /internal/discovery/nppes` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing.
 
 ### Database
 PostgreSQL is the system of record for organizations, contacts, leads, evidence, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
@@ -18,7 +18,7 @@ Background workers perform discovery, enrichment, scoring, campaign orchestratio
 Integrations are isolated behind interfaces so providers can be replaced without rewriting the domain logic. Phase 2 adds an `NppesProvider` adapter for public CMS/NPPES organization discovery. Planned future adapters include Firecrawl/search, Apollo, Smartlead, OpenAI, Google Calendar/Meet, and a consent-based voice provider.
 
 ### Phase 2 discovery flow
-1. Operator or worker submits a targeted NPPES query. State alone is not enough; a narrower filter (`city`, `taxonomy_description`, or `organization_name`) is required.
+1. Operator or worker submits a targeted NPPES query through the CLI, worker job, or the internal HTTP trigger. The HTTP path is authorization-gated; CLI and worker paths are not. State alone is not enough; a narrower filter (`city`, `taxonomy_description`, or `organization_name`) is required.
 2. `NppesDiscoveryService` creates a `discovery_runs` audit row and pages through the NPPES v2.1 API using raw page size, a skip ceiling of 1000, and timeout/retry/backoff (including HTTP 500 and transport errors). NPPES `Errors` payloads fail the run.
 3. Only active organization (`NPI-2`) records are normalized to a business-only subset and upserted into `organizations` by NPI. Sparse reruns do not wipe existing city/state/specialty.
 4. Provenance is stored in `source_evidence` with the source URL and query metadata. Authorized-official personal fields are not kept in memory or persisted.
