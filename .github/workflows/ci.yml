@@ -25,3 +25,19 @@ jobs:
         run: mypy src
       - name: Pytest
         run: pytest -q
+
+  deploy-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose
+        run: docker compose config --quiet
+      - name: Confirm safe container defaults
+        run: |
+          grep -q 'OUTBOUND_ENABLED=false' Dockerfile
+          grep -q 'OUTBOUND_ENABLED: "false"' docker-compose.yml
+          grep -q 'GOOGLE_CALENDAR_LIVE_ENABLED=false' .env.example
+          grep -q 'VOICE_LIVE_ENABLED=false' .env.example
+          grep -q 'USER appuser' Dockerfile
+          test -f .dockerignore
+          ! grep -E 'sk-|AIza|BEGIN PRIVATE KEY' .env.example Dockerfile docker-compose.yml

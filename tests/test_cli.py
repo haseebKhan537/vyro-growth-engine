@@ -932,3 +932,72 @@ def test_cli_main_runs_recommend_growth(
     assert "approval=pending_operator_review" in output
     assert "key=website_enrichment_gap" in output
     assert "applied=False" in output
+
+
+def test_parser_accepts_check_config_and_worker() -> None:
+    parser = build_parser()
+    check_args = parser.parse_args(["check-config"])
+    worker_args = parser.parse_args(["worker", "--list", "--check"])
+
+    assert check_args.command == "check-config"
+    assert worker_args.command == "worker"
+    assert worker_args.list is True
+    assert worker_args.check is True
+
+
+def test_cli_check_config_reports_safe_defaults(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["check-config"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "config_ok=true" in output
+    assert "outbound_enabled=False" in output
+    assert "live_providers_enabled=False" in output
+    assert "live_google_calendar=false" in output
+    assert "live_voice=false" in output
+
+
+def test_cli_check_config_fails_closed_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from vyro_growth.config import Settings
+
+    monkeypatch.setattr(
+        "vyro_growth.cli.get_settings",
+        lambda: Settings(environment="production", internal_api_key=""),
+    )
+
+    exit_code = main(["check-config"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "config_ok=false" in captured.out
+    assert "INTERNAL_API_KEY" in captured.err
+
+
+def test_cli_worker_lists_jobs_without_running_them(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["worker", "--list"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "discover_nppes_practices" in output
+    assert "generate_growth_recommendations" in output
+    assert "undeployed_outbound=send_email,schedule_meeting,place_consent_callback" in output
+
+
+def test_cli_worker_check_validates_config(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["worker", "--check"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "config_ok=true" in output
+    assert "queue=inline" in output
+    assert "scheduler=operator_or_external_cron" in output
+    assert "outbound_enabled=False" in output

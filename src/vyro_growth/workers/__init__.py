@@ -5,6 +5,13 @@ from vyro_growth.workers.booking_plan_handler import (
     PLAN_BOOKING_SLOTS_JOB,
     PlanBookingSlotsHandler,
 )
+from vyro_growth.workers.catalog import (
+    DEPLOYABLE_JOBS,
+    UNDEPLOYED_OUTBOUND_JOBS,
+    WorkerJobSpec,
+    deployable_job_names,
+    undeployed_outbound_job_names,
+)
 from vyro_growth.workers.contact_enrichment_handler import (
     ENRICH_DECISION_MAKERS_JOB,
     EnrichDecisionMakersHandler,
@@ -52,6 +59,9 @@ from vyro_growth.workers.website_enrichment_handler import (
 )
 
 __all__ = [
+    "DEPLOYABLE_JOBS",
+    "UNDEPLOYED_OUTBOUND_JOBS",
+    "WorkerJobSpec",
     "CLASSIFY_INBOUND_REPLIES_JOB",
     "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
     "GenerateGrowthRecommendationsHandler",
@@ -84,5 +94,7 @@ __all__ = [
     "ScoreDiscoveredLeadsHandler",
     "UnknownJobError",
     "WorkerRunner",
+    "deployable_job_names",
     "outbound_action_for_job",
+    "undeployed_outbound_job_names",
 ]

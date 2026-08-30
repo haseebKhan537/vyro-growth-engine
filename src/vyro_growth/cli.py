@@ -5,7 +5,13 @@ import sys
 from uuid import UUID
 
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
-from vyro_growth.config import get_settings
+from vyro_growth.config import (
+    RuntimeConfigError,
+    get_settings,
+    live_provider_flags,
+    require_valid_runtime_settings,
+    validate_runtime_settings,
+)
 from vyro_growth.database import SessionLocal
 from vyro_growth.domain import VoiceConsentChannel, VoiceConsentSource
 from vyro_growth.providers.calendar_booking import build_booking_calendar_provider
@@ -33,6 +39,7 @@ from vyro_growth.services.voice_qualification import (
     VoiceQualificationService,
 )
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentService
+from vyro_growth.workers.catalog import DEPLOYABLE_JOBS, UNDEPLOYED_OUTBOUND_JOBS
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -224,6 +231,24 @@ def build_parser() -> argparse.ArgumentParser:
             "(does not apply changes or send outreach)"
         ),
     )
+    subparsers.add_parser(
+        "check-config",
+        help="Validate runtime settings without connecting to live providers",
+    )
+    worker = subparsers.add_parser(
+        "worker",
+        help="Inspect the in-process worker catalog (no durable queue, no outbound)",
+    )
+    worker.add_argument(
+        "--list",
+        action="store_true",
+        help="List deployable dry-run job names",
+    )
+    worker.add_argument(
+        "--check",
+        action="store_true",
+        help="Validate runtime config and print the job catalog summary",
+    )
     return parser
 
 
@@ -289,6 +314,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "recommend-growth":
         return _run_recommend_growth()
+
+    if args.command == "check-config":
+        return _run_check_config()
+
+    if args.command == "worker":
+        return _run_worker(args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -746,6 +777,46 @@ def _print_optimizer_result(result: OptimizerRunResult) -> None:
             f"approval={item.approval_status}",
             f"applied={item.applied}",
         )
+
+
+def _run_check_config() -> int:
+    settings = get_settings()
+    issues = validate_runtime_settings(settings)
+    flags = live_provider_flags(settings)
+    print(f"environment={settings.environment}")
+    print(f"outbound_enabled={settings.outbound_enabled}")
+    print(f"live_providers_enabled={any(flags.values())}")
+    for name, enabled in flags.items():
+        print(f"live_{name}={str(enabled).lower()}")
+    if issues:
+        for issue in issues:
+            print(f"config_issue={issue}", file=sys.stderr)
+        print("config_ok=false")
+        return 1
+    print("config_ok=true")
+    return 0
+
+
+def _run_worker(args: argparse.Namespace) -> int:
+    if args.list:
+        for job in DEPLOYABLE_JOBS:
+            print(f"{job.name}\t{job.cli}\t{job.description}")
+        print("undeployed_outbound=" + ",".join(UNDEPLOYED_OUTBOUND_JOBS))
+        if not args.check:
+            return 0
+    settings = get_settings()
+    try:
+        require_valid_runtime_settings(settings)
+    except RuntimeConfigError as exc:
+        print(f"config_invalid={exc}", file=sys.stderr)
+        return 1
+    print("config_ok=true")
+    print(f"environment={settings.environment}")
+    print(f"outbound_enabled={settings.outbound_enabled}")
+    print("queue=inline")
+    print(f"jobs={len(DEPLOYABLE_JOBS)}")
+    print("scheduler=operator_or_external_cron")
+    return 0
 
 
 if __name__ == "__main__":

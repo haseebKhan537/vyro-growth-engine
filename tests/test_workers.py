@@ -9,7 +9,14 @@ from vyro_growth.config import Settings
 from vyro_growth.models import Suppression
 from vyro_growth.services.operator_halt import set_operator_halt
 from vyro_growth.services.outbound_guard import OutboundBlockedError, OutboundGuard
-from vyro_growth.workers import InlineJobQueue, InlineWorkerRunner, Job, UnknownJobError
+from vyro_growth.workers import (
+    InlineJobQueue,
+    InlineWorkerRunner,
+    Job,
+    UnknownJobError,
+    deployable_job_names,
+    undeployed_outbound_job_names,
+)
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
@@ -286,3 +293,16 @@ def test_safety_checked_runner_allows_growth_optimizer_without_guard(
     runner.run(job)
 
     assert handler.handled == [job]
+
+
+def test_deployable_catalog_excludes_outbound_guard_jobs() -> None:
+    names = deployable_job_names()
+
+    assert GENERATE_GROWTH_RECOMMENDATIONS_JOB in names
+    assert SCORE_DISCOVERED_LEADS_JOB in names
+    assert set(undeployed_outbound_job_names()) == {
+        SEND_EMAIL_JOB,
+        SCHEDULE_MEETING_JOB,
+        PLACE_CONSENT_CALLBACK_JOB,
+    }
+    assert set(undeployed_outbound_job_names()).isdisjoint(names)
