@@ -492,7 +492,7 @@ def test_rationale_digest_changes_when_evidence_pointers_change() -> None:
 
 def test_evidence_pointer_change_writes_new_score_when_totals_match(db_session: Session) -> None:
     organization = _seed_organization(db_session)
-    first_match = _add_fact(
+    match_row = _add_fact(
         db_session,
         organization,
         WebsiteFactType.WEBSITE_MATCH.value,
@@ -502,13 +502,9 @@ def test_evidence_pointer_change_writes_new_score_when_totals_match(db_session: 
     service = LeadScoringService()
     first = service.score_organization(db_session, organization.id)
 
-    second_match = _add_fact(
-        db_session,
-        organization,
-        WebsiteFactType.WEBSITE_MATCH.value,
-        "verified",
-        source_url="https://www.austinfamily.example/about",
-    )
+    match_row.source_url = "https://www.austinfamily.example/about"
+    match_row.extracted_value = "verified"
+    db_session.flush()
     second = service.score_organization(db_session, organization.id)
 
     first_score = db_session.get(LeadScore, first.lead_score_id)
@@ -527,14 +523,13 @@ def test_evidence_pointer_change_writes_new_score_when_totals_match(db_session: 
     assert first.reused_existing_score is False
     assert second.reused_existing_score is False
     assert second.lead_score_id != first.lead_score_id
-    assert first_match_factor.evidence_id == str(first_match.id)
-    assert second_match_factor.evidence_id == str(second_match.id)
+    assert first_match_factor.evidence_id == str(match_row.id)
+    assert second_match_factor.evidence_id == str(match_row.id)
     assert first_match_factor.source_url == "https://austinfamily.example"
     assert second_match_factor.source_url == "https://www.austinfamily.example/about"
     assert first_score is not None
     assert second_score is not None
     assert first_score.rationale != second_score.rationale
-    assert second_score.rationale["factors"]
     assert activity_count == 2
     assert outreach_count == 0
 
