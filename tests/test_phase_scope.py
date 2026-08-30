@@ -16,6 +16,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "OUTBOUND_HALTED=false" in env_example
     assert "INTERNAL_API_KEY=" in env_example
+    assert "WEBSITE_USER_AGENT=VyroGrowthEngine/0.1" in env_example
 
 
 def test_current_phases_do_not_add_later_phase_integrations() -> None:
