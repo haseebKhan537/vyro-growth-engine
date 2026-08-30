@@ -21,11 +21,19 @@ This repository is a sales/prospecting system. It must not ingest, store, proces
 ## Voice
 Do not implement indiscriminate cold AI robocalling. Voice automation is restricted to inbound leads, requested callbacks, or prospects with documented permission/consent.
 
+## Internal HTTP triggers
+- `POST /internal/discovery/nppes` is an internal operator trigger, not a public API.
+- NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
+- The HTTP trigger requires explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
+- Outside development, a missing or blank `INTERNAL_API_KEY` fails closed. A missing or invalid request key is rejected.
+- In development, an empty configured key is allowed for local use. If a key is configured, the request must match it.
+- Do not expose this route on a public ingress. Prefer CLI or worker execution in deployed environments.
+
 ## Secrets
 - Never commit API keys, passwords, OAuth refresh tokens, SMTP credentials, or private keys.
 - Use environment variables or deployment secret stores.
 - `.env` is gitignored.
-- Loggers must redact credentials and authorization headers.
+- Loggers must redact credentials and authorization headers, including `X-Internal-Api-Key`.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

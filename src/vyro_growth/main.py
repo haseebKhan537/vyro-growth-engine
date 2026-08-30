@@ -2,10 +2,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
+from vyro_growth.api.internal_auth import (
+    evaluate_internal_http_trigger,
+    internal_trigger_http_error,
+)
 from vyro_growth.config import get_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
@@ -37,13 +41,15 @@ def health() -> dict[str, str | bool]:
 def trigger_nppes_discovery(
     request: NppesDiscoveryRequest,
     db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
 ) -> dict[str, object]:
     active_settings = get_settings()
-    if active_settings.environment != "development":
-        raise HTTPException(
-            status_code=403,
-            detail="Discovery trigger is only available in development",
-        )
+    denied = internal_trigger_http_error(
+        evaluate_internal_http_trigger(active_settings, x_internal_api_key)
+    )
+    if denied is not None:
+        status_code, detail = denied
+        raise HTTPException(status_code=status_code, detail=detail)
 
     result = run_nppes_discovery(db, request, settings=active_settings)
     return {

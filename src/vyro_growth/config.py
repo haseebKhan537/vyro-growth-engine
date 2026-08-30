@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     nppes_max_retries: int = Field(default=3, ge=0)
     nppes_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
     discovery_max_records_per_run: int = Field(default=500, ge=1)
+    internal_api_key: str = Field(
+        default="",
+        description=(
+            "Shared secret for internal HTTP triggers such as NPPES discovery. "
+            "Required outside development; empty is fail-closed in those environments."
+        ),
+    )
 
 
 @lru_cache

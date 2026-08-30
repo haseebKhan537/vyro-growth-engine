@@ -4,9 +4,16 @@ from vyro_growth.observability import redact_event
 
 
 def test_redacts_sensitive_top_level_keys() -> None:
-    event = redact_event({"authorization": "Bearer secret", "message": "ok"})
+    event = redact_event(
+        {
+            "authorization": "Bearer secret",
+            "internal_api_key": "internal-secret",
+            "message": "ok",
+        }
+    )
 
     assert event["authorization"] == "[REDACTED]"
+    assert event["internal_api_key"] == "[REDACTED]"
     assert event["message"] == "ok"
 
 
@@ -17,6 +24,7 @@ def test_redacts_sensitive_headers() -> None:
                 "Authorization": "Bearer secret",
                 "Content-Type": "application/json",
                 "X-Api-Key": "abc123",
+                "X-Internal-Api-Key": "internal-secret",
             }
         }
     )
@@ -25,3 +33,4 @@ def test_redacts_sensitive_headers() -> None:
     assert headers["Authorization"] == "[REDACTED]"
     assert headers["Content-Type"] == "application/json"
     assert headers["X-Api-Key"] == "[REDACTED]"
+    assert headers["X-Internal-Api-Key"] == "[REDACTED]"

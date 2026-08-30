@@ -5,12 +5,21 @@ from typing import Any, cast
 import structlog
 from structlog.typing import EventDict, WrappedLogger
 
-SENSITIVE_KEYS = {"authorization", "api_key", "apikey", "password", "secret", "token"}
+SENSITIVE_KEYS = {
+    "authorization",
+    "api_key",
+    "apikey",
+    "internal_api_key",
+    "password",
+    "secret",
+    "token",
+}
 SENSITIVE_HEADERS = {
     "authorization",
     "cookie",
     "set-cookie",
     "x-api-key",
+    "x-internal-api-key",
     "x-auth-token",
     "proxy-authorization",
 }
