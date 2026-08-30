@@ -18,7 +18,7 @@ Practice discovery → enrichment → decision-maker identification → contact 
 - No indiscriminate cold AI robocalling.
 - Voice automation is limited to inbound leads, requested callbacks, or prospects who have consented to a call.
 - Permanent unsubscribe/suppression controls are mandatory.
-- A global outbound kill switch is mandatory.
+- Dual outbound kill switch: `OUTBOUND_ENABLED` must be explicitly true, and the persistent operator halt must be lifted. Either halt path fails closed.
 - Prospect facts must be evidence-backed; AI must not invent enrichment details.
 - Every external action must be auditable.
 - Sales infrastructure remains architecturally separate from any future HIPAA billing/operations environment.

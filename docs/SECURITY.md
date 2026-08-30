@@ -4,9 +4,17 @@
 This repository is a sales/prospecting system. It must not ingest, store, process, or transmit patient PHI.
 
 ## Outbound controls
-- `OUTBOUND_ENABLED` defaults to `false`.
-- No provider adapter may send externally unless the global outbound switch is enabled.
-- Suppression checks must happen immediately before every outbound action.
+- `OUTBOUND_ENABLED` defaults to `false`. No outreach-like action may proceed unless this is explicitly `true`.
+- A second operator halt can still block outbound when the env flag is accidentally enabled:
+  - settings-backed `OUTBOUND_HALTED` (defaults `false`)
+  - persistent `operator_controls.outbound_halted` for the `global` key
+- The persistent halt is seeded **halted**. Outbound requires both env enablement and an explicit operator lift via `set_operator_halt`.
+- If the persistent halt row is missing or unreadable, the guard fails closed (`operator_halt_unavailable`).
+- If a suppression lookup cannot be completed, the guard fails closed (`suppression_check_unavailable`).
+- Actions without an identifiable email, domain, or phone fail closed (`target_unidentified`).
+- Consent-based phone actions fail closed unless the caller passes `consent_to_call=True`. This is a gate only; there is no live dialer.
+- Email, domain, and phone suppressions are checked immediately before every outbound action.
+- Future email, calendar, and consent-based phone adapters/workers must call `OutboundGuard.require_allowed` (or use the guarded wrappers / `SafetyCheckedWorkerRunner`) before sending, scheduling, or dialing.
 - Permanent unsubscribe records must be durable and honored across campaigns.
 - Every external action must create an audit/activity record.
 

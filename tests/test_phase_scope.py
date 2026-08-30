@@ -13,6 +13,7 @@ def test_outbound_remains_disabled_by_default() -> None:
 def test_env_example_keeps_outbound_disabled() -> None:
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
+    assert "OUTBOUND_HALTED=false" in env_example
 
 
 def test_phase_two_does_not_add_later_phase_integrations() -> None:
