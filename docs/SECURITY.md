@@ -61,6 +61,16 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not call Apollo, Smartlead, OpenAI, Google, Twilio, Vapi, Retell, or any live paid/external provider from scoring.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 
+## Personalization integrity
+- Personalization drafts are evidence-grounded and outbound-disabled. They are not outreach.
+- Use only stored public/business evidence and explicit prospect/business data. Do not invent practice facts, pain points, provider counts, revenue, denial rates, A/R, payer mix, billing software, contacts, emails, phones, testimonials, or Vyro performance claims.
+- Unknown facts remain unknown and are listed as missing-data notes.
+- Do not scrape patient data or collect PHI.
+- Do not send email, place calls, book calendar events, or enroll leads.
+- Do not call Apollo, Smartlead, Google, Twilio, Vapi, Retell, or any live paid/external provider from this layer.
+- The OpenAI adapter is a guarded boundary. Default `OPENAI_PERSONALIZATION_ENABLED=false`. CI and local tests use the stub and do not require a live key. Never commit API keys.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

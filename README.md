@@ -214,6 +214,41 @@ Each run writes:
 
 A live paid adapter is not implemented. Tests do not require provider credentials. Expected future env vars (unused): `CONTACT_ENRICHMENT_API_KEY`, `CONTACT_ENRICHMENT_API_BASE_URL`.
 
+## Phase 5 — Evidence-grounded personalization (dry-run)
+
+Generate structured personalization drafts for scored/enriched leads using only stored public/business evidence. Output is evidence-grounded and outbound-disabled. CI and default local development use a deterministic stub and do not require a live OpenAI API key.
+
+CLI:
+```bash
+vyro-growth personalize-leads --organization-id <uuid>
+vyro-growth personalize-leads --lead-id <uuid>
+vyro-growth personalize-leads --limit 25 --state TX
+```
+
+Worker job name: `personalize_scored_leads`
+
+Each draft includes:
+
+- one-sentence practice summary
+- why Vyro may be relevant
+- personalized opening line
+- recommended outreach angle
+- suggested offer, defaulting to Complimentary Revenue Leakage Analysis
+- missing-data notes
+- evidence references to stored `source_evidence` and scoring factors
+- confidence and readiness (`ready`, `needs_more_evidence`, `blocked`)
+
+Unknown facts stay unknown. The generator does not invent practice facts, pain points, provider counts, revenue, denial rates, A/R, payer mix, billing software, contacts, emails, phones, testimonials, or Vyro performance claims.
+
+Each run writes:
+
+- a `personalization_drafts` row (reused on identical evidence fingerprints)
+- a `source_evidence` provenance row
+- an `enrichment_runs` audit row (`source=personalization`)
+- an `activities` audit row
+
+No email is sent, no calls are placed, no calendar events are booked, and leads are not enrolled in outreach tools. `OUTBOUND_ENABLED` remains false by default. Live OpenAI is gated behind `OPENAI_PERSONALIZATION_ENABLED=false` unless explicitly enabled with a key; tests never require that key.
+
 ## Phase 1
 
 Production foundation:

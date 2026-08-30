@@ -35,6 +35,11 @@ from vyro_growth.services.outbound_guard import (
     normalize_email,
     normalize_phone,
 )
+from vyro_growth.services.personalization import (
+    PersonalizationError,
+    PersonalizationJobResult,
+    PersonalizationService,
+)
 from vyro_growth.services.website_enrichment import (
     WebsiteEnrichmentError,
     WebsiteEnrichmentResult,
@@ -57,6 +62,9 @@ __all__ = [
     "OutboundBlockedError",
     "OutboundDecision",
     "OutboundGuard",
+    "PersonalizationError",
+    "PersonalizationJobResult",
+    "PersonalizationService",
     "PersistedScoreResult",
     "ScoringResult",
     "StaticHaltReader",

@@ -9,10 +9,12 @@ from vyro_growth.config import get_settings
 from vyro_growth.database import SessionLocal
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
+from vyro_growth.providers.personalization import build_personalization_provider
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.lead_scoring import LeadScoringService
+from vyro_growth.services.personalization import PersonalizationService
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentService
 
 
@@ -76,6 +78,26 @@ def build_parser() -> argparse.ArgumentParser:
         default=50,
         help="Maximum organizations to enrich when no organization id is provided",
     )
+
+    personalize = subparsers.add_parser(
+        "personalize-leads",
+        help=(
+            "Generate evidence-grounded personalization drafts (dry-run, outbound-disabled)"
+        ),
+    )
+    personalize.add_argument("--lead-id", help="Existing lead UUID")
+    personalize.add_argument("--organization-id", help="Organization UUID")
+    personalize.add_argument(
+        "--state",
+        help="Limit batch personalization to a two-letter state code",
+    )
+    personalize.add_argument("--city", help="Limit batch personalization to a city")
+    personalize.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum organizations to personalize when no id is provided",
+    )
     return parser
 
 
@@ -120,6 +142,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "enrich-contacts":
         return _run_enrich_contacts(args)
+
+    if args.command == "personalize-leads":
+        return _run_personalize_leads(parser, args)
 
     parser.error(f"Unsupported command: {args.command}")
     return 1
@@ -221,6 +246,40 @@ def _run_enrich_contacts(args: argparse.Namespace) -> int:
             f"status={item.status.value}",
         )
     print(f"enriched={len(contact_results)}")
+    return 0
+
+
+def _run_personalize_leads(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if args.lead_id and args.organization_id:
+        parser.error("Provide --lead-id or --organization-id, not both")
+    service = PersonalizationService(build_personalization_provider())
+    with SessionLocal() as db:
+        if args.lead_id:
+            results = [service.personalize_lead(db, UUID(args.lead_id))]
+        elif args.organization_id:
+            results = [service.personalize_organization(db, UUID(args.organization_id))]
+        else:
+            results = list(
+                service.personalize_batch(
+                    db,
+                    limit=args.limit,
+                    state=args.state,
+                    city=args.city,
+                )
+            )
+    for item in results:
+        print(
+            "Personalization:",
+            f"lead_id={item.lead_id}",
+            f"organization_id={item.organization_id}",
+            f"draft_id={item.draft_id or '-'}",
+            f"readiness={item.readiness_status.value if item.readiness_status else '-'}",
+            f"provider={item.provider_name}",
+            f"reused={item.reused_existing_draft}",
+            f"outbound_attempted={item.outbound_attempted}",
+            f"status={item.status.value}",
+        )
+    print(f"personalized={len(results)}")
     return 0
 
 

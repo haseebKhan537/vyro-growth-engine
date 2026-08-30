@@ -8,12 +8,14 @@ def test_redacts_sensitive_top_level_keys() -> None:
         {
             "authorization": "Bearer secret",
             "internal_api_key": "internal-secret",
+            "openai_api_key": "placeholder-key",
             "message": "ok",
         }
     )
 
     assert event["authorization"] == "[REDACTED]"
     assert event["internal_api_key"] == "[REDACTED]"
+    assert event["openai_api_key"] == "[REDACTED]"
     assert event["message"] == "ok"
 
 
