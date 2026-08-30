@@ -33,9 +33,10 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - billing/revenue-cycle signals only when explicitly stated
 - evidence-backed enrichment only, with source URL, confidence, timestamp, and snippet
 - confidence scoring
+- decision-maker/contact enrichment provider foundation (stub only; no live paid provider, no outreach)
 
 ## Phase 4 — Decision-maker and contact enrichment
-- Apollo adapter
+- live paid contact adapter (requires purchased credentials; not started)
 - practice manager/administrator/owner targeting
 - business email enrichment
 - email verification
