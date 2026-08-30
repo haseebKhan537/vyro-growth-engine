@@ -23,6 +23,48 @@ Practice discovery → enrichment → decision-maker identification → contact 
 - Every external action must be auditable.
 - Sales infrastructure remains architecturally separate from any future HIPAA billing/operations environment.
 
+## Local development
+
+### Prerequisites
+- Python 3.12+
+- Docker and Docker Compose
+
+### Setup
+```bash
+git clone https://github.com/haseebKhan537/vyro-growth-engine.git
+cd vyro-growth-engine
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+cp .env.example .env
+```
+
+### Start the stack
+```bash
+docker compose up --build -d postgres
+alembic upgrade head
+uvicorn vyro_growth.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Or run the full stack with Docker Compose:
+```bash
+docker compose up --build
+```
+
+### Verify
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response includes `"outbound_enabled": false`.
+
+### Quality checks
+```bash
+ruff check .
+mypy src
+pytest -q
+```
+
 ## Phase 1
 
 Production foundation:
