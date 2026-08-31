@@ -1845,6 +1845,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     assert preflight.command == "settings-execution-preflight"
     assert preflight.json is True
     assert preflight.request_type == "keep_outbound_disabled"
+    handoff = parser.parse_args(["owner-handoff-packet", "--json"])
+    assert handoff.command == "owner-handoff-packet"
+    assert handoff.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

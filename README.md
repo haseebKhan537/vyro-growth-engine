@@ -68,6 +68,7 @@ pytest -q
 vyro-growth smoke-dry-run --local-only --json
 vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
+vyro-growth owner-handoff-packet --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -888,6 +889,27 @@ curl "http://localhost:8000/internal/operator-settings-execution-preflight?decis
 The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, and settings change request UI link to this page. Filters include request type, decision status, and execution status. The page shows overall status, request/decision counts, blocker/gate/approval codes, missing credential variable names, closed provider flag names, request IDs/types, decision status, desired booleans/statuses, timestamps, and no-execution flags. There are no apply, execute, lift-halt, enable-outbound, provider, deploy, campaign, booking, call, publish, or spend controls.
 
 Rendered HTML is IDs, statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 32 — Owner go-live handoff packet export (read-only)
+
+Export a single sanitized owner-review packet that consolidates launch readiness, settings change requests, settings execution preflight, owner approval packets, and approved action readiness. This layer does not apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, deploy, or call live providers. It is for manual owner review only and is not permission or machinery for going live.
+
+CLI:
+```bash
+vyro-growth owner-handoff-packet
+vyro-growth owner-handoff-packet --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/owner-handoff-packet \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet with sections for launch readiness, settings change requests, settings execution preflight, owner approval packets, approved action readiness, and the remaining manual owner checklist. Fields are statuses, counts, blocker/gate/approval codes, request IDs, packet IDs, candidate IDs, setting names, desired booleans/statuses, missing credential variable names, closed provider flag names, timestamps, and no-execution flags. `execution_allowed` and `go_live_permitted` remain false because a future explicitly approved execution phase does not exist. There is no apply/execute endpoint or button.
+
+JSON is IDs, statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 

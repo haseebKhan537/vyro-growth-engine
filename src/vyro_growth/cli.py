@@ -77,6 +77,10 @@ from vyro_growth.services.launch_readiness import (
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.monitoring import MonitoringSnapshot, OperatorMonitoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
+from vyro_growth.services.owner_handoff import (
+    OwnerHandoffPacketService,
+    format_owner_handoff,
+)
 from vyro_growth.services.personalization import PersonalizationService
 from vyro_growth.services.reply_classification import ReplyClassificationService
 from vyro_growth.services.review_queue import (
@@ -574,6 +578,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--execution-status",
         help="Filter by simulated execution status",
     )
+    owner_handoff = subparsers.add_parser(
+        "owner-handoff-packet",
+        help=(
+            "Export a sanitized owner go-live handoff packet "
+            "(read-only; does not execute, apply settings, or go live)"
+        ),
+    )
+    owner_handoff.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized handoff packet as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -723,6 +739,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "settings-execution-preflight":
         return _run_settings_execution_preflight(args)
+
+    if args.command == "owner-handoff-packet":
+        return _run_owner_handoff_packet(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1905,6 +1924,14 @@ def _run_settings_execution_preflight(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         result = SettingsExecutionPreflightService().simulate(db, settings, filters=filters)
     print(format_settings_execution_preflight(result, as_json=args.json))
+    return 0
+
+
+def _run_owner_handoff_packet(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        packet = OwnerHandoffPacketService().build(db, settings)
+    print(format_owner_handoff(packet, as_json=args.json))
     return 0
 
 

@@ -107,6 +107,11 @@ from vyro_growth.services.outreach_enrollment import (
     OutreachEnrollmentService,
     OutreachPlanResult,
 )
+from vyro_growth.services.owner_handoff import (
+    OwnerHandoffPacket,
+    OwnerHandoffPacketService,
+    format_owner_handoff,
+)
 from vyro_growth.services.personalization import (
     PersonalizationError,
     PersonalizationJobResult,
@@ -216,6 +221,8 @@ __all__ = [
     "OperatorMonitoringService",
     "NppesDiscoveryService",
     "OperatorCommandCenterService",
+    "OwnerHandoffPacket",
+    "OwnerHandoffPacketService",
     "OutboundAction",
     "OutboundBlockedError",
     "OutboundDecision",
@@ -263,6 +270,7 @@ __all__ = [
     "database_is_ready",
     "domain_from_email",
     "format_launch_readiness",
+    "format_owner_handoff",
     "format_settings_change_list",
     "format_settings_change_propose",
     "format_settings_change_request",

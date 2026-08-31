@@ -393,6 +393,26 @@ def test_settings_execution_preflight_does_not_call_live_providers() -> None:
     assert "OUTBOUND_ENABLED=false" in env_example
 
 
+def test_owner_handoff_packet_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/owner_handoff.py"),
+        Path("src/vyro_growth/api/owner_handoff.py"),
+        Path("tests/test_owner_handoff_service.py"),
+        Path("tests/test_owner_handoff_api.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
 def test_action_readiness_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/action_readiness.py"),
