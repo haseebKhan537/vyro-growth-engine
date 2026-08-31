@@ -14,6 +14,7 @@ from vyro_growth.services.launch_readiness import (
     LaunchReadinessService,
     SecretInventoryItem,
 )
+from vyro_growth.services.settings_change_requests import SettingsChangeProposal
 
 
 class SecretInventoryItemResponse(BaseModel):
@@ -49,6 +50,20 @@ class LaunchReadinessFindingResponse(BaseModel):
     next_action_label: str
 
 
+class ProposedSettingsChangeResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    request_type: str
+    requested_setting_names: list[str] = Field(default_factory=list)
+    desired_boolean: bool | None = None
+    desired_status: str | None = None
+    finding_code: str | None = None
+    next_action_code: str | None = None
+    record_only: bool = True
+    no_execution: bool = True
+    settings_applied: bool = False
+
+
 class LaunchReadinessResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -74,6 +89,10 @@ class LaunchReadinessResponse(BaseModel):
     pending_owner_approval_packets: int = 0
     action_readiness_candidate_count: int = 0
     action_readiness_blocked_count: int = 0
+    pending_settings_change_request_count: int = 0
+    proposed_settings_change_requests: list[ProposedSettingsChangeResponse] = Field(
+        default_factory=list
+    )
     findings: list[LaunchReadinessFindingResponse] = Field(default_factory=list)
     next_actions: list[LaunchReadinessFindingResponse] = Field(default_factory=list)
     database: str
@@ -110,6 +129,20 @@ def _finding_to_response(item: LaunchReadinessFinding) -> LaunchReadinessFinding
     )
 
 
+def _proposal_to_response(item: SettingsChangeProposal) -> ProposedSettingsChangeResponse:
+    return ProposedSettingsChangeResponse(
+        request_type=item.request_type,
+        requested_setting_names=list(item.requested_setting_names),
+        desired_boolean=item.desired_boolean,
+        desired_status=item.desired_status,
+        finding_code=item.finding_code,
+        next_action_code=item.next_action_code,
+        record_only=True,
+        no_execution=True,
+        settings_applied=False,
+    )
+
+
 def checklist_to_response(checklist: LaunchReadinessChecklist) -> LaunchReadinessResponse:
     return LaunchReadinessResponse(
         generated_at=checklist.generated_at,
@@ -134,6 +167,10 @@ def checklist_to_response(checklist: LaunchReadinessChecklist) -> LaunchReadines
         pending_owner_approval_packets=checklist.pending_owner_approval_packets,
         action_readiness_candidate_count=checklist.action_readiness_candidate_count,
         action_readiness_blocked_count=checklist.action_readiness_blocked_count,
+        pending_settings_change_request_count=checklist.pending_settings_change_request_count,
+        proposed_settings_change_requests=[
+            _proposal_to_response(item) for item in checklist.proposed_settings_change_requests
+        ],
         findings=[_finding_to_response(item) for item in checklist.findings],
         next_actions=[_finding_to_response(item) for item in checklist.next_actions],
         database=checklist.database,

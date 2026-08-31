@@ -85,6 +85,13 @@ from vyro_growth.services.review_queue import (
     ReviewQueueResult,
     ReviewQueueService,
 )
+from vyro_growth.services.settings_change_requests import (
+    SettingsChangeRequestError,
+    SettingsChangeRequestService,
+    format_settings_change_list,
+    format_settings_change_propose,
+    format_settings_change_request,
+)
 from vyro_growth.services.smoke_dry_run import (
     SmokeDryRunRefused,
     format_smoke_summary,
@@ -468,6 +475,83 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized checklist as JSON",
     )
+    settings_queue = subparsers.add_parser(
+        "settings-change-requests",
+        help=(
+            "List record-only live settings change requests "
+            "(does not apply settings, lift halt, or execute)"
+        ),
+    )
+    settings_queue.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    settings_queue.add_argument("--status", help="Filter by request status")
+    settings_queue.add_argument("--request-type", help="Filter by request type")
+    settings_queue.add_argument(
+        "--decision-status",
+        help="Filter by owner decision status",
+    )
+    create_settings = subparsers.add_parser(
+        "create-settings-change-request",
+        help=(
+            "Create a record-only live settings change request "
+            "(does not apply the setting or execute)"
+        ),
+    )
+    create_settings.add_argument("--request-type", required=True, help="Request type")
+    create_settings.add_argument(
+        "--setting-name",
+        action="append",
+        dest="setting_names",
+        required=True,
+        help="Requested setting name (repeatable). Names only, never secret values.",
+    )
+    create_settings.add_argument(
+        "--desired-boolean",
+        choices=("true", "false"),
+        help="Proposed desired boolean. Not applied.",
+    )
+    create_settings.add_argument(
+        "--desired-status",
+        help="Proposed desired status such as disabled, enabled, halted, or configured",
+    )
+    create_settings.add_argument("--finding-code", help="Optional launch-readiness finding code")
+    create_settings.add_argument(
+        "--next-action-code",
+        help="Optional launch-readiness next-action code",
+    )
+    create_settings.add_argument("--idempotency-key", help="Optional idempotency key")
+    create_settings.add_argument("--notes", help="Optional sanitized operator notes")
+    create_settings.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    settings_detail = subparsers.add_parser(
+        "settings-change-request",
+        help="Show one record-only live settings change request (no execution)",
+    )
+    settings_detail.add_argument("--id", required=True, help="Request UUID")
+    settings_detail.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    record_settings = subparsers.add_parser(
+        "record-settings-change-decision",
+        help=(
+            "Record an audit-only owner decision on a settings change request "
+            "(does not apply settings, lift halt, or execute)"
+        ),
+    )
+    record_settings.add_argument("--id", required=True, help="Request UUID")
+    record_settings.add_argument(
+        "--decision",
+        required=True,
+        choices=("approved", "rejected", "needs_changes"),
+        help="Owner decision record. Approved does not apply the setting.",
+    )
+    record_settings.add_argument("--reviewer", help="Optional short owner/reviewer label")
+    record_settings.add_argument("--notes", help="Optional sanitized notes")
+    record_settings.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    propose_settings = subparsers.add_parser(
+        "propose-settings-changes",
+        help=(
+            "Create record-only settings change requests from the launch-readiness "
+            "checklist (does not apply settings or execute)"
+        ),
+    )
+    propose_settings.add_argument("--json", action="store_true", help="Print sanitized JSON")
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -599,6 +683,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "launch-readiness":
         return _run_launch_readiness(args)
+
+    if args.command == "settings-change-requests":
+        return _run_settings_change_requests(args)
+
+    if args.command == "create-settings-change-request":
+        return _run_create_settings_change_request(args)
+
+    if args.command == "settings-change-request":
+        return _run_settings_change_request_detail(args)
+
+    if args.command == "record-settings-change-decision":
+        return _run_record_settings_change_decision(args)
+
+    if args.command == "propose-settings-changes":
+        return _run_propose_settings_changes(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1661,6 +1760,113 @@ def _run_launch_readiness(args: argparse.Namespace) -> int:
     print(format_launch_readiness(checklist, as_json=args.json))
     if checklist.overall_status == LaunchReadinessStatus.BLOCKED.value:
         return 1
+    return 0
+
+
+def _parse_desired_boolean(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    return value == "true"
+
+
+def _run_settings_change_requests(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            result = SettingsChangeRequestService().list_requests(
+                db,
+                settings,
+                status=args.status,
+                request_type=args.request_type,
+                owner_decision_status=args.decision_status,
+            )
+        except SettingsChangeRequestError as exc:
+            print(f"Settings change request error: {exc.message}")
+            return 1
+    print(format_settings_change_list(result, as_json=args.json))
+    return 0
+
+
+def _run_create_settings_change_request(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            result = SettingsChangeRequestService().create(
+                db,
+                settings,
+                request_type=args.request_type,
+                requested_setting_names=args.setting_names,
+                desired_boolean=_parse_desired_boolean(args.desired_boolean),
+                desired_status=args.desired_status,
+                finding_code=args.finding_code,
+                next_action_code=args.next_action_code,
+                idempotency_key=args.idempotency_key,
+                source="cli",
+                reviewer_notes=args.notes,
+            )
+        except SettingsChangeRequestError as exc:
+            print(f"Settings change request error: {exc.message}")
+            return 1
+    print(format_settings_change_request(result, as_json=args.json))
+    return 0
+
+
+def _run_settings_change_request_detail(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    try:
+        request_id = UUID(args.id)
+    except ValueError:
+        print("Settings change request error: id must be a UUID")
+        return 1
+    with SessionLocal() as db:
+        result = SettingsChangeRequestService().get_request(db, settings, request_id)
+    if result is None:
+        print("Settings change request error: request was not found")
+        return 1
+    print(format_settings_change_request(result, as_json=args.json))
+    return 0
+
+
+def _run_record_settings_change_decision(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    try:
+        request_id = UUID(args.id)
+    except ValueError:
+        print("Settings change request error: id must be a UUID")
+        return 1
+    with SessionLocal() as db:
+        try:
+            result = SettingsChangeRequestService().record_decision(
+                db,
+                settings,
+                request_id=request_id,
+                decision=args.decision,
+                reviewer=args.reviewer,
+                source="cli",
+                reviewer_notes=args.notes,
+            )
+        except SettingsChangeRequestError as exc:
+            print(f"Settings change request error: {exc.message}")
+            return 1
+    print(format_settings_change_request(result, as_json=args.json))
+    return 0
+
+
+def _run_propose_settings_changes(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        checklist = LaunchReadinessService().assess(db, settings)
+        try:
+            result = SettingsChangeRequestService().propose_from_seeds(
+                db,
+                settings,
+                checklist.proposed_settings_change_requests,
+                source="launch_readiness",
+            )
+        except SettingsChangeRequestError as exc:
+            print(f"Settings change request error: {exc.message}")
+            return 1
+    print(format_settings_change_propose(result, as_json=args.json))
     return 0
 
 

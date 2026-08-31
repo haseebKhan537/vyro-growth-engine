@@ -258,6 +258,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
 - `ready_for_owner_review` is not permission to enable outbound or lift halt.
 
+## Live settings change request integrity
+- Phase 28 live settings change requests are record-only owner-reviewable proposals. They never perform a live workflow.
+- Do not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign live settings, scoring thresholds, or operator halt.
+- Do not set live `owner_approved`, call providers, send email, enroll campaigns, generate sendable replies, place calls, book meetings, publish content, launch ads, spend money, deploy, or execute approved packets, items, or settings requests.
+- Store setting names and desired booleans/statuses only. Credential requests must name env/config variables and must never store secret values.
+- Duplicate creates with the same idempotency key must not create duplicate rows. Decision records are audit-only and must not apply the setting or lift halt.
+- Print request IDs, statuses, blocker/finding/next-action codes, requested setting names, desired booleans, owner decision status, timestamps, and no-execution flags only.
+- Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

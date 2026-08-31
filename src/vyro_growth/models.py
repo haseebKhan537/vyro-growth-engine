@@ -41,6 +41,9 @@ from vyro_growth.domain import (
     ReplyIntent,
     ReviewDecisionStatus,
     ReviewItemStatus,
+    SettingsChangeDecisionStatus,
+    SettingsChangeRequestStatus,
+    SettingsChangeRequestType,
     VoicePlanStatus,
     VoiceQualificationRunStatus,
 )
@@ -995,3 +998,110 @@ class OwnerApprovalPacketDecision(TimestampMixin, Base):
     owner_approved: Mapped[bool] = mapped_column(Boolean, default=False)
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     packet: Mapped[OwnerApprovalPacket] = relationship(back_populates="decision_record")
+
+
+class LiveSettingsChangeRequest(TimestampMixin, Base):
+    """Record-only proposed live settings change for owner review.
+
+    Phase 28 stores setting names and desired booleans/statuses only. It never
+    applies settings, lifts halt, executes packets, or stores secret values.
+    """
+
+    __tablename__ = "live_settings_change_requests"
+    __table_args__ = (
+        UniqueConstraint(
+            "idempotency_key",
+            name="uq_live_settings_change_requests_idempotency_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    request_type: Mapped[str] = mapped_column(
+        String(64),
+        default=SettingsChangeRequestType.KEEP_SAFE_DEFAULT.value,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default=SettingsChangeRequestStatus.PENDING.value,
+        index=True,
+    )
+    owner_decision_status: Mapped[str] = mapped_column(
+        String(32),
+        default=SettingsChangeDecisionStatus.PENDING.value,
+        index=True,
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(128), index=True)
+    requested_setting_names: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    desired_boolean: Mapped[bool | None] = mapped_column(Boolean)
+    desired_status: Mapped[str | None] = mapped_column(String(32))
+    finding_code: Mapped[str | None] = mapped_column(String(64), index=True)
+    next_action_code: Mapped[str | None] = mapped_column(String(64), index=True)
+    source: Mapped[str] = mapped_column(String(64), default="cli")
+    reviewer_notes: Mapped[str | None] = mapped_column(String(500))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    record_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    no_execution: Mapped[bool] = mapped_column(Boolean, default=True)
+    executed: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    campaign_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    pages_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    settings_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    halt_changed: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_action: Mapped[bool] = mapped_column(Boolean, default=False)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    decision_record: Mapped[LiveSettingsChangeRequestDecision | None] = relationship(
+        back_populates="request",
+        uselist=False,
+    )
+
+
+class LiveSettingsChangeRequestDecision(TimestampMixin, Base):
+    """Audit-only owner decision for one settings change request.
+
+    Recording approved/rejected never applies the setting, lifts halt, or
+    sets live owner-approved state.
+    """
+
+    __tablename__ = "live_settings_change_request_decisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "live_settings_change_request_id",
+            name="uq_live_settings_change_request_decisions_request",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    live_settings_change_request_id: Mapped[UUID] = mapped_column(
+        ForeignKey("live_settings_change_requests.id"),
+        index=True,
+    )
+    decision: Mapped[str] = mapped_column(
+        String(32),
+        default=SettingsChangeDecisionStatus.APPROVED.value,
+        index=True,
+    )
+    previous_decision: Mapped[str | None] = mapped_column(String(32))
+    reviewer: Mapped[str] = mapped_column(String(120), default="operator")
+    source: Mapped[str] = mapped_column(String(64), default="cli")
+    reviewer_notes: Mapped[str | None] = mapped_column(String(500))
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    executed: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    campaign_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    pages_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    settings_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    halt_changed: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_action: Mapped[bool] = mapped_column(Boolean, default=False)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    request: Mapped[LiveSettingsChangeRequest] = relationship(back_populates="decision_record")

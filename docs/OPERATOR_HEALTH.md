@@ -11,6 +11,7 @@ After PostgreSQL is up and migrations are applied:
 ```bash
 vyro-growth operator-command-center
 vyro-growth launch-readiness
+vyro-growth settings-change-requests
 vyro-growth action-readiness
 vyro-growth system-status
 ```
@@ -30,11 +31,13 @@ curl http://localhost:8000/internal/operator-action-readiness \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/launch-readiness \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/settings-change-requests \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/monitoring/status \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 ```
 
-CLI does not use the HTTP key. `vyro-growth launch-readiness` is the owner-facing sanitized launch checklist and secret inventory; `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `GET /internal/operator-review-queue` and `GET /internal/operator-approval-packets` are HTML drilldowns; `GET /internal/operator-action-readiness` is the read-only approved action readiness queue; review-item detail pages can record a decision only via `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`; approval-packet detail pages can record a decision only via `POST /internal/operator-approval-packets/{packet_id}/decision`; `system-status` remains the detailed monitoring snapshot. Decision recording does not execute artifacts or packets. The readiness queue and launch checklist do not execute.
+CLI does not use the HTTP key. `vyro-growth launch-readiness` is the owner-facing sanitized launch checklist and secret inventory; `vyro-growth settings-change-requests` is the record-only live settings change queue; `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `GET /internal/operator-review-queue` and `GET /internal/operator-approval-packets` are HTML drilldowns; `GET /internal/operator-action-readiness` is the read-only approved action readiness queue; review-item detail pages can record a decision only via `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`; approval-packet detail pages can record a decision only via `POST /internal/operator-approval-packets/{packet_id}/decision`; `system-status` remains the detailed monitoring snapshot. Decision recording does not execute artifacts, packets, or settings requests. The readiness queue and launch checklist do not execute.
 
 ## What the snapshot includes
 

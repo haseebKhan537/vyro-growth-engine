@@ -41,6 +41,10 @@ from vyro_growth.observability import sanitize_mapping, sanitize_operator_text
 from vyro_growth.services.action_readiness import ActionReadinessService
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt
 from vyro_growth.services.readiness import database_is_ready
+from vyro_growth.services.settings_change_requests import (
+    SettingsChangeProposal,
+    pending_settings_change_request_count,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -95,6 +99,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.KEEP_OUTBOUND_DISABLED: "Keep OUTBOUND_ENABLED=false.",
     NextActionCode.KEEP_LIVE_PROVIDERS_DISABLED: "Keep every live-provider flag disabled.",
+    NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS: (
+        "Review pending live settings change requests. Recording a decision does not apply them."
+    ),
 }
 
 
@@ -151,6 +158,8 @@ class LaunchReadinessChecklist:
     pending_owner_approval_packets: int
     action_readiness_candidate_count: int
     action_readiness_blocked_count: int
+    pending_settings_change_request_count: int
+    proposed_settings_change_requests: tuple[SettingsChangeProposal, ...]
     findings: tuple[LaunchReadinessFinding, ...]
     next_actions: tuple[LaunchReadinessFinding, ...]
     database: str
@@ -174,11 +183,13 @@ class LaunchReadinessService:
         pending_packets = 0
         candidate_count = 0
         blocked_count = 0
+        pending_settings_requests = 0
         db_ok = database_is_ready(db)
         if db_ok:
             try:
                 halt_before = read_operator_halt(db)
                 pending_packets = _pending_packet_count(db)
+                pending_settings_requests = pending_settings_change_request_count(db)
                 queue = self.action_readiness.list_queue(db, settings)
                 candidate_count = queue.candidate_count
                 blocked_count = sum(
@@ -192,6 +203,7 @@ class LaunchReadinessService:
                 pending_packets = 0
                 candidate_count = 0
                 blocked_count = 0
+                pending_settings_requests = 0
         halt_after = read_operator_halt(db) if db_ok else HaltStatus.UNAVAILABLE
         if halt_after is not halt_before:
             raise RuntimeError("launch readiness must not change operator halt status")
@@ -210,8 +222,10 @@ class LaunchReadinessService:
             smoke=smoke,
             pending_packets=pending_packets,
             blocked_count=blocked_count,
+            pending_settings_requests=pending_settings_requests,
         )
         next_actions = _next_actions(findings, settings)
+        proposals = _proposed_settings_changes(next_actions, inventory)
         overall = _overall_status(findings)
         checklist = LaunchReadinessChecklist(
             generated_at=datetime.now(tz=UTC),
@@ -236,6 +250,8 @@ class LaunchReadinessService:
             pending_owner_approval_packets=pending_packets,
             action_readiness_candidate_count=candidate_count,
             action_readiness_blocked_count=blocked_count,
+            pending_settings_change_request_count=pending_settings_requests,
+            proposed_settings_change_requests=proposals,
             findings=findings,
             next_actions=next_actions,
             database="ok" if db_ok else "unavailable",
@@ -321,6 +337,11 @@ def format_launch_readiness(checklist: LaunchReadinessChecklist, *, as_json: boo
             f"candidates={payload['action_readiness_candidate_count']} "
             f"blocked={payload['action_readiness_blocked_count']}"
         ),
+        (
+            "Settings change requests: "
+            f"pending={payload['pending_settings_change_request_count']} "
+            f"proposed={len(payload['proposed_settings_change_requests'])}"
+        ),
         f"Database: {payload['database']}",
         f"Environment: {payload['environment']}",
     ]
@@ -341,6 +362,22 @@ def format_launch_readiness(checklist: LaunchReadinessChecklist, *, as_json: boo
             "Next action: "
             f"severity={action.severity} code={action.next_action_code} "
             f"label={action.next_action_label}"
+        )
+    for proposal in checklist.proposed_settings_change_requests:
+        names = ",".join(proposal.requested_setting_names) or "-"
+        desired = (
+            "null" if proposal.desired_boolean is None else _bool_text(proposal.desired_boolean)
+        )
+        lines.append(
+            "Proposed settings change: "
+            f"type={proposal.request_type} "
+            f"settings={names} "
+            f"desired_boolean={desired} "
+            f"desired_status={proposal.desired_status or '-'} "
+            f"finding={proposal.finding_code or '-'} "
+            f"next_action={proposal.next_action_code or '-'} "
+            f"record_only={_bool_text(proposal.record_only)} "
+            f"settings_applied={_bool_text(proposal.settings_applied)}"
         )
     return "\n".join(lines)
 
@@ -383,6 +420,21 @@ def checklist_payload(checklist: LaunchReadinessChecklist) -> dict[str, Any]:
         "pending_owner_approval_packets": checklist.pending_owner_approval_packets,
         "action_readiness_candidate_count": checklist.action_readiness_candidate_count,
         "action_readiness_blocked_count": checklist.action_readiness_blocked_count,
+        "pending_settings_change_request_count": checklist.pending_settings_change_request_count,
+        "proposed_settings_change_requests": [
+            {
+                "request_type": item.request_type,
+                "requested_setting_names": list(item.requested_setting_names),
+                "desired_boolean": item.desired_boolean,
+                "desired_status": item.desired_status,
+                "finding_code": item.finding_code,
+                "next_action_code": item.next_action_code,
+                "record_only": True,
+                "no_execution": True,
+                "settings_applied": False,
+            }
+            for item in checklist.proposed_settings_change_requests
+        ],
         "findings": [_finding_payload(item) for item in checklist.findings],
         "next_actions": [_finding_payload(item) for item in checklist.next_actions],
         "database": checklist.database,
@@ -500,6 +552,7 @@ def _findings(
     smoke: CiSmokeGateStatus,
     pending_packets: int,
     blocked_count: int,
+    pending_settings_requests: int,
 ) -> tuple[LaunchReadinessFinding, ...]:
     items: list[LaunchReadinessFinding] = []
     if settings.outbound_enabled:
@@ -600,6 +653,18 @@ def _findings(
                 ),
             )
         )
+    if pending_settings_requests:
+        items.append(
+            _finding(
+                FindingSeverity.WARNING,
+                FindingCode.PENDING_SETTINGS_CHANGE_REQUESTS,
+                NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS,
+                label=(
+                    f"Review {pending_settings_requests} pending live settings "
+                    "change request(s). Recording a decision does not apply them."
+                ),
+            )
+        )
     return tuple(items)
 
 
@@ -644,6 +709,94 @@ def _next_actions(
             ),
         )
     )
+
+
+def _proposed_settings_changes(
+    next_actions: Sequence[LaunchReadinessFinding],
+    inventory: Sequence[SecretInventoryItem],
+) -> tuple[SettingsChangeProposal, ...]:
+    missing_required = tuple(item.name for item in inventory if item.required and not item.present)
+    live_flags = tuple(sorted(name for name in REQUIRED_FLAG_NAMES if name != "OUTBOUND_ENABLED"))
+    proposals: list[SettingsChangeProposal] = []
+    seen: set[str] = set()
+
+    def add(item: SettingsChangeProposal) -> None:
+        key = "|".join(
+            (
+                item.request_type,
+                ",".join(item.requested_setting_names),
+                str(item.desired_boolean),
+                item.desired_status or "",
+                item.next_action_code or "",
+            )
+        )
+        if key in seen:
+            return
+        seen.add(key)
+        proposals.append(item)
+
+    for action in next_actions:
+        code = action.next_action_code
+        if code in {
+            NextActionCode.KEEP_OUTBOUND_DISABLED.value,
+            NextActionCode.DISABLE_OUTBOUND.value,
+        }:
+            add(
+                SettingsChangeProposal(
+                    request_type="keep_outbound_disabled",
+                    requested_setting_names=("OUTBOUND_ENABLED",),
+                    desired_boolean=False,
+                    desired_status="disabled",
+                    finding_code=action.code if code == NextActionCode.DISABLE_OUTBOUND.value else (
+                        FindingCode.SAFE_DEFAULTS.value
+                    ),
+                    next_action_code=code,
+                )
+            )
+        elif code in {
+            NextActionCode.KEEP_LIVE_PROVIDERS_DISABLED.value,
+            NextActionCode.DISABLE_LIVE_PROVIDERS.value,
+        }:
+            add(
+                SettingsChangeProposal(
+                    request_type="keep_safe_default",
+                    requested_setting_names=live_flags,
+                    desired_boolean=False,
+                    desired_status="disabled",
+                    finding_code=(
+                        FindingCode.LIVE_PROVIDER_ENABLED.value
+                        if code == NextActionCode.DISABLE_LIVE_PROVIDERS.value
+                        else FindingCode.SAFE_DEFAULTS.value
+                    ),
+                    next_action_code=code,
+                )
+            )
+        elif code in {
+            NextActionCode.KEEP_OPERATOR_HALT.value,
+            NextActionCode.RECORD_OPERATOR_HALT.value,
+        }:
+            add(
+                SettingsChangeProposal(
+                    request_type="request_operator_halt_review",
+                    requested_setting_names=("OPERATOR_HALT",),
+                    desired_boolean=True,
+                    desired_status="halted",
+                    finding_code=action.code,
+                    next_action_code=code,
+                )
+            )
+        elif code == NextActionCode.CONFIGURE_REQUIRED_CREDENTIALS.value and missing_required:
+            add(
+                SettingsChangeProposal(
+                    request_type="request_credential_configuration_review",
+                    requested_setting_names=missing_required,
+                    desired_boolean=None,
+                    desired_status="configured",
+                    finding_code=FindingCode.MISSING_REQUIRED_CREDENTIAL.value,
+                    next_action_code=code,
+                )
+            )
+    return tuple(proposals)
 
 
 def _finding(
