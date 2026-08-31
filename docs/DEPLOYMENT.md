@@ -187,7 +187,7 @@ Do not roll forward by enabling live providers.
 4. `alembic upgrade head`
 5. Start the API (`uvicorn vyro_growth.main:app --host 0.0.0.0 --port 8000` or `docker compose up --build api`).
 6. Probe `/health` and `/ready`.
-7. Run `vyro-growth system-status` and review findings before any manual rollout. See `docs/OPERATOR_HEALTH.md`.
+7. Run `vyro-growth operator-command-center` and `vyro-growth system-status` and review findings before any manual rollout. See `docs/OPERATOR_HEALTH.md`.
 8. Start worker checks or cron-invoked CLI jobs as needed.
 
 Production start fails closed when `INTERNAL_API_KEY` or `DATABASE_URL` is missing, or when a live-provider flag is true without its key.

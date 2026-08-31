@@ -9,17 +9,20 @@ Keep `OUTBOUND_ENABLED=false` and every live-provider flag disabled unless the o
 After PostgreSQL is up and migrations are applied:
 
 ```bash
+vyro-growth operator-command-center
 vyro-growth system-status
 ```
 
-Internal HTTP equivalent (not a public API). Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+Internal HTTP equivalents (not a public API). Outside development they are fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
 
 ```bash
+curl http://localhost:8000/internal/operator-command-center \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/monitoring/status \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 ```
 
-CLI does not use the HTTP key. Both paths are read-only.
+CLI does not use the HTTP key. Both paths are read-only. `operator-command-center` is the cross-pipeline summary; `system-status` remains the detailed monitoring snapshot.
 
 ## What the snapshot includes
 
@@ -29,6 +32,7 @@ CLI does not use the HTTP key. Both paths are read-only.
 - Phase 12 readiness/config state (`/ready` fields plus `ready_for_manual_rollout`)
 - Pending operator-review counts: personalization drafts, planned enrollments, booking plans, voice plans, optimizer recommendations, acquisition channel plans, content briefs
 - Findings with severity `blocked`, `warning`, or `info`, including an info finding when dry-run execution plans or owner approval packets exist and none were executed
+- Command-center next-action labels for owner review (no execution)
 
 Output is counts, statuses, timestamps, and sanitized messages only. It does not include message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI.
 
@@ -47,8 +51,8 @@ Output is counts, statuses, timestamps, and sanitized messages only. It does not
 1. Confirm `.env` / runtime env still has `OUTBOUND_ENABLED=false` and every live-provider flag false. See `docs/DEPLOYMENT.md`.
 2. `vyro-growth check-config`
 3. Probe `/health` and `/ready`
-4. `vyro-growth system-status`
-5. Review `blocked` and `warning` findings. Do not enable outbound to "clear" them.
+4. `vyro-growth operator-command-center` and `vyro-growth system-status`
+5. Review `blocked` and `warning` findings and next-action labels. Do not enable outbound to "clear" them.
 6. Review pending drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs on their existing dry-run surfaces. Approval does not publish pages or launch ads. `vyro-growth plan-approved-execution` records a dry-run plan only and does not execute. `vyro-growth generate-approval-packets` records a live-readiness packet only and does not execute.
 
 Do not invent prospect facts. Do not ingest or expose PHI. Do not lift the operator halt from this command.

@@ -401,6 +401,21 @@ class FindingCode(StrEnum):
     APPROVAL_PACKETS_DRY_RUN = "approval_packets_dry_run"
 
 
+class NextActionCode(StrEnum):
+    DISABLE_OUTBOUND = "disable_outbound"
+    DISABLE_LIVE_PROVIDERS = "disable_live_providers"
+    INVESTIGATE_LIVE_ARTIFACTS = "investigate_live_artifacts"
+    RECORD_OPERATOR_HALT = "record_operator_halt"
+    REVIEW_FAILED_RUNS = "review_failed_runs"
+    CHECK_RUNTIME_CONFIG = "check_runtime_config"
+    REVIEW_PENDING_ARTIFACTS = "review_pending_artifacts"
+    PLAN_APPROVED_EXECUTION = "plan_approved_execution"
+    GENERATE_APPROVAL_PACKETS = "generate_approval_packets"
+    OWNER_REVIEW_APPROVAL_PACKETS = "owner_review_approval_packets"
+    RUN_DISCOVERY_WHEN_READY = "run_discovery_when_ready"
+    KEEP_OUTBOUND_DISABLED = "keep_outbound_disabled"
+
+
 class ReviewArtifactType(StrEnum):
     PERSONALIZATION_DRAFT = "personalization_draft"
     OUTREACH_ENROLLMENT_PLAN = "outreach_enrollment_plan"

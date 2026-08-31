@@ -38,6 +38,10 @@ from vyro_growth.services.channel_planning import (
     ChannelPlanRunResult,
     ChannelPlanSeeds,
 )
+from vyro_growth.services.command_center import (
+    CommandCenterSummary,
+    OperatorCommandCenterService,
+)
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.content_brief import (
     ContentBriefError,
@@ -262,6 +266,13 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     subparsers.add_parser(
+        "operator-command-center",
+        help=(
+            "Print a sanitized read-only command-center summary: pipeline counts, "
+            "readiness, review/approval-packet counts, and next-action labels"
+        ),
+    )
+    subparsers.add_parser(
         "recommend-growth",
         help=(
             "Generate dry-run growth optimizer recommendations for operator review "
@@ -453,6 +464,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "system-status":
         return _run_system_status()
+
+    if args.command == "operator-command-center":
+        return _run_operator_command_center()
 
     if args.command == "recommend-growth":
         return _run_recommend_growth()
@@ -990,6 +1004,116 @@ def _print_system_status(snapshot: MonitoringSnapshot) -> None:
         )
     for item in snapshot.activity_summary:
         print("Activity:", f"action={item.action}", f"count={item.count}")
+
+
+def _run_operator_command_center() -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        summary = OperatorCommandCenterService().summarize(db, settings)
+    _print_command_center(summary)
+    return 0
+
+
+def _print_command_center(summary: CommandCenterSummary) -> None:
+    safety = summary.safety
+    readiness = summary.readiness
+    review = summary.outstanding_review
+    packets = summary.approval_packets
+    pipeline = summary.pipeline
+    findings = summary.finding_counts
+    print(
+        "Command center:",
+        f"overall={summary.overall_severity.value}",
+        f"read_only={summary.read_only}",
+        f"ready_for_manual_rollout={readiness.ready_for_manual_rollout}",
+        f"executed={summary.executed_count}",
+        f"outbound_attempted={summary.outbound_attempted}",
+    )
+    print(
+        "Safety:",
+        f"outbound_enabled={safety.outbound_enabled}",
+        f"operator_halt={safety.operator_halt_status}",
+        f"live_providers_enabled={safety.live_providers_enabled}",
+        f"live_calendar_events={safety.live_calendar_events}",
+        f"live_meet_links={safety.live_meet_links}",
+        f"live_phone_calls={safety.live_phone_calls}",
+        f"phi_fields_present={safety.phi_fields_present}",
+    )
+    print(
+        "Readiness:",
+        f"status={readiness.status}",
+        f"environment={readiness.environment}",
+        f"database={readiness.database}",
+        f"config_ok={readiness.config_ok}",
+    )
+    print(
+        "Pipeline:",
+        f"organizations={pipeline.organizations}",
+        f"leads={pipeline.leads}",
+        f"drafts={pipeline.personalization_drafts}",
+        f"outreach_planned={pipeline.outreach_plans_planned}",
+        f"replies={pipeline.reply_classifications}",
+        f"bookings={pipeline.booking_plans}",
+        f"voice={pipeline.voice_qualification_plans}",
+        f"optimizer={pipeline.optimizer_recommendations}",
+        f"channel_plans={pipeline.channel_plans}",
+        f"content_briefs={pipeline.content_briefs}",
+        f"execution_plans={pipeline.execution_plans}",
+        f"approval_packets={pipeline.approval_packets}",
+    )
+    print(
+        "Outstanding review:",
+        f"pending={review.pending_count}",
+        f"decided={review.decided_count}",
+        f"approved={review.approved_count}",
+        f"rejected={review.rejected_count}",
+        f"needs_changes={review.needs_changes_count}",
+        f"executed={review.executed_count}",
+    )
+    print(
+        "Approval packets:",
+        f"packets={packets.packets}",
+        f"status={packets.latest_run_status}",
+        f"owner_approved={packets.owner_approved}",
+        f"executed={packets.executed}",
+        f"preflight={packets.by_preflight_status}",
+    )
+    print(
+        "Findings:",
+        f"blocked={findings.blocked}",
+        f"warning={findings.warning}",
+        f"info={findings.info}",
+        f"total={findings.total}",
+    )
+    for run in summary.latest_runs:
+        print(
+            "Latest run:",
+            f"phase={run.phase}",
+            f"job={run.job_name or '-'}",
+            f"status={run.status}",
+            f"run_id={run.run_id or '-'}",
+        )
+    for failure in summary.recent_failures:
+        print(
+            "Failure:",
+            f"phase={failure.phase}",
+            f"status={failure.status}",
+            f"error={failure.error_message or '-'}",
+        )
+    for finding in summary.findings:
+        print(
+            "Finding:",
+            f"severity={finding.severity.value}",
+            f"code={finding.code.value}",
+            f"message={finding.message}",
+        )
+    for action in summary.next_actions:
+        print(
+            "Next action:",
+            f"severity={action.severity}",
+            f"code={action.code}",
+            f"label={action.label}",
+        )
 
 
 def _run_recommend_growth() -> int:
