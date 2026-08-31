@@ -236,6 +236,7 @@ def test_renderer_populated_section_filter_hides_other_panels() -> None:
     assert "JSON summary" in html
     assert "/internal/operator-review-queue" in html
     assert "/internal/operator-approval-packets" in html
+    assert "/internal/operator-action-readiness" in html
     for marker in ACTION_MARKERS:
         assert marker not in html.lower()
 
@@ -265,6 +266,7 @@ def test_operator_dashboard_open_in_development(
     assert "No pipeline activity yet" in body
     assert "Open review queue" in body
     assert "Open approval packets" in body
+    assert "Open action readiness" in body
     assert "read-only" in body.lower()
     assert "Outbound" in body
     assert "disabled" in body

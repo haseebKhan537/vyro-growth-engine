@@ -35,6 +35,7 @@ from vyro_growth.api.monitoring import (
     SanitizedFailureResponse,
 )
 from vyro_growth.api.operator_ui import (
+    OPERATOR_ACTION_READINESS_PATH,
     OPERATOR_APPROVAL_PACKETS_PATH,
     OPERATOR_REVIEW_QUEUE_PATH,
 )
@@ -242,7 +243,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_REVIEW_QUEUE_PATH)}">'
         "Review queue</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_APPROVAL_PACKETS_PATH)}">'
-        "Approval packets</a>\n"
+        "Approval packets</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_ACTION_READINESS_PATH)}">'
+        "Action readiness</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -455,8 +458,10 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "      <h2>Approval packets and preflight</h2>\n"
         f'      <p class="hint"><a class="nav-link" '
         f'href="{escape(OPERATOR_APPROVAL_PACKETS_PATH)}">'
-        "Open approval packets</a> — read-only list and detail. "
-        "No approve or execute controls.</p>\n"
+        "Open approval packets</a> — packet list and detail. "
+        "Decision recording does not execute. "
+        f'<a class="nav-link" href="{escape(OPERATOR_ACTION_READINESS_PATH)}">'
+        "Open action readiness</a> — read-only queue. No execute controls.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"
         f"        {_metric('Owner approved', packets.owner_approved)}\n"

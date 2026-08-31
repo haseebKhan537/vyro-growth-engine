@@ -26,6 +26,10 @@ from vyro_growth.domain import (
     VoiceQualificationRunStatus,
     WebsiteMatchStatus,
 )
+from vyro_growth.services.action_readiness import (
+    ActionReadinessCandidate,
+    ActionReadinessResult,
+)
 from vyro_growth.services.approval_packets import ApprovalPacketRunResult, ApprovalPacketView
 from vyro_growth.services.booking_plan import BookingPlanJobResult
 from vyro_growth.services.channel_planning import ChannelPlanRunResult, ChannelPlanView
@@ -1649,6 +1653,128 @@ def test_cli_main_runs_generate_approval_packets(
 
     list_code = main(["list-approval-packets"])
     assert list_code == 0
+
+
+def test_parser_accepts_action_readiness() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "action-readiness",
+            "--plan-family",
+            "outreach_enrollment",
+            "--readiness-status",
+            "missing_owner_packet_decision",
+            "--blocker-status",
+            "blocked",
+            "--decision-status",
+            "approved",
+        ]
+    )
+
+    assert args.command == "action-readiness"
+    assert args.plan_family == "outreach_enrollment"
+    assert args.readiness_status == "missing_owner_packet_decision"
+    assert args.blocker_status == "blocked"
+    assert args.decision_status == "approved"
+
+
+def test_cli_main_runs_action_readiness(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    candidate_id = uuid4()
+    artifact_id = uuid4()
+    result = ActionReadinessResult(
+        generated_at=datetime.now(tz=UTC),
+        candidate_count=1,
+        by_readiness_status={"missing_owner_packet_decision": 1},
+        by_plan_family={"outreach_enrollment": 1},
+        by_blocker_status={"blocked": 1},
+        by_decision_status={"approved": 1},
+        dry_run_only=True,
+        no_execution=True,
+        executed_count=0,
+        execution_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        ads_launched=False,
+        live_action=False,
+        read_only=True,
+        explicit_live_owner_action_required=True,
+        operator_halt_status="halted",
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        candidates=(
+            ActionReadinessCandidate(
+                candidate_id=candidate_id,
+                artifact_type="outreach_enrollment_plan",
+                artifact_id=artifact_id,
+                plan_family="outreach_enrollment",
+                sanitized_label="Prepare later owner-approved campaign enrollment",
+                review_decision_status="approved",
+                packet_decision_status="missing",
+                preflight_status="blocked",
+                readiness_status="missing_owner_packet_decision",
+                blocker_status="blocked",
+                dry_run_only=True,
+                no_execution=True,
+                executed=False,
+                execution_attempted=False,
+                outbound_attempted=False,
+                live_call_attempted=False,
+                recommendation_applied=False,
+                spend_attempted=False,
+                campaign_launched=False,
+                pages_published=False,
+                ads_launched=False,
+                owner_approved=False,
+                live_action=False,
+                explicit_live_owner_action_required=True,
+                generated_at=datetime.now(tz=UTC),
+                execution_plan_id=None,
+                approval_packet_id=None,
+                review_decision_id=None,
+                packet_decision_id=None,
+                blocker_codes=("execution_disabled_in_this_phase",),
+                missing_approval_codes=("missing_owner_packet_decision",),
+                missing_prerequisite_codes=(),
+            ),
+        ),
+    )
+
+    class DummyService:
+        def list_queue(
+            self, _db: object, _settings: object, **_kwargs: object
+        ) -> ActionReadinessResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ActionReadinessService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["action-readiness"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "candidates=1" in output
+    assert "executed=0" in output
+    assert "live_action=False" in output
+    assert "read_only=True" in output
+    assert "explicit_live_owner_action_required=True" in output
+    assert f"id={candidate_id}" in output
+    assert f"artifact_id={artifact_id}" in output
+    assert "readiness=missing_owner_packet_decision" in output
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

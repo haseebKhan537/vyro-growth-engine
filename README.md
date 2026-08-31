@@ -719,6 +719,29 @@ The form accepts a decision value, an optional short owner/reviewer label, and o
 
 Rendered HTML is IDs, statuses, timestamps, redacted labels, and sanitized owner notes only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 24 — Approved action readiness queue (read-only)
+
+Show which stored review items, execution plans, and approval packets are theoretically ready, which remain blocked, and why. This layer combines existing records only. It does not generate new artifacts, execute approved items or packets, send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish pages, launch ads, spend money, deploy, apply optimizer recommendations, set live owner-approved state, or change live/scoring/campaign/provider/deployment settings or operator halt state.
+
+CLI:
+```bash
+vyro-growth action-readiness
+vyro-growth action-readiness --plan-family outreach_enrollment --readiness-status missing_owner_packet_decision
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/action-readiness \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/operator-action-readiness?readiness_status=preflight_blocked" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The queue shows candidate/action id, artifact type/id, plan family, review decision status, approval-packet decision status, preflight status, dry-run/no-execution flags, executed/live-action flags (false), blocker and missing-approval codes, timestamps, and sanitized labels. Readiness statuses include `blocked`, `missing_review_decision`, `missing_owner_packet_decision`, `preflight_blocked`, `approved_but_halted`, and `ready_pending_explicit_live_owner_action`. A ready-like status still requires a future explicit owner action before live execution. There are no execute/send/enroll/book/call/publish/spend/deploy controls.
+
+Rendered HTML and JSON are IDs, statuses, counts, timestamps, codes, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

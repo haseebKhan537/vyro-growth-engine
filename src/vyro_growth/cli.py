@@ -26,6 +26,11 @@ from vyro_growth.providers.voice_qualification import (
 )
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
+from vyro_growth.services.action_readiness import (
+    ActionReadinessFilters,
+    ActionReadinessResult,
+    ActionReadinessService,
+)
 from vyro_growth.services.approval_packets import (
     ApprovalPacketError,
     ApprovalPacketFilters,
@@ -381,6 +386,20 @@ def build_parser() -> argparse.ArgumentParser:
         "list-approval-packets",
         help="List the latest owner approval packets (no live action)",
     )
+    readiness = subparsers.add_parser(
+        "action-readiness",
+        help=(
+            "List the read-only approved action readiness queue "
+            "(does not execute approved items or packets)"
+        ),
+    )
+    readiness.add_argument("--plan-family", help="Limit to one execution plan family")
+    readiness.add_argument("--readiness-status", help="Limit to one readiness status")
+    readiness.add_argument("--blocker-status", help="Limit to blocked or phase_safety_only")
+    readiness.add_argument(
+        "--decision-status",
+        help="Limit to one review decision status (approved, rejected, needs_changes, missing)",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -500,6 +519,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "list-approval-packets":
         return _run_list_approval_packets()
+
+    if args.command == "action-readiness":
+        return _run_action_readiness(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1518,6 +1540,52 @@ def _print_approval_packet_result(result: ApprovalPacketRunResult) -> None:
             f"executed={item.executed}",
             f"owner_approval_required={item.owner_approval_required}",
             f"action={item.proposed_action}",
+        )
+
+
+def _run_action_readiness(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    filters = ActionReadinessFilters(
+        plan_family=args.plan_family,
+        readiness_status=args.readiness_status,
+        blocker_status=args.blocker_status,
+        decision_status=args.decision_status,
+    )
+    with SessionLocal() as db:
+        result = ActionReadinessService().list_queue(db, settings, filters=filters)
+    _print_action_readiness(result)
+    return 0
+
+
+def _print_action_readiness(result: ActionReadinessResult) -> None:
+    print(
+        "Action readiness:",
+        f"candidates={result.candidate_count}",
+        f"executed={result.executed_count}",
+        f"dry_run_only={result.dry_run_only}",
+        f"no_execution={result.no_execution}",
+        f"live_action={result.live_action}",
+        f"read_only={result.read_only}",
+        f"explicit_live_owner_action_required={result.explicit_live_owner_action_required}",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"operator_halt={result.operator_halt_status}",
+    )
+    for item in result.candidates:
+        print(
+            "Readiness candidate:",
+            f"id={item.candidate_id}",
+            f"family={item.plan_family}",
+            f"artifact_type={item.artifact_type}",
+            f"artifact_id={item.artifact_id}",
+            f"review={item.review_decision_status}",
+            f"packet={item.packet_decision_status}",
+            f"preflight={item.preflight_status}",
+            f"readiness={item.readiness_status}",
+            f"blockers={item.blocker_status}",
+            f"executed={item.executed}",
+            f"live_action={item.live_action}",
+            f"owner_approved={item.owner_approved}",
+            f"label={item.sanitized_label}",
         )
 
 

@@ -16,22 +16,26 @@ from vyro_growth.observability import sanitize_operator_text
 OPERATOR_DASHBOARD_PATH = "/internal/operator-dashboard"
 OPERATOR_REVIEW_QUEUE_PATH = "/internal/operator-review-queue"
 OPERATOR_APPROVAL_PACKETS_PATH = "/internal/operator-approval-packets"
+OPERATOR_ACTION_READINESS_PATH = "/internal/operator-action-readiness"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
+ACTION_READINESS_JSON_PATH = "/internal/action-readiness"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
-OperatorSurface = Literal["dashboard", "review-queue", "approval-packets"]
+OperatorSurface = Literal["dashboard", "review-queue", "approval-packets", "action-readiness"]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "dashboard": "Dashboard",
     "review-queue": "Review queue",
     "approval-packets": "Approval packets",
+    "action-readiness": "Action readiness",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
     "review-queue": OPERATOR_REVIEW_QUEUE_PATH,
     "approval-packets": OPERATOR_APPROVAL_PACKETS_PATH,
+    "action-readiness": OPERATOR_ACTION_READINESS_PATH,
 }
 
 
@@ -83,8 +87,14 @@ def filter_link(href: str, label: str, *, current: bool) -> str:
 
 
 def render_operator_nav(current: OperatorSurface) -> str:
+    surfaces: tuple[OperatorSurface, ...] = (
+        "dashboard",
+        "review-queue",
+        "approval-packets",
+        "action-readiness",
+    )
     links = []
-    for name in ("dashboard", "review-queue", "approval-packets"):
+    for name in surfaces:
         label = _SURFACE_LABELS[name]
         href = _SURFACE_HREFS[name]
         links.append(filter_link(href, label, current=name == current))

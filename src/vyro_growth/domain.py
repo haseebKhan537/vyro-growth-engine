@@ -412,6 +412,7 @@ class NextActionCode(StrEnum):
     PLAN_APPROVED_EXECUTION = "plan_approved_execution"
     GENERATE_APPROVAL_PACKETS = "generate_approval_packets"
     OWNER_REVIEW_APPROVAL_PACKETS = "owner_review_approval_packets"
+    INSPECT_ACTION_READINESS = "inspect_action_readiness"
     RUN_DISCOVERY_WHEN_READY = "run_discovery_when_ready"
     KEEP_OUTBOUND_DISABLED = "keep_outbound_disabled"
 
@@ -496,6 +497,27 @@ class ApprovalPacketRunStatus(StrEnum):
 class PreflightStatus(StrEnum):
     BLOCKED = "blocked"
     AWAITING_OWNER_DECISION = "awaiting_owner_decision"
+
+
+class ActionReadinessStatus(StrEnum):
+    BLOCKED = "blocked"
+    MISSING_REVIEW_DECISION = "missing_review_decision"
+    MISSING_OWNER_PACKET_DECISION = "missing_owner_packet_decision"
+    PREFLIGHT_BLOCKED = "preflight_blocked"
+    APPROVED_BUT_HALTED = "approved_but_halted"
+    READY_PENDING_EXPLICIT_LIVE_OWNER_ACTION = "ready_pending_explicit_live_owner_action"
+
+
+class ActionReadinessBlockerStatus(StrEnum):
+    BLOCKED = "blocked"
+    PHASE_SAFETY_ONLY = "phase_safety_only"
+
+
+class ActionDecisionStatus(StrEnum):
+    MISSING = "missing"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    NEEDS_CHANGES = "needs_changes"
 
 
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(

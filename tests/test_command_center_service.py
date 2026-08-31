@@ -151,6 +151,7 @@ def test_command_center_summarizes_approval_packets_without_executing(
     assert summary.approval_packets.executed == 0
     codes = {item.code for item in summary.next_actions}
     assert NextActionCode.OWNER_REVIEW_APPROVAL_PACKETS.value in codes
+    assert NextActionCode.INSPECT_ACTION_READINESS.value in codes
     assert NextActionCode.KEEP_OUTBOUND_DISABLED.value in codes
     assert summary.executed_count == 0
     assert summary.outbound_attempted is False
