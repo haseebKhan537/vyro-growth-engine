@@ -196,4 +196,20 @@ OPERATOR_UI_STYLES = """  <style>
       padding: 0.75rem 0.9rem; border-radius: 4px; margin-bottom: 1rem;
     }
     a.row-link { color: #9ec3e6; text-decoration: none; }
+    .success-banner {
+      border: 1px solid #2f4a38; background: #16241c; color: #c4e8d0;
+      padding: 0.75rem 0.9rem; border-radius: 4px; margin-bottom: 1rem;
+    }
+    .form-grid { display: grid; gap: 0.55rem; max-width: 28rem; }
+    .form-grid label { display: grid; gap: 0.2rem; color: #c5cad1; }
+    .form-grid input, .form-grid select, .form-grid textarea {
+      background: #14161a; color: #e6e8eb; border: 1px solid #2a2f38;
+      border-radius: 3px; padding: 0.35rem 0.45rem; font: inherit;
+    }
+    .form-grid textarea { min-height: 4.5rem; }
+    .form-grid button[type="submit"] {
+      justify-self: start; background: #2a3340; color: #fff;
+      border: 1px solid #5b6b7c; border-radius: 3px; padding: 0.35rem 0.7rem;
+      font: inherit; cursor: pointer;
+    }
   </style>"""

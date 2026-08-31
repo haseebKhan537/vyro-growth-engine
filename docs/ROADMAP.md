@@ -280,16 +280,27 @@ Future dashboard-UI work (not in this phase):
 - execute an approved live action from the UI
 - change operator halt, outbound, or live-provider flags
 
-## Phase 21 — Read-only review queue and approval packet UI drilldowns (current)
+## Phase 21 — Read-only review queue and approval packet UI drilldowns
 Internal HTML list/detail views over the existing review queue and owner approval packets. No live action.
 - `GET /internal/operator-review-queue` and artifact detail pages for pending and decided dry-run review items
 - `GET /internal/operator-approval-packets` and packet detail pages for owner approval/preflight rows
-- dashboard links to the drilldowns; no approve, reject, or execute controls
+- dashboard links to the drilldowns
 - read-only filters: artifact type, status, include-decided, plan family, and preflight status
 - empty states and sanitized failure/not-found pages
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - IDs, statuses, timestamps, safe titles/labels/categories, blocked/warning/info counts and codes, required owner decision labels, and dry-run/no-execution flags only
 
+## Phase 22 — Operator review decision UI forms (current)
+Internal HTML decision-record form on review-item detail pages. No execution.
+- `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision` records `approved`, `rejected`, or `needs_changes`
+- optional short reviewer label and reviewer notes, sanitized/redacted before persist and render
+- reuses the existing review-queue decision service and unique decision row
+- POST-redirect-GET plus identical-payload short-circuit so refresh/double-submit does not create extra side effects
+- success/error HTML is sanitized high-level decision metadata only
+- no execute controls; approval-packet pages stay read-only; operator halt is unchanged
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
 Future review/approval-UI work (not in this phase):
-- approve, reject, or execute from the HTML pages
+- execute an approved item from the HTML pages
+- approve owner approval packets for live readiness
 - change operator halt, outbound, or live-provider flags

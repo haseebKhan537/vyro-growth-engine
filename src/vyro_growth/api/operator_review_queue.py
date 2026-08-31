@@ -1,21 +1,24 @@
-"""Read-only operator review-queue HTML drilldown.
+"""Operator review-queue HTML drilldown and decision-record form.
 
-Phase 21 renders pending and decided dry-run review artifacts as internal
-HTML pages. It never records a new decision, never executes an artifact, and
-never sends email, enrolls campaigns, generates sendable replies, books
-meetings, creates video-meet links, places calls, publishes content, launches
-ads, spends money, deploys, applies optimizer recommendations, or changes
-live/scoring/campaign/provider/deployment settings or operator halt state.
+Phase 22 renders pending and decided dry-run review artifacts as internal
+HTML pages and lets an operator record approve/reject/needs_changes on a
+detail page. Recording a decision never executes an artifact and never sends
+email, enrolls campaigns, generates sendable replies, books meetings, creates
+video-meet links, places calls, publishes content, launches ads, spends money,
+deploys, applies optimizer recommendations, or changes live/scoring/campaign/
+provider/deployment settings or operator halt state.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from html import escape
 from typing import Literal, Never
+from urllib.parse import parse_qs
 from uuid import UUID
 
 import structlog
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.operator_ui import (
@@ -40,8 +43,14 @@ from vyro_growth.api.review_queue import (
     review_item_to_response,
 )
 from vyro_growth.config import Settings
-from vyro_growth.domain import ReviewArtifactType, ReviewItemStatus
-from vyro_growth.services.review_queue import ReviewQueueService
+from vyro_growth.domain import ReviewArtifactType, ReviewDecisionStatus, ReviewItemStatus
+from vyro_growth.services.review_queue import (
+    MAX_NOTES_LENGTH,
+    ReviewItem,
+    ReviewQueueError,
+    ReviewQueueService,
+    sanitize_operator_text,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -70,6 +79,21 @@ _STATUS_LABELS: dict[ReviewStatusFilter, str] = {
     "needs_changes": "Needs changes",
 }
 _ARTIFACT_TYPES: tuple[str, ...] = tuple(item.value for item in ReviewArtifactType)
+DECISION_VALUES: tuple[str, ...] = tuple(item.value for item in ReviewDecisionStatus)
+OPERATOR_UI_DECISION_SOURCE = "operator_ui"
+MAX_FORM_BYTES = 8192
+MAX_REVIEWER_LENGTH = 120
+GENERIC_DECISION_ERROR = "Decision must be approved, rejected, or needs_changes."
+GENERIC_FORM_ERROR = "The decision could not be recorded."
+GENERIC_NOT_REVIEWABLE_ERROR = "This item is not available for a decision record."
+DecisionValue = Literal["approved", "rejected", "needs_changes"]
+
+
+@dataclass(frozen=True)
+class DecisionFormValues:
+    decision: DecisionValue | None = None
+    reviewer: str = ""
+    reviewer_notes: str = ""
 
 
 def _unreachable(value: object) -> Never:
@@ -131,6 +155,36 @@ def review_item_href(artifact_type: str, artifact_id: UUID) -> str:
     return f"{OPERATOR_REVIEW_QUEUE_PATH}/{escape(artifact_type)}/{artifact_id}"
 
 
+def review_item_decision_href(artifact_type: str, artifact_id: UUID) -> str:
+    return f"{OPERATOR_REVIEW_QUEUE_PATH}/{artifact_type}/{artifact_id}/decision"
+
+
+def review_item_recorded_href(artifact_type: str, artifact_id: UUID) -> str:
+    return f"{OPERATOR_REVIEW_QUEUE_PATH}/{artifact_type}/{artifact_id}?decision_recorded=1"
+
+
+def parse_form_decision(value: str | None) -> DecisionValue | None:
+    match value:
+        case "approved" | "rejected" | "needs_changes":
+            return value
+        case _:
+            return None
+
+
+def parse_urlencoded_form(body: bytes) -> dict[str, str]:
+    if not body:
+        return {}
+    try:
+        parsed = parse_qs(
+            body.decode("utf-8", errors="replace"),
+            keep_blank_values=True,
+            max_num_fields=16,
+        )
+    except ValueError:
+        return {}
+    return {key: values[0] if values else "" for key, values in parsed.items()}
+
+
 def render_review_queue_error() -> str:
     return render_failure_page(
         page_id="operator-review-queue-error",
@@ -190,7 +244,13 @@ def render_review_queue_list(
     )
 
 
-def render_review_item_detail(item: ReviewItemResponse) -> str:
+def render_review_item_detail(
+    item: ReviewItemResponse,
+    *,
+    decision_recorded: bool = False,
+    form_error: str | None = None,
+    form_values: DecisionFormValues | None = None,
+) -> str:
     generated = html_escape(format_dt(item.created_at))
     decision = item.decision
     decision_block = (
@@ -200,6 +260,7 @@ def render_review_item_detail(item: ReviewItemResponse) -> str:
             f"        {metric('Reviewer', decision.reviewer)}\n"
             f"        {metric('Source', decision.source)}\n"
             f"        {metric('Decided at', format_dt(decision.decided_at))}\n"
+            f"        {metric('Executed', yes_no(item.executed))}\n"
             "      </div>\n"
             + (
                 f'      <p class="hint">Reviewer notes: '
@@ -209,11 +270,14 @@ def render_review_item_detail(item: ReviewItemResponse) -> str:
             )
         )
         if decision is not None
-        else '<p class="empty-state">No recorded decision yet. This page does not add one.</p>'
+        else '<p class="empty-state">No recorded decision yet.</p>'
     )
     labels = "".join(f"<li>{titleize(label)}</li>" for label in item.risk_labels)
     if not labels:
         labels = '<li class="empty">No risk labels.</li>'
+    saved_banner = (
+        _render_decision_saved_banner(item) if decision_recorded and decision is not None else ""
+    )
     return (
         "<!DOCTYPE html>\n"
         '<html lang="en">\n'
@@ -224,14 +288,16 @@ def render_review_item_detail(item: ReviewItemResponse) -> str:
         f"{OPERATOR_UI_STYLES}\n"
         "</head>\n"
         "<body>\n"
-        '  <main id="operator-review-item" data-read-only="true">\n'
+        '  <main id="operator-review-item" data-decision-record-only="true" '
+        'data-execution="false">\n'
         '    <header class="page-header">\n'
         "      <div>\n"
         "        <h1>Review item</h1>\n"
-        '        <p class="lede">Read-only dry-run artifact. No execution.</p>\n'
+        '        <p class="lede">Decision-record only. No execution.</p>\n'
         "      </div>\n"
         f'      <p class="meta">Created {generated}</p>\n'
         "    </header>\n"
+        f"{saved_banner}"
         f"{render_operator_nav('review-queue')}\n"
         '    <section class="panel">\n'
         "      <h2>Safe detail</h2>\n"
@@ -254,9 +320,8 @@ def render_review_item_detail(item: ReviewItemResponse) -> str:
         f'      <ul class="plain">{labels}</ul>\n'
         "      <h3>Recorded decision</h3>\n"
         f"      {decision_block}\n"
-        '      <p class="hint">There are no approve, reject, or execute controls '
-        "on this page.</p>\n"
         "    </section>\n"
+        f"{_render_decision_form(item, form_error=form_error, form_values=form_values)}\n"
         '    <p><a class="nav-link" href="'
         f'{escape(OPERATOR_REVIEW_QUEUE_PATH)}">Back to review queue</a></p>\n'
         "  </main>\n"
@@ -309,6 +374,7 @@ def build_operator_review_item_response(
     *,
     artifact_type: str,
     artifact_id: str,
+    decision_recorded: bool = False,
     service: ReviewQueueService | None = None,
 ) -> HTMLResponse:
     try:
@@ -336,15 +402,252 @@ def build_operator_review_item_response(
                 status_code=404,
                 headers=NO_STORE_HEADERS,
             )
-        html = render_review_item_detail(review_item_to_response(item))
+        html = render_review_item_detail(
+            review_item_to_response(item),
+            decision_recorded=decision_recorded,
+        )
         return HTMLResponse(content=html, status_code=200, headers=NO_STORE_HEADERS)
     except Exception:
-        logger.exception("operator_review_item_render_failed", read_only=True)
+        logger.exception("operator_review_item_render_failed", execution=False)
         return HTMLResponse(
             content=render_review_queue_error(),
             status_code=500,
             headers=NO_STORE_HEADERS,
         )
+
+
+def build_operator_review_decision_response(
+    db: Session,
+    settings: Settings,
+    *,
+    artifact_type: str,
+    artifact_id: str,
+    form_body: bytes,
+    service: ReviewQueueService | None = None,
+) -> HTMLResponse | RedirectResponse:
+    parsed_type = parse_review_artifact_type(artifact_type)
+    try:
+        parsed_id = UUID(artifact_id)
+    except ValueError:
+        parsed_id = None
+    if parsed_type is None or parsed_id is None:
+        return HTMLResponse(
+            content=render_review_item_missing(),
+            status_code=404,
+            headers=NO_STORE_HEADERS,
+        )
+    queue = service or ReviewQueueService()
+    try:
+        item = queue.get_item(
+            db,
+            settings,
+            artifact_type=parsed_type,
+            artifact_id=parsed_id,
+        )
+        if item is None:
+            return HTMLResponse(
+                content=render_review_item_missing(),
+                status_code=404,
+                headers=NO_STORE_HEADERS,
+            )
+        if len(form_body) > MAX_FORM_BYTES:
+            return _decision_form_error(
+                item,
+                GENERIC_FORM_ERROR,
+                form_values=DecisionFormValues(),
+            )
+        form = parse_urlencoded_form(form_body)
+        decision = parse_form_decision(form.get("decision"))
+        reviewer_raw = _clip(form.get("reviewer"), MAX_REVIEWER_LENGTH)
+        notes_raw = _clip(form.get("reviewer_notes"), MAX_NOTES_LENGTH)
+        form_values = DecisionFormValues(
+            decision=decision,
+            reviewer=sanitize_operator_text(reviewer_raw) or "",
+            reviewer_notes=sanitize_operator_text(notes_raw) or "",
+        )
+        if decision is None:
+            return _decision_form_error(item, GENERIC_DECISION_ERROR, form_values=form_values)
+        if _same_recorded_decision(item, decision, reviewer_raw, notes_raw):
+            return _decision_recorded_redirect(parsed_type, parsed_id)
+        try:
+            queue.record_decision(
+                db,
+                artifact_type=parsed_type,
+                artifact_id=parsed_id,
+                decision=decision,
+                reviewer=reviewer_raw,
+                source=OPERATOR_UI_DECISION_SOURCE,
+                reviewer_notes=notes_raw,
+            )
+        except ReviewQueueError as exc:
+            logger.info(
+                "operator_review_decision_rejected",
+                code=exc.code,
+                execution=False,
+            )
+            return _decision_service_error(exc, item)
+        return _decision_recorded_redirect(parsed_type, parsed_id)
+    except Exception:
+        logger.exception("operator_review_decision_failed", execution=False)
+        return HTMLResponse(
+            content=render_review_queue_error(),
+            status_code=500,
+            headers=NO_STORE_HEADERS,
+        )
+
+
+def _clip(value: str | None, limit: int) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    return cleaned[:limit]
+
+
+def _same_recorded_decision(
+    item: ReviewItem,
+    decision: DecisionValue,
+    reviewer: str | None,
+    notes: str | None,
+) -> bool:
+    existing = item.decision
+    if existing is None:
+        return False
+    reviewer_name = sanitize_operator_text(reviewer) or "operator"
+    notes_value = sanitize_operator_text(notes)
+    return (
+        existing.decision == decision
+        and existing.reviewer == reviewer_name
+        and existing.reviewer_notes == notes_value
+    )
+
+
+def _decision_recorded_redirect(artifact_type: str, artifact_id: UUID) -> RedirectResponse:
+    return RedirectResponse(
+        url=review_item_recorded_href(artifact_type, artifact_id),
+        status_code=303,
+        headers=NO_STORE_HEADERS,
+    )
+
+
+def _decision_form_error(
+    item: ReviewItem,
+    message: str,
+    *,
+    form_values: DecisionFormValues | None = None,
+) -> HTMLResponse:
+    html = render_review_item_detail(
+        review_item_to_response(item),
+        form_error=message,
+        form_values=form_values,
+    )
+    return HTMLResponse(content=html, status_code=400, headers=NO_STORE_HEADERS)
+
+
+def _decision_service_error(exc: ReviewQueueError, item: ReviewItem) -> HTMLResponse:
+    match exc.code:
+        case "artifact_not_found" | "unknown_artifact_type":
+            return HTMLResponse(
+                content=render_review_item_missing(),
+                status_code=404,
+                headers=NO_STORE_HEADERS,
+            )
+        case "invalid_decision":
+            return _decision_form_error(item, GENERIC_DECISION_ERROR)
+        case "artifact_not_reviewable":
+            return _decision_form_error(item, GENERIC_NOT_REVIEWABLE_ERROR)
+        case _:
+            return _decision_form_error(item, GENERIC_FORM_ERROR)
+
+
+def _render_decision_saved_banner(item: ReviewItemResponse) -> str:
+    decision = item.decision
+    if decision is None:
+        return ""
+    notes = (
+        f'      <p class="hint">Reviewer notes: {html_escape(decision.reviewer_notes)}</p>\n'
+        if decision.reviewer_notes
+        else ""
+    )
+    return (
+        '    <div class="success-banner" id="decision-recorded">\n'
+        "      <p>Decision recorded. No execution was attempted.</p>\n"
+        '      <div class="metric-grid">\n'
+        f"        {metric('Decision', decision.decision)}\n"
+        f"        {metric('Reviewer', decision.reviewer)}\n"
+        f"        {metric('Source', decision.source)}\n"
+        f"        {metric('Decided at', format_dt(decision.decided_at))}\n"
+        f"        {metric('Executed', yes_no(item.executed))}\n"
+        f"        {metric('Outbound attempted', 'no')}\n"
+        "      </div>\n"
+        f"{notes}"
+        "    </div>\n"
+    )
+
+
+def _render_decision_form(
+    item: ReviewItemResponse,
+    *,
+    form_error: str | None = None,
+    form_values: DecisionFormValues | None = None,
+) -> str:
+    action = review_item_decision_href(item.artifact_type, item.artifact_id)
+    selected = (
+        form_values.decision
+        if form_values is not None and form_values.decision is not None
+        else (item.decision.decision if item.decision is not None else "")
+    )
+    reviewer = (
+        form_values.reviewer
+        if form_values is not None
+        else (item.decision.reviewer if item.decision is not None else "")
+    )
+    notes = (
+        form_values.reviewer_notes
+        if form_values is not None
+        else (item.decision.reviewer_notes if item.decision is not None else "")
+    )
+    error_html = (
+        f'      <p class="banner" id="decision-form-error">{html_escape(form_error)}</p>\n'
+        if form_error
+        else ""
+    )
+    options: list[str] = []
+    for value in DECISION_VALUES:
+        mark = " selected" if selected == value else ""
+        options.append(f'<option value="{escape(value)}"{mark}>{escape(value)}</option>')
+    return (
+        '    <section class="panel" id="decision-form">\n'
+        "      <h2>Record decision</h2>\n"
+        '      <p class="hint">Records an operator decision only. This does not execute '
+        "the artifact, send email, enroll campaigns, book meetings, place calls, "
+        "publish content, launch ads, spend money, deploy, or change operator halt "
+        "state.</p>\n"
+        f"{error_html}"
+        f'      <form method="post" action="{escape(action)}" '
+        'id="operator-review-decision-form" autocomplete="off">\n'
+        '        <div class="form-grid">\n'
+        "          <label>Decision\n"
+        '            <select name="decision" required>\n'
+        f"              {''.join(options)}\n"
+        "            </select>\n"
+        "          </label>\n"
+        "          <label>Reviewer\n"
+        f'            <input name="reviewer" maxlength="{MAX_REVIEWER_LENGTH}" '
+        f'value="{html_escape(reviewer, empty="")}" autocomplete="off">\n'
+        "          </label>\n"
+        "          <label>Reviewer notes\n"
+        f'            <textarea name="reviewer_notes" maxlength="{MAX_NOTES_LENGTH}">'
+        f"{html_escape(notes, empty="")}</textarea>\n"
+        "          </label>\n"
+        '          <button type="submit">Record decision</button>\n'
+        "        </div>\n"
+        "      </form>\n"
+        '      <p class="hint">This form records a decision only. There is no execute '
+        "control.</p>\n"
+        "    </section>"
+    )
 
 
 def _render_list_header(queue: ReviewQueueResponse, generated: str) -> str:

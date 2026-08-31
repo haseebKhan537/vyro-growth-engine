@@ -2,8 +2,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.approval_packets import (
@@ -57,6 +57,7 @@ from vyro_growth.api.operator_approval_packets import (
 )
 from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.operator_review_queue import (
+    build_operator_review_decision_response,
     build_operator_review_item_response,
     build_operator_review_queue_response,
 )
@@ -197,6 +198,7 @@ def operator_review_queue_item(
     artifact_id: str,
     db: DbSession,
     x_internal_api_key: Annotated[str | None, Header()] = None,
+    decision_recorded: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
@@ -205,6 +207,32 @@ def operator_review_queue_item(
         active_settings,
         artifact_type=artifact_type,
         artifact_id=artifact_id,
+        decision_recorded=decision_recorded,
+    )
+
+
+@app.post(
+    "/internal/operator-review-queue/{artifact_type}/{artifact_id}/decision",
+    tags=["internal"],
+    response_class=HTMLResponse,
+    response_model=None,
+)
+async def operator_review_queue_decision(
+    artifact_type: str,
+    artifact_id: str,
+    request: Request,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse | RedirectResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    form_body = await request.body()
+    return build_operator_review_decision_response(
+        db,
+        active_settings,
+        artifact_type=artifact_type,
+        artifact_id=artifact_id,
+        form_body=form_body,
     )
 
 
