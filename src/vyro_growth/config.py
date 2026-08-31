@@ -169,6 +169,18 @@ def any_live_provider_enabled(settings: Settings) -> bool:
     return any(live_provider_flags(settings).values())
 
 
+def credential_presence_flags(settings: Settings) -> dict[str, bool]:
+    """Boolean presence of local credentials. Never returns secret values."""
+
+    return {
+        "internal_api_key": bool(settings.internal_api_key.strip()),
+        "generative_ai_api_key": bool(settings.openai_api_key.strip()),
+        "campaign_provider_api_key": bool(settings.smartlead_api_key.strip()),
+        "calendar_api_key": bool(settings.google_calendar_api_key.strip()),
+        "voice_api_key": bool(settings.voice_api_key.strip()),
+    }
+
+
 def validate_runtime_settings(settings: Settings) -> tuple[str, ...]:
     """Return fail-closed configuration issues. Does not call external providers."""
 

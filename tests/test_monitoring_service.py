@@ -64,6 +64,8 @@ def test_empty_status_is_zeroed_and_safe(db_session: Session) -> None:
         "voice_qualification_plans",
         "acquisition_channel_plans",
         "content_briefs",
+        "execution_plans",
+        "approval_packets",
     }
     assert all(run.status == "not_started" for run in snapshot.latest_runs)
     codes = {item.code for item in snapshot.findings}

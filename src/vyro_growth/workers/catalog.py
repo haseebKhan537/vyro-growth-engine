@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from vyro_growth.workers.approval_packet_handler import GENERATE_APPROVAL_PACKETS_JOB
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
@@ -94,6 +95,11 @@ DEPLOYABLE_JOBS: tuple[WorkerJobSpec, ...] = (
         GENERATE_EXECUTION_PLANS_JOB,
         "plan-approved-execution",
         "Dry-run execution plans for approved review artifacts",
+    ),
+    WorkerJobSpec(
+        GENERATE_APPROVAL_PACKETS_JOB,
+        "generate-approval-packets",
+        "Live-readiness preflight and owner approval packets",
     ),
 )
 

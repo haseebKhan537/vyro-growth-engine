@@ -398,6 +398,7 @@ class FindingCode(StrEnum):
     OPERATOR_HALT_ACTIVE = "operator_halt_active"
     SAFE_DEFAULTS = "safe_defaults"
     EXECUTION_PLANS_DRY_RUN = "execution_plans_dry_run"
+    APPROVAL_PACKETS_DRY_RUN = "approval_packets_dry_run"
 
 
 class ReviewArtifactType(StrEnum):
@@ -469,6 +470,17 @@ class ExecutionPlanType(StrEnum):
 class ExecutionReadinessStatus(StrEnum):
     BLOCKED = "blocked"
     AWAITING_OWNER_APPROVAL = "awaiting_owner_approval"
+
+
+class ApprovalPacketRunStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class PreflightStatus(StrEnum):
+    BLOCKED = "blocked"
+    AWAITING_OWNER_DECISION = "awaiting_owner_decision"
 
 
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(

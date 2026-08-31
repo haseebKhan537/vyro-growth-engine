@@ -19,6 +19,7 @@ from vyro_growth.domain import (
 )
 from vyro_growth.models import (
     Activity,
+    ApprovalPacketRun,
     BookingPlan,
     BookingPlanRun,
     CampaignEnrollment,
@@ -33,6 +34,7 @@ from vyro_growth.models import (
     OptimizerRecommendation,
     OptimizerRun,
     OutreachPlanRun,
+    OwnerApprovalPacket,
     PersonalizationDraft,
     VoiceQualificationPlan,
     VoiceQualificationRun,
@@ -44,6 +46,7 @@ from vyro_growth.providers.website import WEBSITE_ENRICHMENT_SOURCE
 from vyro_growth.services.dashboard import DashboardAnalyticsService, SafetyCard
 from vyro_growth.services.operator_halt import HaltStatus
 from vyro_growth.services.readiness import ReadinessPayload, assess_readiness
+from vyro_growth.workers.approval_packet_handler import GENERATE_APPROVAL_PACKETS_JOB
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
@@ -81,6 +84,7 @@ PHASE_JOB_NAMES: dict[str, str] = {
     "acquisition_channel_plans": GENERATE_CHANNEL_PLANS_JOB,
     "content_briefs": GENERATE_CONTENT_BRIEFS_JOB,
     "execution_plans": GENERATE_EXECUTION_PLANS_JOB,
+    "approval_packets": GENERATE_APPROVAL_PACKETS_JOB,
 }
 
 
@@ -210,12 +214,16 @@ class OperatorMonitoringService:
         readiness = self._readiness(readiness_payload, safety)
         activity_summary = self._activity_summary(db)
         execution_plans = _count_rows(db, ExecutionPlan, ExecutionPlan.executed.is_(False))
+        approval_packets = _count_rows(
+            db, OwnerApprovalPacket, OwnerApprovalPacket.executed.is_(False)
+        )
         findings = self._findings(
             safety=safety,
             readiness=readiness,
             pending=pending,
             failures=failures,
             execution_plans=execution_plans,
+            approval_packets=approval_packets,
         )
         snapshot = MonitoringSnapshot(
             generated_at=datetime.now(tz=UTC),
@@ -355,6 +363,31 @@ class OperatorMonitoringService:
                     run_id=execution_run.id,
                 )
             )
+        packet_run = _latest_row(db, ApprovalPacketRun)
+        if packet_run is None:
+            runs.append(
+                LatestJobStatus(
+                    phase="approval_packets",
+                    job_name=PHASE_JOB_NAMES["approval_packets"],
+                    implemented=True,
+                    status="not_started",
+                    started_at=None,
+                    finished_at=None,
+                    run_id=None,
+                )
+            )
+        else:
+            runs.append(
+                LatestJobStatus(
+                    phase="approval_packets",
+                    job_name=PHASE_JOB_NAMES["approval_packets"],
+                    implemented=True,
+                    status=packet_run.status,
+                    started_at=packet_run.started_at,
+                    finished_at=packet_run.finished_at,
+                    run_id=packet_run.id,
+                )
+            )
         return tuple(runs)
 
     def _recent_failures(self, db: Session) -> tuple[SanitizedFailure, ...]:
@@ -379,6 +412,7 @@ class OperatorMonitoringService:
             ("acquisition_channel_plans", ChannelPlanRun, None),
             ("content_briefs", ContentBriefRun, None),
             ("execution_plans", ExecutionPlanRun, None),
+            ("approval_packets", ApprovalPacketRun, None),
         )
         for phase, model, extra in sources:
             stmt = select(model).where(model.status == FAILED_STATUS)
@@ -500,6 +534,7 @@ class OperatorMonitoringService:
         pending: PendingReviewCounts,
         failures: tuple[SanitizedFailure, ...],
         execution_plans: int,
+        approval_packets: int,
     ) -> tuple[OperationalFinding, ...]:
         findings: list[OperationalFinding] = []
         if safety.outbound_enabled:
@@ -586,6 +621,18 @@ class OperatorMonitoringService:
                         "None were executed."
                     ),
                     phase="execution_plans",
+                )
+            )
+        if approval_packets:
+            findings.append(
+                OperationalFinding(
+                    FindingSeverity.INFO,
+                    FindingCode.APPROVAL_PACKETS_DRY_RUN,
+                    (
+                        f"{approval_packets} owner approval packet(s) exist. "
+                        "None were executed."
+                    ),
+                    phase="approval_packets",
                 )
             )
         if safety.operator_halt_status == HaltStatus.HALTED.value:

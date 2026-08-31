@@ -180,6 +180,16 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Keep `executed`, `execution_attempted`, outbound, call, spend, launch, publish, and apply flags false.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by execution planning.
 
+## Owner approval packet integrity
+- Phase 18 owner approval packets are live-readiness records only. They never perform the underlying live action.
+- Do not send email, enroll live campaigns, generate sendable autonomous replies, create calendar events, create Google Meet links, place calls, publish pages or content, launch ads, spend money, deploy, apply optimizer recommendations, or change scoring/campaign/provider settings.
+- Do not call OpenAI, Smartlead, Apollo, Google Calendar, Google Ads, Search Console, Analytics, SEO/search, voice providers, or other paid/external providers from this layer.
+- Preflight inspects only dry-run execution plans and safe local/config metadata. Report setting presence as boolean only. Never print API keys, tokens, provider secrets, or environment secret values.
+- Do not invent prospect facts. Missing facts remain missing.
+- Do not return message bodies, personalization copy, emails, phones, evidence snippets, API keys, provider secrets, or PHI in API/CLI output.
+- Keep `executed`, `execution_attempted`, outbound, call, spend, launch, publish, and apply flags false.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by approval-packet generation.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

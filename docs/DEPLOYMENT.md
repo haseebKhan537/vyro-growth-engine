@@ -88,6 +88,7 @@ Current revision chain (do not skip):
 13. `013_channel_plans`
 14. `014_content_briefs`
 15. `015_execution_plans`
+16. `016_approval_packets`
 
 Check status:
 
