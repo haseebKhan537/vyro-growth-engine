@@ -12,6 +12,7 @@ After PostgreSQL is up and migrations are applied:
 vyro-growth operator-command-center
 vyro-growth launch-readiness
 vyro-growth settings-change-requests
+vyro-growth settings-execution-preflight
 vyro-growth action-readiness
 vyro-growth system-status
 ```
@@ -35,11 +36,13 @@ curl http://localhost:8000/internal/launch-readiness \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/settings-change-requests \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/settings-execution-preflight \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/monitoring/status \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 ```
 
-CLI does not use the HTTP key. `vyro-growth launch-readiness` is the owner-facing sanitized launch checklist and secret inventory; `vyro-growth settings-change-requests` is the record-only live settings change queue; `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `GET /internal/operator-review-queue` and `GET /internal/operator-approval-packets` are HTML drilldowns; `GET /internal/operator-action-readiness` is the read-only approved action readiness queue; `GET /internal/operator-settings-change-requests` is the record-only settings change request UI; review-item detail pages can record a decision only via `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`; approval-packet detail pages can record a decision only via `POST /internal/operator-approval-packets/{packet_id}/decision`; settings-change detail pages can record a decision only via `POST /internal/operator-settings-change-requests/{request_id}/decision`; `system-status` remains the detailed monitoring snapshot. Decision recording does not execute artifacts, packets, or settings requests. The readiness queue and launch checklist do not execute.
+CLI does not use the HTTP key. `vyro-growth launch-readiness` is the owner-facing sanitized launch checklist and secret inventory; `vyro-growth settings-change-requests` is the record-only live settings change queue; `vyro-growth settings-execution-preflight` is a dry-run simulator of remaining settings-execution blockers and is not permission to go live; `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `GET /internal/operator-review-queue` and `GET /internal/operator-approval-packets` are HTML drilldowns; `GET /internal/operator-action-readiness` is the read-only approved action readiness queue; `GET /internal/operator-settings-change-requests` is the record-only settings change request UI; review-item detail pages can record a decision only via `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`; approval-packet detail pages can record a decision only via `POST /internal/operator-approval-packets/{packet_id}/decision`; settings-change detail pages can record a decision only via `POST /internal/operator-settings-change-requests/{request_id}/decision`; `system-status` remains the detailed monitoring snapshot. Decision recording does not execute artifacts, packets, or settings requests. The readiness queue, launch checklist, and settings-execution preflight do not execute.
 
 ## What the snapshot includes
 
@@ -68,7 +71,7 @@ Output is counts, statuses, timestamps, and sanitized messages only. It does not
 1. Confirm `.env` / runtime env still has `OUTBOUND_ENABLED=false` and every live-provider flag false. See `docs/DEPLOYMENT.md`.
 2. `vyro-growth check-config`
 3. Probe `/health` and `/ready`
-4. `vyro-growth launch-readiness`, `vyro-growth operator-command-center`, open `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `GET /internal/operator-approval-packets`, `GET /internal/operator-action-readiness`, `GET /internal/operator-settings-change-requests`, and `vyro-growth system-status`
+4. `vyro-growth launch-readiness`, `vyro-growth settings-execution-preflight`, `vyro-growth operator-command-center`, open `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `GET /internal/operator-approval-packets`, `GET /internal/operator-action-readiness`, `GET /internal/operator-settings-change-requests`, and `vyro-growth system-status`
 5. Review `blocked` and `warning` findings and next-action labels. Do not enable outbound to "clear" them.
 6. Review pending drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs on their existing dry-run surfaces. Approval does not publish pages or launch ads. `vyro-growth plan-approved-execution` records a dry-run plan only and does not execute. `vyro-growth generate-approval-packets` records a live-readiness packet only and does not execute.
 7. Optionally run `vyro-growth smoke-dry-run --local-only` on a developer machine. It uses an isolated in-memory demo database and is not a production workflow. Pull-request CI already runs that command as job `smoke-dry-run` with live flags disabled and `vyro-growth check-smoke-output` as the sanitization gate.

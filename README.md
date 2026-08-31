@@ -67,6 +67,7 @@ mypy src
 pytest -q
 vyro-growth smoke-dry-run --local-only --json
 vyro-growth launch-readiness --json
+vyro-growth settings-execution-preflight --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -846,6 +847,30 @@ curl -X POST http://localhost:8000/internal/operator-settings-change-requests/<r
 The Phase 20 dashboard, command-center next-action labels, and launch-readiness next-action labels link to this queue. Filters include request type, status, and owner decision status. Detail pages show sanitized request type, status, owner decision status, requested setting names, desired boolean/status, finding/next-action codes, timestamps, source, and record-only/no-execution flags. The form accepts a decision value, an optional short owner/reviewer label, and optional notes. Notes are sanitized/redacted before they are stored and again before they are rendered. A successful submit redirects to the detail page and shows the saved high-level decision metadata. Submitting the same decision twice, or refreshing after redirect, does not create a second decision row or apply anything. Invalid decisions and missing requests return generic sanitized HTML. There is no apply, execute, enable outbound, or lift-halt control.
 
 Rendered HTML is IDs, statuses, setting names, codes, timestamps, redacted labels, and sanitized owner notes only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 30 — Approved settings execution preflight simulator (dry-run only)
+
+Evaluate recorded settings-change requests and owner decisions and explain what would still block real execution. This layer does not apply settings, lift operator halt, enable outbound, execute requests, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, deploy, or call live providers. It is not permission or machinery for going live.
+
+CLI:
+```bash
+vyro-growth settings-execution-preflight
+vyro-growth settings-execution-preflight --json
+vyro-growth settings-execution-preflight --json --decision-status approved
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/settings-execution-preflight \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/settings-execution-preflight?decision_status=approved" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized console or JSON simulation: request IDs, request types, decision status, setting names, desired booleans/statuses, blocker/gate codes, missing credential names, timestamps, counts, and no-execution flags. Live execution gates stay closed. `execution_allowed` remains false because a future explicitly approved execution phase does not exist. There is no apply/execute endpoint or button.
+
+JSON is IDs, statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 

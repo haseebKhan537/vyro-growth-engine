@@ -274,6 +274,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Render request type, status, owner decision status, setting names, desired boolean/status, finding/next-action codes, timestamps, source, record-only/no-execution flags, and safe counts only.
 - Do not render secret values, environment values, API keys, tokens, provider secrets, message bodies, full outreach draft copy, real emails, real phones, evidence snippets, PHI, or unsafe raw error text.
 
+## Settings execution preflight integrity
+- Phase 30 settings-execution preflight is a dry-run simulator over recorded settings change requests and owner decisions. It never performs a live workflow.
+- Do not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign live settings, scoring thresholds, or operator halt.
+- Do not apply settings, execute settings requests, set live `owner_approved`, execute review items/approval packets, send email, enroll campaigns, generate sendable autonomous replies, place calls, book meetings, create Google Meet links, publish content, launch ads, spend money, or deploy.
+- Do not call GitHub Actions, OpenAI, NPPES/search, Apollo, Smartlead, Google Calendar, Google Ads, Search Console, Analytics, SEO/search, deployment, or voice providers in CI/defaults.
+- Print request IDs, request types, decision status, setting names, desired booleans/statuses, blocker/gate codes, missing credential names, timestamps, counts, and no-execution flags only.
+- Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
+- `execution_allowed=false` is not permission or machinery for going live. A future explicitly approved execution phase does not exist in this phase.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

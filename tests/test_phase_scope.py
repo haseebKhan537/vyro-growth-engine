@@ -74,6 +74,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "domain.py",
         "launch_readiness.py",
         "settings_change_requests.py",
+        "settings_execution_preflight.py",
     }
     calendar_boundary = {
         "config.py",
@@ -93,6 +94,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "monitoring.py",
         "launch_readiness.py",
         "settings_change_requests.py",
+        "settings_execution_preflight.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -112,6 +114,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "monitoring.py",
         "launch_readiness.py",
         "settings_change_requests.py",
+        "settings_execution_preflight.py",
     }
     forbidden = (
         "apollo",
@@ -353,6 +356,26 @@ def test_settings_change_requests_do_not_call_live_providers() -> None:
         Path("tests/test_settings_change_request_migration.py"),
         Path("tests/test_operator_settings_change_requests_api.py"),
         Path("tests/test_operator_settings_change_decision_api.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
+def test_settings_execution_preflight_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/settings_execution_preflight.py"),
+        Path("src/vyro_growth/api/settings_execution_preflight.py"),
+        Path("tests/test_settings_execution_preflight_service.py"),
+        Path("tests/test_settings_execution_preflight_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
