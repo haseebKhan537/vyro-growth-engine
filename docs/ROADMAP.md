@@ -290,17 +290,28 @@ Internal HTML list/detail views over the existing review queue and owner approva
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - IDs, statuses, timestamps, safe titles/labels/categories, blocked/warning/info counts and codes, required owner decision labels, and dry-run/no-execution flags only
 
-## Phase 22 — Operator review decision UI forms (current)
+## Phase 22 — Operator review decision UI forms
 Internal HTML decision-record form on review-item detail pages. No execution.
 - `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision` records `approved`, `rejected`, or `needs_changes`
 - optional short reviewer label and reviewer notes, sanitized/redacted before persist and render
 - reuses the existing review-queue decision service and unique decision row
 - POST-redirect-GET plus identical-payload short-circuit so refresh/double-submit does not create extra side effects
 - success/error HTML is sanitized high-level decision metadata only
-- no execute controls; approval-packet pages stay read-only; operator halt is unchanged
+- no execute controls; operator halt is unchanged
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 23 — Owner approval packet decision UI (current)
+Internal HTML decision-record form on approval-packet detail pages. No execution.
+- `POST /internal/operator-approval-packets/{packet_id}/decision` records `approved`, `rejected`, or `needs_changes`
+- optional short owner/reviewer label and notes, sanitized/redacted before persist and render
+- reuses/extends the existing approval-packet service with a decision-record-only path and unique decision row
+- POST-redirect-GET plus identical-payload short-circuit so refresh/double-submit does not create extra side effects
+- success/error HTML is sanitized high-level decision metadata only
+- recording `approved` does not execute the packet or set live `owner_approved`
+- approval-packet list pages and review-queue decision UI stay as they are
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future review/approval-UI work (not in this phase):
-- execute an approved item from the HTML pages
-- approve owner approval packets for live readiness
+- execute an approved item or packet from the HTML pages
+- treat an approval-packet decision as live owner approval
 - change operator halt, outbound, or live-provider flags

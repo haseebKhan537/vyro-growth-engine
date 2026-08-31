@@ -1,10 +1,12 @@
 """Live-readiness preflight and owner approval packets.
 
-Phase 18 inspects dry-run execution plans and safe local/config metadata. It
-never sends email, enrolls campaigns, generates sendable replies, books
+Phase 18 inspects dry-run execution plans and safe local/config metadata.
+Phase 23 records an owner/operator decision against a stored packet. Neither
+path sends email, enrolls campaigns, generates sendable replies, books
 meetings, creates video-meet links, places calls, publishes content, launches
 ads, spends money, deploys, applies optimizer recommendations, or changes
-live settings. Secret values are never returned.
+live settings. Secret values are never returned. Recording a decision never
+executes the packet.
 """
 
 from __future__ import annotations
@@ -32,15 +34,23 @@ from vyro_growth.domain import (
     ExecutionPlanType,
     FindingSeverity,
     PreflightStatus,
+    ReviewDecisionStatus,
 )
-from vyro_growth.models import Activity, ApprovalPacketRun, ExecutionPlan, OwnerApprovalPacket
+from vyro_growth.models import (
+    Activity,
+    ApprovalPacketRun,
+    ExecutionPlan,
+    OwnerApprovalPacket,
+    OwnerApprovalPacketDecision,
+)
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt
-from vyro_growth.services.review_queue import sanitize_operator_text
+from vyro_growth.services.review_queue import MAX_NOTES_LENGTH, sanitize_operator_text
 
 logger = structlog.get_logger(__name__)
 
 APPROVAL_PACKET_ACTOR = "approval_packets"
 APPROVAL_PACKET_MODEL_VERSION = "approval-packets-v1"
+APPROVAL_PACKET_DECISION_ACTION = "owner_approval_packet_decision_recorded"
 ALWAYS_BLOCKED_CODE = "execution_disabled_in_this_phase"
 SUPPORTED_PLAN_FAMILIES: frozenset[str] = frozenset(item.value for item in ExecutionPlanType)
 
@@ -105,6 +115,16 @@ class ApprovalPacketError(ValueError):
 
 
 @dataclass(frozen=True)
+class ApprovalPacketDecisionView:
+    decision_id: UUID
+    decision: str
+    reviewer: str
+    source: str
+    reviewer_notes: str | None
+    decided_at: datetime
+
+
+@dataclass(frozen=True)
 class ApprovalPacketView:
     id: UUID
     source_execution_plan_id: UUID
@@ -133,6 +153,30 @@ class ApprovalPacketView:
     missing_prerequisites: tuple[dict[str, object], ...]
     findings: tuple[dict[str, object], ...]
     required_owner_decisions: tuple[str, ...]
+    decision: ApprovalPacketDecisionView | None = None
+
+
+@dataclass(frozen=True)
+class ApprovalPacketDecisionResult:
+    decision_id: UUID
+    packet_id: UUID
+    decision: str
+    reviewer: str
+    source: str
+    reviewer_notes: str | None
+    decided_at: datetime
+    executed: bool
+    execution_attempted: bool
+    outbound_attempted: bool
+    live_call_attempted: bool
+    recommendation_applied: bool
+    spend_attempted: bool
+    campaign_launched: bool
+    pages_published: bool
+    ads_launched: bool
+    owner_approved: bool
+    operator_halt_before: str
+    operator_halt_after: str
 
 
 @dataclass(frozen=True)
@@ -307,7 +351,153 @@ class ApprovalPacketService:
         row = db.get(OwnerApprovalPacket, packet_id)
         if row is None:
             return None
-        return _packet_view(row)
+        decision = db.scalar(
+            select(OwnerApprovalPacketDecision).where(
+                OwnerApprovalPacketDecision.owner_approval_packet_id == packet_id
+            )
+        )
+        return _packet_view(row, decision)
+
+    def record_decision(
+        self,
+        db: Session,
+        *,
+        packet_id: UUID,
+        decision: str,
+        reviewer: str | None = None,
+        source: str = "operator_ui",
+        reviewer_notes: str | None = None,
+        commit: bool = True,
+    ) -> ApprovalPacketDecisionResult:
+        """Persist an owner/operator decision record for one packet.
+
+        Decision-record only. Does not execute the packet, mutate live
+        owner-approved state, or change operator halt.
+        """
+
+        halt_before = read_operator_halt(db)
+        packet = db.get(OwnerApprovalPacket, packet_id)
+        if packet is None:
+            raise ApprovalPacketError("packet_not_found", "Approval packet not found")
+        parsed_decision = _parse_decision(decision)
+        notes = sanitize_operator_text(_clip_notes(reviewer_notes))
+        reviewer_name = sanitize_operator_text(reviewer) or "operator"
+        source_name = sanitize_operator_text(source) or "operator_ui"
+        decided_at = datetime.now(tz=UTC)
+        existing = db.scalar(
+            select(OwnerApprovalPacketDecision).where(
+                OwnerApprovalPacketDecision.owner_approval_packet_id == packet_id
+            )
+        )
+        previous = existing.decision if existing is not None else None
+        audit = _decision_audit(
+            packet,
+            parsed_decision,
+            reviewer_name,
+            source_name,
+            previous=previous,
+        )
+        if existing is None:
+            row = OwnerApprovalPacketDecision(
+                owner_approval_packet_id=packet_id,
+                decision=parsed_decision.value,
+                previous_decision=None,
+                reviewer=reviewer_name,
+                source=source_name,
+                reviewer_notes=notes,
+                decided_at=decided_at,
+                executed=False,
+                execution_attempted=False,
+                outbound_attempted=False,
+                live_call_attempted=False,
+                recommendation_applied=False,
+                spend_attempted=False,
+                campaign_launched=False,
+                pages_published=False,
+                ads_launched=False,
+                owner_approved=False,
+                audit_json=audit,
+            )
+            db.add(row)
+        else:
+            existing.previous_decision = previous
+            existing.decision = parsed_decision.value
+            existing.reviewer = reviewer_name
+            existing.source = source_name
+            existing.reviewer_notes = notes
+            existing.decided_at = decided_at
+            existing.executed = False
+            existing.execution_attempted = False
+            existing.outbound_attempted = False
+            existing.live_call_attempted = False
+            existing.recommendation_applied = False
+            existing.spend_attempted = False
+            existing.campaign_launched = False
+            existing.pages_published = False
+            existing.ads_launched = False
+            existing.owner_approved = False
+            existing.audit_json = audit
+            row = existing
+        db.add(
+            Activity(
+                lead_id=None,
+                actor=APPROVAL_PACKET_ACTOR,
+                action=APPROVAL_PACKET_DECISION_ACTION,
+                details={
+                    "owner_approval_packet_id": str(packet_id),
+                    "decision": parsed_decision.value,
+                    "previous_decision": previous,
+                    "reviewer": reviewer_name,
+                    "source": source_name,
+                    "executed": False,
+                    "execution_attempted": False,
+                    "outbound_attempted": False,
+                    "live_call_attempted": False,
+                    "recommendation_applied": False,
+                    "spend_attempted": False,
+                    "campaign_launched": False,
+                    "pages_published": False,
+                    "ads_launched": False,
+                    "owner_approved": False,
+                },
+            )
+        )
+        db.flush()
+        halt_after = read_operator_halt(db)
+        if halt_after is not halt_before:
+            raise RuntimeError("approval packet decision must not change operator halt status")
+        if commit:
+            db.commit()
+            db.refresh(row)
+        logger.info(
+            "owner_approval_packet_decision_recorded",
+            owner_approval_packet_id=str(packet_id),
+            decision=parsed_decision.value,
+            executed=False,
+            owner_approved=False,
+            outbound_attempted=False,
+        )
+        return ApprovalPacketDecisionResult(
+            decision_id=row.id,
+            packet_id=packet_id,
+            decision=row.decision,
+            reviewer=row.reviewer,
+            source=row.source,
+            reviewer_notes=row.reviewer_notes,
+            decided_at=row.decided_at,
+            executed=False,
+            execution_attempted=False,
+            outbound_attempted=False,
+            live_call_attempted=False,
+            recommendation_applied=False,
+            spend_attempted=False,
+            campaign_launched=False,
+            pages_published=False,
+            ads_launched=False,
+            owner_approved=False,
+            operator_halt_before=halt_before.value,
+            operator_halt_after=halt_after.value,
+        )
 
     def _view(
         self,
@@ -328,6 +518,7 @@ class ApprovalPacketService:
                 )
             )
         )
+        decisions = _decision_map(db, [row.id for row in rows])
         return ApprovalPacketRunResult(
             approval_packet_run_id=run.id,
             status=ApprovalPacketRunStatus(run.status),
@@ -351,8 +542,84 @@ class ApprovalPacketService:
             generated_at=run.finished_at or run.created_at,
             operator_halt_before=halt_before.value,
             operator_halt_after=halt_after.value,
-            packets=tuple(_packet_view(row) for row in rows),
+            packets=tuple(_packet_view(row, decisions.get(row.id)) for row in rows),
         )
+
+
+def _parse_decision(value: str) -> ReviewDecisionStatus:
+    try:
+        return ReviewDecisionStatus(value.strip())
+    except ValueError as exc:
+        raise ApprovalPacketError(
+            "invalid_decision",
+            "Decision must be approved, rejected, or needs_changes",
+        ) from exc
+
+
+def _clip_notes(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    return cleaned[:MAX_NOTES_LENGTH]
+
+
+def _decision_map(
+    db: Session,
+    packet_ids: Sequence[UUID],
+) -> dict[UUID, OwnerApprovalPacketDecision]:
+    if not packet_ids:
+        return {}
+    rows = db.scalars(
+        select(OwnerApprovalPacketDecision).where(
+            OwnerApprovalPacketDecision.owner_approval_packet_id.in_(packet_ids)
+        )
+    ).all()
+    return {row.owner_approval_packet_id: row for row in rows}
+
+
+def _decision_view(row: OwnerApprovalPacketDecision) -> ApprovalPacketDecisionView:
+    return ApprovalPacketDecisionView(
+        decision_id=row.id,
+        decision=row.decision,
+        reviewer=row.reviewer,
+        source=row.source,
+        reviewer_notes=row.reviewer_notes,
+        decided_at=row.decided_at,
+    )
+
+
+def _decision_audit(
+    packet: OwnerApprovalPacket,
+    decision: ReviewDecisionStatus,
+    reviewer: str,
+    source: str,
+    *,
+    previous: str | None = None,
+) -> dict[str, object]:
+    return {
+        "owner_approval_packet_id": str(packet.id),
+        "plan_family": packet.plan_family,
+        "decision": decision.value,
+        "previous_decision": previous,
+        "reviewer": reviewer,
+        "source": source,
+        "dry_run_only": True,
+        "no_execution": True,
+        "executed": False,
+        "execution_attempted": False,
+        "outbound_attempted": False,
+        "live_call_attempted": False,
+        "recommendation_applied": False,
+        "spend_attempted": False,
+        "campaign_launched": False,
+        "pages_published": False,
+        "ads_launched": False,
+        "owner_approved": False,
+        "decision_record_only": True,
+        "secrets_exposed": False,
+    }
 
 
 def _validate_filters(filters: ApprovalPacketFilters) -> None:
@@ -730,7 +997,10 @@ def _packet_row(run_id: UUID, draft: _DraftPacket) -> OwnerApprovalPacket:
     )
 
 
-def _packet_view(row: OwnerApprovalPacket) -> ApprovalPacketView:
+def _packet_view(
+    row: OwnerApprovalPacket,
+    decision_row: OwnerApprovalPacketDecision | None = None,
+) -> ApprovalPacketView:
     return ApprovalPacketView(
         id=row.id,
         source_execution_plan_id=row.source_execution_plan_id,
@@ -759,6 +1029,7 @@ def _packet_view(row: OwnerApprovalPacket) -> ApprovalPacketView:
         missing_prerequisites=_object_tuple(row.missing_prerequisites_json),
         findings=_object_tuple(row.findings_json),
         required_owner_decisions=_string_tuple(row.required_owner_decisions_json),
+        decision=_decision_view(decision_row) if decision_row is not None else None,
     )
 
 

@@ -52,6 +52,7 @@ from vyro_growth.api.monitoring import (
     build_monitoring_status_response,
 )
 from vyro_growth.api.operator_approval_packets import (
+    build_operator_approval_packet_decision_response,
     build_operator_approval_packet_response,
     build_operator_approval_packets_response,
 )
@@ -266,6 +267,7 @@ def operator_approval_packet_item(
     packet_id: str,
     db: DbSession,
     x_internal_api_key: Annotated[str | None, Header()] = None,
+    decision_recorded: Annotated[bool, Query()] = False,
 ) -> HTMLResponse:
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
@@ -273,6 +275,30 @@ def operator_approval_packet_item(
         db,
         active_settings,
         packet_id=packet_id,
+        decision_recorded=decision_recorded,
+    )
+
+
+@app.post(
+    "/internal/operator-approval-packets/{packet_id}/decision",
+    tags=["internal"],
+    response_class=HTMLResponse,
+    response_model=None,
+)
+async def operator_approval_packet_decision(
+    packet_id: str,
+    request: Request,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse | RedirectResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    form_body = await request.body()
+    return build_operator_approval_packet_decision_response(
+        db,
+        active_settings,
+        packet_id=packet_id,
+        form_body=form_body,
     )
 
 

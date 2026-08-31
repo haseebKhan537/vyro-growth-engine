@@ -37,7 +37,8 @@ from vyro_growth.services.execution_planning import ExecutionPlanningService
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
 
 XSS_LABEL = "<script>alert(1)</script>"
-ACTION_MARKERS = ("<button", "<form", "javascript:", "onclick=", "<input")
+ACTION_MARKERS = ("javascript:", "onclick=", "onerror=")
+FORM_MARKERS = ("<form", "<button", "<input", "<select", "<textarea")
 
 
 @pytest.fixture
@@ -122,7 +123,7 @@ def test_renderer_empty_state_is_read_only() -> None:
     assert 'id="operator-approval-packets"' in html
     assert "No owner approval packets" in html
     assert "There are no approve, reject, or execute controls" in html
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 
 
@@ -141,7 +142,7 @@ def test_renderer_populated_filter_and_xss_escape() -> None:
     assert str(packet.id) in html
     assert str(other.id) not in html
     assert "plan_family=optimizer_apply" in html
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 
 
@@ -159,16 +160,23 @@ def test_detail_renderer_and_missing_pages_are_safe() -> None:
     error = render_approval_packets_error()
 
     assert 'id="operator-approval-packet"' in html
+    assert 'data-decision-record-only="true"' in html
     assert XSS_LABEL not in html
     assert escape_marker() in html
     assert "Required owner decision labels" in html
-    assert "There are no approve, reject, or execute controls" in html
+    assert "Record owner decision" in html
+    assert 'id="operator-approval-packet-decision-form"' in html
+    assert "There is no execute control" in html
     assert 'id="operator-approval-packets-missing"' in missing
     assert 'id="operator-approval-packets-error"' in error
     assert "sk-testsecret12345" not in error
-    for page in (html, missing, error):
-        for marker in ACTION_MARKERS:
-            assert marker not in page.lower()
+    for marker in ACTION_MARKERS:
+        assert marker not in html.lower()
+        assert marker not in missing.lower()
+        assert marker not in error.lower()
+    for marker in FORM_MARKERS:
+        assert marker not in missing.lower()
+        assert marker not in error.lower()
 
 
 def test_approval_packets_ui_open_in_development(
@@ -187,7 +195,7 @@ def test_approval_packets_ui_open_in_development(
     assert "No owner approval packets" in body
     assert PHI_SNIPPET not in body
     assert db_session.scalar(select(func.count()).select_from(Activity)) == 0
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in body.lower()
 
 
@@ -278,6 +286,9 @@ def test_approval_packets_ui_populated_filters_and_detail_stay_read_only(
     assert "Approval packet" in detail.text
     assert packet.plan_family.replace("_", " ") in detail.text or packet.plan_family in detail.text
     assert "Required owner decision labels" in detail.text
+    assert "Record owner decision" in detail.text
+    assert "There is no execute control" in detail.text
+    assert "There are no approve, reject, or execute controls" in listed.text
     assert "Executed=0" in listed.text or "executed=no" in listed.text
     assert missing.status_code == 404
     assert invalid.status_code == 404
@@ -285,9 +296,11 @@ def test_approval_packets_ui_populated_filters_and_detail_stay_read_only(
     assert PROSPECT_EMAIL not in listed.text
     assert "diabetes" not in listed.text.lower()
     assert "sk-testsecret12345" not in listed.text
-    for body in (listed.text, filtered.text, detail.text, missing.text):
-        for marker in ACTION_MARKERS:
+    for body in (listed.text, filtered.text, missing.text):
+        for marker in ACTION_MARKERS + FORM_MARKERS:
             assert marker not in body.lower()
+    for marker in ACTION_MARKERS:
+        assert marker not in detail.text.lower()
     assert (
         db_session.scalar(select(func.count()).select_from(OwnerApprovalPacket))
         == before_packets
@@ -324,7 +337,7 @@ def test_approval_packets_ui_failure_state_redacts_errors(
     assert "sk-testsecret12345" not in body
     assert "diabetes" not in body.lower()
     assert "No pipeline rows were written" in body
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in response.text.lower()
 
 

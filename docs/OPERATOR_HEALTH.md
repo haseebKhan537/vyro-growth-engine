@@ -28,7 +28,7 @@ curl http://localhost:8000/internal/monitoring/status \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 ```
 
-CLI does not use the HTTP key. `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `GET /internal/operator-review-queue` and `GET /internal/operator-approval-packets` are HTML drilldowns; review-item detail pages can record a decision only via `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`; `system-status` remains the detailed monitoring snapshot. Decision recording does not execute artifacts.
+CLI does not use the HTTP key. `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `GET /internal/operator-review-queue` and `GET /internal/operator-approval-packets` are HTML drilldowns; review-item detail pages can record a decision only via `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`; approval-packet detail pages can record a decision only via `POST /internal/operator-approval-packets/{packet_id}/decision`; `system-status` remains the detailed monitoring snapshot. Decision recording does not execute artifacts or packets.
 
 ## What the snapshot includes
 

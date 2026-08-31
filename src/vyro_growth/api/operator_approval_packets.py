@@ -1,12 +1,12 @@
-"""Read-only owner approval packet HTML drilldown.
+"""Owner approval packet HTML drilldown and decision-record form.
 
-Phase 21 renders stored owner approval packets and preflight rows as
-internal HTML pages. It never generates a new packet run, never executes a
-plan, and never sends email, enrolls campaigns, generates sendable replies,
-books meetings, creates video-meet links, places calls, publishes content,
-launches ads, spends money, deploys, applies optimizer recommendations, or
-changes live/scoring/campaign/provider/deployment settings or operator halt
-state.
+Phase 23 renders stored owner approval packets as internal HTML pages and
+lets an operator record approved/rejected/needs_changes on a detail page.
+Recording a decision never executes a packet and never sends email, enrolls
+campaigns, generates sendable replies, books meetings, creates video-meet
+links, places calls, publishes content, launches ads, spends money, deploys,
+applies optimizer recommendations, or changes live/scoring/campaign/provider/
+deployment settings or operator halt state. `owner_approved` remains false.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from html import escape
 from uuid import UUID
 
 import structlog
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.approval_packets import (
@@ -24,6 +24,16 @@ from vyro_growth.api.approval_packets import (
     approval_packet_run_to_response,
     empty_approval_packet_response,
     packet_to_response,
+)
+from vyro_growth.api.operator_review_queue import (
+    DECISION_VALUES,
+    GENERIC_DECISION_ERROR,
+    GENERIC_FORM_ERROR,
+    MAX_FORM_BYTES,
+    MAX_REVIEWER_LENGTH,
+    DecisionFormValues,
+    parse_form_decision,
+    parse_urlencoded_form,
 )
 from vyro_growth.api.operator_ui import (
     APPROVAL_PACKETS_JSON_PATH,
@@ -42,12 +52,19 @@ from vyro_growth.api.operator_ui import (
 )
 from vyro_growth.config import Settings
 from vyro_growth.domain import ExecutionPlanType, PreflightStatus
-from vyro_growth.services.approval_packets import ApprovalPacketRunResult, ApprovalPacketService
+from vyro_growth.services.approval_packets import (
+    ApprovalPacketError,
+    ApprovalPacketRunResult,
+    ApprovalPacketService,
+    ApprovalPacketView,
+)
+from vyro_growth.services.review_queue import MAX_NOTES_LENGTH, sanitize_operator_text
 
 logger = structlog.get_logger(__name__)
 
 _PLAN_FAMILIES: tuple[str, ...] = tuple(item.value for item in ExecutionPlanType)
 _PREFLIGHT_STATUSES: tuple[str, ...] = tuple(item.value for item in PreflightStatus)
+OPERATOR_UI_PACKET_DECISION_SOURCE = "operator_ui"
 
 
 def parse_plan_family(value: str | None) -> str | None:
@@ -70,6 +87,14 @@ def parse_preflight_status(value: str | None) -> str | None:
 
 def packet_href(packet_id: UUID) -> str:
     return f"{OPERATOR_APPROVAL_PACKETS_PATH}/{packet_id}"
+
+
+def packet_decision_href(packet_id: UUID) -> str:
+    return f"{OPERATOR_APPROVAL_PACKETS_PATH}/{packet_id}/decision"
+
+
+def packet_recorded_href(packet_id: UUID) -> str:
+    return f"{OPERATOR_APPROVAL_PACKETS_PATH}/{packet_id}?decision_recorded=1"
 
 
 def finding_counts(packet: ApprovalPacketResponse) -> tuple[int, int, int]:
@@ -145,9 +170,41 @@ def render_approval_packet_list(
     )
 
 
-def render_approval_packet_detail(packet: ApprovalPacketResponse) -> str:
+def render_approval_packet_detail(
+    packet: ApprovalPacketResponse,
+    *,
+    decision_recorded: bool = False,
+    form_error: str | None = None,
+    form_values: DecisionFormValues | None = None,
+) -> str:
     generated = html_escape(format_dt(packet.generated_at))
     blocked, warning, info = finding_counts(packet)
+    decision = packet.decision
+    decision_block = (
+        (
+            '      <div class="metric-grid">\n'
+            f"        {metric('Decision', decision.decision)}\n"
+            f"        {metric('Reviewer', decision.reviewer)}\n"
+            f"        {metric('Source', decision.source)}\n"
+            f"        {metric('Decided at', format_dt(decision.decided_at))}\n"
+            f"        {metric('Executed', yes_no(packet.executed))}\n"
+            f"        {metric('Owner approved', yes_no(packet.owner_approved))}\n"
+            "      </div>\n"
+            + (
+                f'      <p class="hint">Owner notes: '
+                f"{html_escape(decision.reviewer_notes)}</p>\n"
+                if decision.reviewer_notes
+                else ""
+            )
+        )
+        if decision is not None
+        else '<p class="empty-state">No recorded owner decision yet.</p>'
+    )
+    saved_banner = (
+        _render_decision_saved_banner(packet)
+        if decision_recorded and decision is not None
+        else ""
+    )
     return (
         "<!DOCTYPE html>\n"
         '<html lang="en">\n'
@@ -158,14 +215,16 @@ def render_approval_packet_detail(packet: ApprovalPacketResponse) -> str:
         f"{OPERATOR_UI_STYLES}\n"
         "</head>\n"
         "<body>\n"
-        '  <main id="operator-approval-packet" data-read-only="true">\n'
+        '  <main id="operator-approval-packet" data-decision-record-only="true" '
+        'data-execution="false">\n'
         '    <header class="page-header">\n'
         "      <div>\n"
         "        <h1>Approval packet</h1>\n"
-        '        <p class="lede">Read-only preflight packet. No execution.</p>\n'
+        '        <p class="lede">Decision-record only. No execution.</p>\n'
         "      </div>\n"
         f'      <p class="meta">Generated {generated}</p>\n'
         "    </header>\n"
+        f"{saved_banner}"
         f"{render_operator_nav('approval-packets')}\n"
         '    <section class="panel">\n'
         "      <h2>Safe detail</h2>\n"
@@ -181,6 +240,7 @@ def render_approval_packet_detail(packet: ApprovalPacketResponse) -> str:
         f"        {metric('Executed', yes_no(packet.executed))}\n"
         f"        {metric('Owner approved', yes_no(packet.owner_approved))}\n"
         f"        {metric('Owner approval required', yes_no(packet.owner_approval_required))}\n"
+        f"        {metric('Decision', decision.decision if decision else 'none')}\n"
         f"        {metric('Blocked findings', blocked)}\n"
         f"        {metric('Warning findings', warning)}\n"
         f"        {metric('Info findings', info)}\n"
@@ -194,9 +254,10 @@ def render_approval_packet_detail(packet: ApprovalPacketResponse) -> str:
         f"      {_render_findings(packet.findings)}\n"
         "      <h3>Required owner decision labels</h3>\n"
         f"      {_render_decisions(packet.required_owner_decisions)}\n"
-        '      <p class="hint">There are no approve, reject, or execute controls '
-        "on this page.</p>\n"
+        "      <h3>Recorded owner decision</h3>\n"
+        f"      {decision_block}\n"
         "    </section>\n"
+        f"{_render_decision_form(packet, form_error=form_error, form_values=form_values)}\n"
         '    <p><a class="nav-link" href="'
         f'{escape(OPERATOR_APPROVAL_PACKETS_PATH)}">Back to approval packets</a></p>\n'
         "  </main>\n"
@@ -247,6 +308,7 @@ def build_operator_approval_packet_response(
     settings: Settings,
     *,
     packet_id: str,
+    decision_recorded: bool = False,
     service: ApprovalPacketService | None = None,
 ) -> HTMLResponse:
     del settings
@@ -269,10 +331,86 @@ def build_operator_approval_packet_response(
                 status_code=404,
                 headers=NO_STORE_HEADERS,
             )
-        html = render_approval_packet_detail(packet_to_response(packet))
+        html = render_approval_packet_detail(
+            packet_to_response(packet),
+            decision_recorded=decision_recorded,
+        )
         return HTMLResponse(content=html, status_code=200, headers=NO_STORE_HEADERS)
     except Exception:
-        logger.exception("operator_approval_packet_render_failed", read_only=True)
+        logger.exception("operator_approval_packet_render_failed", execution=False)
+        return HTMLResponse(
+            content=render_approval_packets_error(),
+            status_code=500,
+            headers=NO_STORE_HEADERS,
+        )
+
+
+def build_operator_approval_packet_decision_response(
+    db: Session,
+    settings: Settings,
+    *,
+    packet_id: str,
+    form_body: bytes,
+    service: ApprovalPacketService | None = None,
+) -> HTMLResponse | RedirectResponse:
+    del settings
+    try:
+        parsed_id = UUID(packet_id)
+    except ValueError:
+        parsed_id = None
+    if parsed_id is None:
+        return HTMLResponse(
+            content=render_approval_packet_missing(),
+            status_code=404,
+            headers=NO_STORE_HEADERS,
+        )
+    planner = service or ApprovalPacketService()
+    try:
+        packet = planner.get_packet(db, parsed_id)
+        if packet is None:
+            return HTMLResponse(
+                content=render_approval_packet_missing(),
+                status_code=404,
+                headers=NO_STORE_HEADERS,
+            )
+        if len(form_body) > MAX_FORM_BYTES:
+            return _decision_form_error(
+                packet,
+                GENERIC_FORM_ERROR,
+                form_values=DecisionFormValues(),
+            )
+        form = parse_urlencoded_form(form_body)
+        decision = parse_form_decision(form.get("decision"))
+        reviewer_raw = _clip(form.get("reviewer"), MAX_REVIEWER_LENGTH)
+        notes_raw = _clip(form.get("reviewer_notes"), MAX_NOTES_LENGTH)
+        form_values = DecisionFormValues(
+            decision=decision,
+            reviewer=sanitize_operator_text(reviewer_raw) or "",
+            reviewer_notes=sanitize_operator_text(notes_raw) or "",
+        )
+        if decision is None:
+            return _decision_form_error(packet, GENERIC_DECISION_ERROR, form_values=form_values)
+        if _same_recorded_decision(packet, decision, reviewer_raw, notes_raw):
+            return _decision_recorded_redirect(parsed_id)
+        try:
+            planner.record_decision(
+                db,
+                packet_id=parsed_id,
+                decision=decision,
+                reviewer=reviewer_raw,
+                source=OPERATOR_UI_PACKET_DECISION_SOURCE,
+                reviewer_notes=notes_raw,
+            )
+        except ApprovalPacketError as exc:
+            logger.info(
+                "operator_approval_packet_decision_rejected",
+                code=exc.code,
+                execution=False,
+            )
+            return _decision_service_error(exc, packet)
+        return _decision_recorded_redirect(parsed_id)
+    except Exception:
+        logger.exception("operator_approval_packet_decision_failed", execution=False)
         return HTMLResponse(
             content=render_approval_packets_error(),
             status_code=500,
@@ -284,6 +422,162 @@ def _run_to_response(result: ApprovalPacketRunResult | None) -> ApprovalPacketRu
     if result is None:
         return empty_approval_packet_response()
     return approval_packet_run_to_response(result)
+
+
+def _clip(value: str | None, limit: int) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    return cleaned[:limit]
+
+
+def _same_recorded_decision(
+    packet: ApprovalPacketView,
+    decision: str,
+    reviewer: str | None,
+    notes: str | None,
+) -> bool:
+    existing = packet.decision
+    if existing is None:
+        return False
+    reviewer_name = sanitize_operator_text(reviewer) or "operator"
+    notes_value = sanitize_operator_text(notes)
+    return (
+        existing.decision == decision
+        and existing.reviewer == reviewer_name
+        and existing.reviewer_notes == notes_value
+    )
+
+
+def _decision_recorded_redirect(packet_id: UUID) -> RedirectResponse:
+    return RedirectResponse(
+        url=packet_recorded_href(packet_id),
+        status_code=303,
+        headers=NO_STORE_HEADERS,
+    )
+
+
+def _decision_form_error(
+    packet: ApprovalPacketView,
+    message: str,
+    *,
+    form_values: DecisionFormValues | None = None,
+) -> HTMLResponse:
+    html = render_approval_packet_detail(
+        packet_to_response(packet),
+        form_error=message,
+        form_values=form_values,
+    )
+    return HTMLResponse(content=html, status_code=400, headers=NO_STORE_HEADERS)
+
+
+def _decision_service_error(
+    exc: ApprovalPacketError,
+    packet: ApprovalPacketView,
+) -> HTMLResponse:
+    match exc.code:
+        case "packet_not_found" | "artifact_not_found":
+            return HTMLResponse(
+                content=render_approval_packet_missing(),
+                status_code=404,
+                headers=NO_STORE_HEADERS,
+            )
+        case "invalid_decision":
+            return _decision_form_error(packet, GENERIC_DECISION_ERROR)
+        case _:
+            return _decision_form_error(packet, GENERIC_FORM_ERROR)
+
+
+def _render_decision_saved_banner(packet: ApprovalPacketResponse) -> str:
+    decision = packet.decision
+    if decision is None:
+        return ""
+    notes = (
+        f'      <p class="hint">Owner notes: {html_escape(decision.reviewer_notes)}</p>\n'
+        if decision.reviewer_notes
+        else ""
+    )
+    return (
+        '    <div class="success-banner" id="decision-recorded">\n'
+        "      <p>Decision recorded. No execution was attempted.</p>\n"
+        '      <div class="metric-grid">\n'
+        f"        {metric('Decision', decision.decision)}\n"
+        f"        {metric('Reviewer', decision.reviewer)}\n"
+        f"        {metric('Source', decision.source)}\n"
+        f"        {metric('Decided at', format_dt(decision.decided_at))}\n"
+        f"        {metric('Executed', yes_no(packet.executed))}\n"
+        f"        {metric('Owner approved', yes_no(packet.owner_approved))}\n"
+        f"        {metric('Outbound attempted', 'no')}\n"
+        "      </div>\n"
+        f"{notes}"
+        "    </div>\n"
+    )
+
+
+def _render_decision_form(
+    packet: ApprovalPacketResponse,
+    *,
+    form_error: str | None = None,
+    form_values: DecisionFormValues | None = None,
+) -> str:
+    action = packet_decision_href(packet.id)
+    selected = (
+        form_values.decision
+        if form_values is not None and form_values.decision is not None
+        else (packet.decision.decision if packet.decision is not None else "")
+    )
+    reviewer = (
+        form_values.reviewer
+        if form_values is not None
+        else (packet.decision.reviewer if packet.decision is not None else "")
+    )
+    notes = (
+        form_values.reviewer_notes
+        if form_values is not None
+        else (packet.decision.reviewer_notes if packet.decision is not None else "")
+    )
+    error_html = (
+        f'      <p class="banner" id="decision-form-error">{html_escape(form_error)}</p>\n'
+        if form_error
+        else ""
+    )
+    options: list[str] = []
+    for value in DECISION_VALUES:
+        mark = " selected" if selected == value else ""
+        options.append(f'<option value="{escape(value)}"{mark}>{escape(value)}</option>')
+    return (
+        '    <section class="panel" id="decision-form">\n'
+        "      <h2>Record owner decision</h2>\n"
+        '      <p class="hint">Records an owner/operator decision only. This does not '
+        "execute the packet, send email, enroll campaigns, book meetings, place "
+        "calls, publish content, launch ads, spend money, deploy, change operator "
+        "halt state, or mark the packet as live owner-approved.</p>\n"
+        f"{error_html}"
+        f'      <form method="post" action="{escape(action)}" '
+        'id="operator-approval-packet-decision-form" autocomplete="off">\n'
+        '        <div class="form-grid">\n'
+        "          <label>Decision\n"
+        '            <select name="decision" required>\n'
+        f"              {''.join(options)}\n"
+        "            </select>\n"
+        "          </label>\n"
+        "          <label>Owner / reviewer\n"
+        f'            <input name="reviewer" maxlength="{MAX_REVIEWER_LENGTH}" '
+        f'value="{html_escape(reviewer, empty="")}" autocomplete="off">\n'
+        "          </label>\n"
+        "          <label>Notes\n"
+        f'            <textarea name="reviewer_notes" maxlength="{MAX_NOTES_LENGTH}">'
+        f"{html_escape(notes, empty="")}</textarea>\n"
+        "          </label>\n"
+        '          <button type="submit">Record decision</button>\n'
+        "        </div>\n"
+        "      </form>\n"
+        '      <p class="hint">This form records a decision only. There is no execute '
+        "control.</p>\n"
+        "    </section>"
+    )
 
 
 def _owner_approved_count(run: ApprovalPacketRunResponse) -> int:
@@ -424,7 +718,7 @@ def _render_packets(
         "      <h2>Packets</h2>\n"
         '      <table class="dense"><thead><tr>'
         "<th>Family</th><th>Packet</th><th>Artifact</th><th>Preflight</th>"
-        "<th>Findings</th><th>Action</th><th>Flags</th>"
+        "<th>Decision</th><th>Findings</th><th>Action</th><th>Flags</th>"
         f"</tr></thead><tbody>{rows}</tbody></table>\n"
         "    </section>"
     )
@@ -433,6 +727,7 @@ def _render_packets(
 def _packet_row(packet: ApprovalPacketResponse) -> str:
     href = packet_href(packet.id)
     blocked, warning, info = finding_counts(packet)
+    decision = packet.decision.decision if packet.decision is not None else "none"
     flags = (
         f"dry-run={yes_no(packet.dry_run_only)} · "
         f"no-exec={yes_no(packet.no_execution)} · "
@@ -445,6 +740,7 @@ def _packet_row(packet: ApprovalPacketResponse) -> str:
         f"{html_escape(short_id(packet.id))}</a></td>"
         f"<td>{titleize(packet.source_artifact_type)}</td>"
         f"<td>{html_escape(packet.preflight_status)}</td>"
+        f"<td>{html_escape(decision)}</td>"
         f"<td>blocked={blocked} · warning={warning} · info={info}</td>"
         f"<td>{html_escape(packet.proposed_action)}</td>"
         f"<td>{html_escape(flags)}</td>"
