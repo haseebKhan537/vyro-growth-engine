@@ -233,7 +233,7 @@ def test_operator_settings_execution_preflight_populated_filters_and_no_side_eff
         request_type=SettingsChangeRequestType.REQUEST_OUTBOUND_ENABLEMENT_REVIEW.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
         idempotency_key="ui-preflight",
-        reviewer_notes=f"{PHI_SNIPPET} {PROSPECT_EMAIL}",
+        reviewer_notes=PHI_SNIPPET,
     )
     SettingsChangeRequestService().record_decision(
         db_session,
