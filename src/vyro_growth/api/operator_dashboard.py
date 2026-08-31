@@ -38,6 +38,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_ACTION_READINESS_PATH,
     OPERATOR_APPROVAL_PACKETS_PATH,
     OPERATOR_REVIEW_QUEUE_PATH,
+    OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
 )
 from vyro_growth.config import Settings
 from vyro_growth.observability import sanitize_operator_text
@@ -245,7 +246,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_APPROVAL_PACKETS_PATH)}">'
         "Approval packets</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_ACTION_READINESS_PATH)}">'
-        "Action readiness</a>\n"
+        "Action readiness</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH)}">'
+        "Settings requests</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -292,6 +295,10 @@ def _render_safety(
     return (
         '    <section id="safety" class="panel">\n'
         "      <h2>Safety and readiness</h2>\n"
+        f'      <p class="hint"><a class="nav-link" '
+        f'href="{escape(OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH)}">'
+        "Open settings change requests</a> — record-only list and detail. "
+        "Decision recording does not apply settings or change operator halt.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
         f"        {_metric('Settings halt', _flag(safety.outbound_halted_settings))}\n"
@@ -461,7 +468,10 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "Open approval packets</a> — packet list and detail. "
         "Decision recording does not execute. "
         f'<a class="nav-link" href="{escape(OPERATOR_ACTION_READINESS_PATH)}">'
-        "Open action readiness</a> — read-only queue. No execute controls.</p>\n"
+        "Open action readiness</a> — read-only queue. No execute controls. "
+        f'<a class="nav-link" href="{escape(OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH)}">'
+        "Open settings change requests</a> — record-only. Decision recording "
+        "does not apply settings.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"
         f"        {_metric('Owner approved', packets.owner_approved)}\n"

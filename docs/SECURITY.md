@@ -28,9 +28,9 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `/ready` reports config issues and database availability. It must not call live providers or return secrets.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/operator-command-center`, `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`, `GET /internal/operator-approval-packets`, `POST /internal/operator-approval-packets/{packet_id}/decision`, `GET /internal/operator-action-readiness`, `GET /internal/action-readiness`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/operator-command-center`, `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`, `GET /internal/operator-approval-packets`, `POST /internal/operator-approval-packets/{packet_id}/decision`, `GET /internal/operator-action-readiness`, `GET /internal/operator-settings-change-requests`, `POST /internal/operator-settings-change-requests/{request_id}/decision`, `GET /internal/action-readiness`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
-- Dashboard, monitoring, command-center, operator-dashboard, operator review-queue UI, operator approval-packet UI, and operator action-readiness UI routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`, `vyro-growth operator-command-center`, `vyro-growth action-readiness`) does not use the HTTP key and does not write pipeline state. The HTML dashboard and drilldowns are HTTP-only and do not change operator halt state.
+- Dashboard, monitoring, command-center, operator-dashboard, operator review-queue UI, operator approval-packet UI, operator action-readiness UI, and operator settings-change request list routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`, `vyro-growth operator-command-center`, `vyro-growth action-readiness`) does not use the HTTP key and does not write pipeline state. The HTML dashboard and drilldowns are HTTP-only and do not change operator halt state.
 - Review-queue list is read-only over stored artifacts. `record-review` writes a decision and audit row only; it does not execute the artifact.
 - These routes require explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
 - Outside development, a missing or blank `INTERNAL_API_KEY` fails closed. A missing or invalid request key is rejected.
@@ -266,6 +266,13 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Duplicate creates with the same idempotency key must not create duplicate rows. Decision records are audit-only and must not apply the setting or lift halt.
 - Print request IDs, statuses, blocker/finding/next-action codes, requested setting names, desired booleans, owner decision status, timestamps, and no-execution flags only.
 - Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
+
+## Settings change request UI integrity
+- Phase 29 settings-change HTML pages are a sanitized operator drilldown over Phase 28 records. They never perform a live workflow.
+- Do not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign live settings, scoring thresholds, or operator halt.
+- Decision forms may only call the existing record-only decision service. They must not apply settings, lift halt, enable outbound, execute requests, or set live `owner_approved`.
+- Render request type, status, owner decision status, setting names, desired boolean/status, finding/next-action codes, timestamps, source, record-only/no-execution flags, and safe counts only.
+- Do not render secret values, environment values, API keys, tokens, provider secrets, message bodies, full outreach draft copy, real emails, real phones, evidence snippets, PHI, or unsafe raw error text.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

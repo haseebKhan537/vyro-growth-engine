@@ -75,6 +75,11 @@ from vyro_growth.api.operator_review_queue import (
     build_operator_review_item_response,
     build_operator_review_queue_response,
 )
+from vyro_growth.api.operator_settings_change_requests import (
+    build_operator_settings_change_decision_response,
+    build_operator_settings_change_detail_response,
+    build_operator_settings_change_list_response,
+)
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
     build_latest_optimizer_response,
@@ -371,6 +376,73 @@ def operator_action_readiness_item(
         db,
         active_settings,
         candidate_id=candidate_id,
+    )
+
+
+@app.get(
+    "/internal/operator-settings-change-requests",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_settings_change_requests(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    request_type: Annotated[str | None, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
+    owner_decision_status: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_settings_change_list_response(
+        db,
+        active_settings,
+        request_type=request_type,
+        status=status,
+        owner_decision_status=owner_decision_status,
+    )
+
+
+@app.get(
+    "/internal/operator-settings-change-requests/{request_id}",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_settings_change_request_item(
+    request_id: str,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    decision_recorded: Annotated[bool, Query()] = False,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_settings_change_detail_response(
+        db,
+        active_settings,
+        request_id=request_id,
+        decision_recorded=decision_recorded,
+    )
+
+
+@app.post(
+    "/internal/operator-settings-change-requests/{request_id}/decision",
+    tags=["internal"],
+    response_class=HTMLResponse,
+    response_model=None,
+)
+async def operator_settings_change_request_decision(
+    request_id: str,
+    request: Request,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse | RedirectResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    form_body = await request.body()
+    return build_operator_settings_change_decision_response(
+        db,
+        active_settings,
+        request_id=request_id,
+        form_body=form_body,
     )
 
 

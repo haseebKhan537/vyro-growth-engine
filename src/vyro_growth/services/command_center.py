@@ -100,7 +100,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "Configure the named required credential in local env. Do not paste values here."
     ),
     NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS: (
-        "Review pending live settings change requests. Recording a decision does not apply them."
+        "Review pending live settings change requests at "
+        "/internal/operator-settings-change-requests. "
+        "Recording a decision does not apply them."
     ),
 }
 

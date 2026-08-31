@@ -100,7 +100,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     NextActionCode.KEEP_OUTBOUND_DISABLED: "Keep OUTBOUND_ENABLED=false.",
     NextActionCode.KEEP_LIVE_PROVIDERS_DISABLED: "Keep every live-provider flag disabled.",
     NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS: (
-        "Review pending live settings change requests. Recording a decision does not apply them."
+        "Review pending live settings change requests at "
+        "/internal/operator-settings-change-requests. "
+        "Recording a decision does not apply them."
     ),
 }
 
@@ -661,7 +663,8 @@ def _findings(
                 NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS,
                 label=(
                     f"Review {pending_settings_requests} pending live settings "
-                    "change request(s). Recording a decision does not apply them."
+                    "change request(s) at /internal/operator-settings-change-requests. "
+                    "Recording a decision does not apply them."
                 ),
             )
         )
