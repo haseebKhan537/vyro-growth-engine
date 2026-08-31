@@ -12,6 +12,10 @@ from vyro_growth.workers.catalog import (
     deployable_job_names,
     undeployed_outbound_job_names,
 )
+from vyro_growth.workers.channel_planning_handler import (
+    GENERATE_CHANNEL_PLANS_JOB,
+    GenerateChannelPlansHandler,
+)
 from vyro_growth.workers.contact_enrichment_handler import (
     ENRICH_DECISION_MAKERS_JOB,
     EnrichDecisionMakersHandler,
@@ -67,8 +71,10 @@ __all__ = [
     "UNDEPLOYED_OUTBOUND_JOBS",
     "WorkerJobSpec",
     "CLASSIFY_INBOUND_REPLIES_JOB",
+    "GENERATE_CHANNEL_PLANS_JOB",
     "GENERATE_CONTENT_BRIEFS_JOB",
     "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
+    "GenerateChannelPlansHandler",
     "GenerateContentBriefsHandler",
     "GenerateGrowthRecommendationsHandler",
     "PLAN_BOOKING_SLOTS_JOB",

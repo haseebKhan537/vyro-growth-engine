@@ -104,9 +104,11 @@ def test_worker_catalog_excludes_outbound_send_jobs() -> None:
 
     assert "discover_nppes_practices" in names
     assert "generate_growth_recommendations" in names
+    assert "generate_channel_plans" in names
+    assert "generate_content_briefs" in names
     assert "send_email" not in names
     assert "schedule_meeting" not in names
     assert "place_consent_callback" not in names
     assert undeployed_outbound_job_names() == UNDEPLOYED_OUTBOUND_JOBS
     assert set(UNDEPLOYED_OUTBOUND_JOBS).isdisjoint(names)
-    assert len(DEPLOYABLE_JOBS) == 11
+    assert len(DEPLOYABLE_JOBS) == 12

@@ -20,6 +20,7 @@ from vyro_growth.domain import (
 from vyro_growth.models import (
     Activity,
     CampaignEnrollment,
+    ChannelPlan,
     ContentBrief,
     ContentBriefRun,
     Lead,
@@ -30,6 +31,7 @@ from vyro_growth.models import (
     OutreachMessage,
     PersonalizationDraft,
 )
+from vyro_growth.services.channel_planning import ChannelPlanningService, ChannelPlanSeeds
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
 from vyro_growth.services.review_queue import ReviewQueueError, ReviewQueueService
 
@@ -299,6 +301,54 @@ def test_content_briefs_appear_in_queue_and_approval_does_not_publish(
     db_session.refresh(brief)
     assert brief.published is False
     assert brief.publish_attempted is False
+    assert read_operator_halt(db_session) is HaltStatus.HALTED
+
+
+def test_channel_plans_appear_in_queue_and_approval_does_not_launch(
+    db_session: Session,
+) -> None:
+    set_operator_halt(db_session, halted=True, reason="keep-halted")
+    planned = ChannelPlanningService().plan(
+        db_session,
+        seeds=ChannelPlanSeeds(specialty="Family Medicine", geography="TX"),
+    )
+    assert planned.plan_count > 0
+    first = planned.plans[0]
+    before_launched = db_session.scalar(select(func.count()).select_from(ChannelPlan))
+
+    result = ReviewQueueService().list_queue(
+        db_session,
+        _settings(),
+        artifact_type=ReviewArtifactType.ACQUISITION_CHANNEL_PLAN.value,
+    )
+    assert result.pending_count == planned.plan_count
+    assert all(
+        item.artifact_type == ReviewArtifactType.ACQUISITION_CHANNEL_PLAN.value
+        for item in result.items
+    )
+    assert "no_spend" in result.items[0].risk_labels
+    assert "not_launched" in result.items[0].risk_labels
+
+    recorded = ReviewQueueService().record_decision(
+        db_session,
+        artifact_type=ReviewArtifactType.ACQUISITION_CHANNEL_PLAN.value,
+        artifact_id=first.id,
+        decision=ReviewDecisionStatus.APPROVED.value,
+        reviewer="ops",
+        source="cli",
+        reviewer_notes="Looks like a later-phase concept",
+    )
+    assert recorded.executed is False
+    assert recorded.execution_attempted is False
+    assert recorded.outbound_attempted is False
+    row = db_session.get(ChannelPlan, first.id)
+    assert row is not None
+    assert row.launched is False
+    assert row.spend_attempted is False
+    assert row.campaign_launched is False
+    assert row.pages_published is False
+    assert row.approval_status == RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value
+    assert db_session.scalar(select(func.count()).select_from(ChannelPlan)) == before_launched
     assert read_operator_halt(db_session) is HaltStatus.HALTED
 
 

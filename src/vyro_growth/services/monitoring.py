@@ -22,6 +22,8 @@ from vyro_growth.models import (
     BookingPlan,
     BookingPlanRun,
     CampaignEnrollment,
+    ChannelPlan,
+    ChannelPlanRun,
     ContentBrief,
     ContentBriefRun,
     DiscoveryRun,
@@ -41,6 +43,7 @@ from vyro_growth.services.dashboard import DashboardAnalyticsService, SafetyCard
 from vyro_growth.services.operator_halt import HaltStatus
 from vyro_growth.services.readiness import ReadinessPayload, assess_readiness
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
+from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.discovery_handler import DISCOVER_NPPES_PRACTICES_JOB
@@ -72,6 +75,7 @@ PHASE_JOB_NAMES: dict[str, str] = {
     "booking_plans": PLAN_BOOKING_SLOTS_JOB,
     "voice_qualification_plans": PLAN_VOICE_QUALIFICATIONS_JOB,
     "growth_optimizer": GENERATE_GROWTH_RECOMMENDATIONS_JOB,
+    "acquisition_channel_plans": GENERATE_CHANNEL_PLANS_JOB,
     "content_briefs": GENERATE_CONTENT_BRIEFS_JOB,
 }
 
@@ -135,6 +139,7 @@ class PendingReviewCounts:
     booking_plans: int
     voice_plans: int
     optimizer_recommendations: int
+    channel_plans: int
     content_briefs: int
 
     @property
@@ -145,6 +150,7 @@ class PendingReviewCounts:
             + self.booking_plans
             + self.voice_plans
             + self.optimizer_recommendations
+            + self.channel_plans
             + self.content_briefs
         )
 
@@ -268,6 +274,31 @@ class OperatorMonitoringService:
                     run_id=optimizer.id,
                 )
             )
+        channel_run = _latest_row(db, ChannelPlanRun)
+        if channel_run is None:
+            runs.append(
+                LatestJobStatus(
+                    phase="acquisition_channel_plans",
+                    job_name=PHASE_JOB_NAMES["acquisition_channel_plans"],
+                    implemented=True,
+                    status="not_started",
+                    started_at=None,
+                    finished_at=None,
+                    run_id=None,
+                )
+            )
+        else:
+            runs.append(
+                LatestJobStatus(
+                    phase="acquisition_channel_plans",
+                    job_name=PHASE_JOB_NAMES["acquisition_channel_plans"],
+                    implemented=True,
+                    status=channel_run.status,
+                    started_at=channel_run.started_at,
+                    finished_at=channel_run.finished_at,
+                    run_id=channel_run.id,
+                )
+            )
         briefs = _latest_row(db, ContentBriefRun)
         if briefs is None:
             runs.append(
@@ -314,6 +345,7 @@ class OperatorMonitoringService:
             ("booking_plans", BookingPlanRun, None),
             ("voice_qualification_plans", VoiceQualificationRun, None),
             ("growth_optimizer", OptimizerRun, None),
+            ("acquisition_channel_plans", ChannelPlanRun, None),
             ("content_briefs", ContentBriefRun, None),
         )
         for phase, model, extra in sources:
@@ -401,6 +433,13 @@ class OperatorMonitoringService:
                 OptimizerRecommendation.approval_status
                 == RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
                 OptimizerRecommendation.applied.is_(False),
+            ),
+            channel_plans=_count_rows(
+                db,
+                ChannelPlan,
+                ChannelPlan.approval_status
+                == RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+                ChannelPlan.launched.is_(False),
             ),
             content_briefs=_count_rows(
                 db,

@@ -6,12 +6,15 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from vyro_growth.api.channel_plans import (
+    ChannelPlanRunResponse,
+    ChannelPlanSeedRequest,
+    build_channel_plan_run_response,
+    build_latest_channel_plan_response,
+)
 from vyro_growth.api.content_briefs import (
-    ChannelPlanResponse,
     ContentBriefRunResponse,
     GenerateContentBriefsRequest,
-    SeedChannelPlanRequest,
-    build_channel_plan_response,
     build_content_brief_run_response,
     build_latest_content_brief_response,
     content_brief_http_error,
@@ -135,6 +138,27 @@ def latest_growth_recommendations(
     return build_latest_optimizer_response(db)
 
 
+@app.post("/internal/channel-plans/run", tags=["internal"])
+def run_channel_planning(
+    db: DbSession,
+    request: ChannelPlanSeedRequest | None = None,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ChannelPlanRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_channel_plan_run_response(db, request)
+
+
+@app.get("/internal/channel-plans", tags=["internal"])
+def latest_channel_plans(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ChannelPlanRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_latest_channel_plan_response(db)
+
+
 @app.post("/internal/content-briefs/generate", tags=["internal"])
 def generate_content_briefs(
     db: DbSession,
@@ -158,21 +182,6 @@ def latest_content_briefs(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_content_brief_response(db)
-
-
-@app.post("/internal/channel-plans", tags=["internal"])
-def seed_channel_plan(
-    request: SeedChannelPlanRequest,
-    db: DbSession,
-    x_internal_api_key: Annotated[str | None, Header()] = None,
-) -> ChannelPlanResponse:
-    active_settings = get_settings()
-    _require_internal_key(active_settings, x_internal_api_key)
-    try:
-        return build_channel_plan_response(db, request)
-    except ContentBriefError as exc:
-        status_code, detail = content_brief_http_error(exc)
-        raise HTTPException(status_code=status_code, detail=detail) from exc
 
 
 @app.get("/internal/review-queue", tags=["internal"])

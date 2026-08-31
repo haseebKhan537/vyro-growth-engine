@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -9,16 +11,20 @@ from tests.fixtures.outreach import sample_lead, sample_organization
 from tests.test_dashboard_service import PHI_SNIPPET, PROSPECT_EMAIL, _seed_pipeline
 from vyro_growth.config import Settings
 from vyro_growth.domain import (
-    AcquisitionChannelPlanStatus,
+    AcquisitionChannel,
+    ChannelPlanRunStatus,
+    ChannelPlanType,
     ContentBriefApprovalStatus,
     ContentBriefType,
     LeadStage,
+    RecommendationApprovalStatus,
 )
 from vyro_growth.models import (
-    AcquisitionChannelPlan,
     Activity,
     Campaign,
     CampaignEnrollment,
+    ChannelPlan,
+    ChannelPlanRun,
     ContentBrief,
     ContentBriefRun,
     Lead,
@@ -26,6 +32,7 @@ from vyro_growth.models import (
     OutreachMessage,
     Suppression,
 )
+from vyro_growth.services.channel_planning import ChannelPlanningService, ChannelPlanSeeds
 from vyro_growth.services.content_brief import ContentBriefSeed, ContentBriefService
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
 
@@ -81,40 +88,31 @@ def test_populated_metrics_create_specialty_and_geography_briefs(db_session: Ses
 
 
 def test_channel_plan_integration_adds_matching_brief_types(db_session: Session) -> None:
-    service = ContentBriefService()
-    seo = service.seed_channel_plan(
+    planned = ChannelPlanningService().plan(
         db_session,
-        channel_type="seo",
-        specialty="Family Medicine",
-        geography="TX",
-    )
-    ads = service.seed_channel_plan(
-        db_session,
-        channel_type="google_ads",
-        specialty="Cardiology",
-        geography="CA",
-    )
-    partner = service.seed_channel_plan(
-        db_session,
-        channel_type="referral_partner",
-        specialty="Dermatology",
+        seeds=ChannelPlanSeeds(
+            specialty="Family Medicine",
+            geography="TX",
+            keywords=("medical billing",),
+            partner_type="specialty association",
+        ),
     )
     set_operator_halt(db_session, halted=True, reason="keep-halted")
 
-    result = service.generate(db_session, _settings())
+    result = ContentBriefService().generate(db_session, _settings())
     types = {item.brief_type for item in result.briefs}
     plan_ids = {item.source_channel_plan_id for item in result.briefs}
 
+    assert planned.plan_count > 0
     assert ContentBriefType.SEO_ARTICLE.value in types
     assert ContentBriefType.GOOGLE_ADS_LANDING_PAGE.value in types
     assert ContentBriefType.REFERRAL_PARTNER_PAGE.value in types
-    assert seo.id in plan_ids
-    assert ads.id in plan_ids
-    assert partner.id in plan_ids
+    assert {item.id for item in planned.plans} <= plan_ids
     assert all(item.published is False for item in result.briefs)
-    assert all(plan.launched is False for plan in (seo, ads, partner))
-    assert all(plan.spend_attempted is False for plan in (seo, ads, partner))
-    assert all(plan.ads_live is False for plan in (seo, ads, partner))
+    assert all(plan.launched is False for plan in planned.plans)
+    assert all(plan.spend_attempted is False for plan in planned.plans)
+    assert all(plan.campaign_launched is False for plan in planned.plans)
+    assert all(plan.pages_published is False for plan in planned.plans)
 
 
 def test_operator_seed_creates_review_only_brief(db_session: Session) -> None:
@@ -266,28 +264,54 @@ def test_service_does_not_publish_or_touch_outbound(db_session: Session) -> None
     assert run.dry_run_only is True
 
 
-def test_channel_plan_seed_is_idempotent_and_unlaunched(db_session: Session) -> None:
-    service = ContentBriefService()
-    first = service.seed_channel_plan(
-        db_session,
-        channel_type="seo",
-        specialty="Family Medicine",
-        geography="TX",
+def test_launched_or_spend_attempted_channel_plans_are_ignored(db_session: Session) -> None:
+    now = datetime.now(tz=UTC)
+    run = ChannelPlanRun(
+        status=ChannelPlanRunStatus.COMPLETED.value,
+        snapshot_fingerprint=f"ignored-{uuid4().hex}",
+        plan_count=1,
+        dry_run_only=True,
+        no_spend=True,
+        spend_attempted=True,
+        campaign_launched=False,
+        pages_published=False,
+        started_at=now,
+        finished_at=now,
     )
-    second = service.seed_channel_plan(
-        db_session,
-        channel_type="seo",
-        specialty="Family Medicine",
-        geography="TX",
+    db_session.add(run)
+    db_session.flush()
+    db_session.add(
+        ChannelPlan(
+            channel_plan_run_id=run.id,
+            plan_key="seo_content:ignored",
+            channel=AcquisitionChannel.SEO_CONTENT.value,
+            plan_type=ChannelPlanType.LANDING_PAGE_TOPIC.value,
+            title="Should not become a brief",
+            summary="Already marked spend-attempted.",
+            target_specialty="Family Medicine",
+            target_geography="TX",
+            target_icp=None,
+            priority="medium",
+            confidence=0.7,
+            source_metrics_json={},
+            seed_input_refs_json={},
+            generated_at=now,
+            approval_status=RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+            dry_run_only=True,
+            no_spend=True,
+            launched=False,
+            spend_attempted=True,
+            campaign_launched=False,
+            pages_published=False,
+            outbound_attempted=False,
+        )
     )
+    db_session.flush()
 
-    assert second.reused_existing is True
-    assert second.id == first.id
-    assert db_session.scalar(select(func.count()).select_from(AcquisitionChannelPlan)) == 1
-    assert first.status == AcquisitionChannelPlanStatus.PENDING_OPERATOR_REVIEW.value
-    assert first.launched is False
-    assert first.spend_attempted is False
-    assert first.ads_live is False
+    result = ContentBriefService().generate(db_session, _settings())
+
+    assert result.brief_count == 0
+    assert all(item.source_channel_plan_id is None for item in result.briefs)
 
 
 def test_missing_specialty_stays_missing(db_session: Session) -> None:

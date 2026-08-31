@@ -1,12 +1,12 @@
-"""Add review-only acquisition channel plans and content briefs.
+"""Add review-only content brief tables.
 
-Revision ID: 013_content_briefs
-Revises: 012_operator_review_decisions
+Revision ID: 014_content_briefs
+Revises: 013_channel_plans
 Create Date: 2026-08-31 00:00:00.000000
 
-Production-safe: new tables only. Existing review, optimizer, outreach,
-booking, and voice rows are unchanged. Briefs are operator-review drafts
-and are never published, launched, or spent against.
+Production-safe: new tables only. Existing channel-plan, review, optimizer,
+outreach, booking, and voice rows are unchanged. Briefs are operator-review
+drafts and are never published, launched, or spent against.
 """
 
 from __future__ import annotations
@@ -18,80 +18,13 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision: str = "013_content_briefs"
-down_revision: str | Sequence[str] | None = "012_operator_review_decisions"
+revision: str = "014_content_briefs"
+down_revision: str | Sequence[str] | None = "013_channel_plans"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "acquisition_channel_plans",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("plan_key", sa.String(length=255), nullable=False),
-        sa.Column("channel_type", sa.String(length=64), nullable=False),
-        sa.Column("specialty", sa.String(length=120), nullable=True),
-        sa.Column("geography", sa.String(length=120), nullable=True),
-        sa.Column("icp_label", sa.String(length=120), nullable=True),
-        sa.Column("title", sa.String(length=255), nullable=False),
-        sa.Column("summary", sa.Text(), nullable=False),
-        sa.Column(
-            "source_metrics_json",
-            postgresql.JSONB(astext_type=sa.Text()),
-            nullable=False,
-            server_default=sa.text("'{}'::jsonb"),
-        ),
-        sa.Column("status", sa.String(length=64), nullable=False),
-        sa.Column("dry_run_only", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("launched", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("spend_attempted", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("ads_live", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("plan_key", name="uq_acquisition_channel_plans_plan_key"),
-    )
-    op.create_index(
-        op.f("ix_acquisition_channel_plans_plan_key"),
-        "acquisition_channel_plans",
-        ["plan_key"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_acquisition_channel_plans_channel_type"),
-        "acquisition_channel_plans",
-        ["channel_type"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_acquisition_channel_plans_specialty"),
-        "acquisition_channel_plans",
-        ["specialty"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_acquisition_channel_plans_geography"),
-        "acquisition_channel_plans",
-        ["geography"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_acquisition_channel_plans_status"),
-        "acquisition_channel_plans",
-        ["status"],
-        unique=False,
-    )
-
     op.create_table(
         "content_brief_runs",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -205,7 +138,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(["content_brief_run_id"], ["content_brief_runs.id"]),
-        sa.ForeignKeyConstraint(["source_channel_plan_id"], ["acquisition_channel_plans.id"]),
+        sa.ForeignKeyConstraint(["source_channel_plan_id"], ["channel_plans.id"]),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "content_brief_run_id",
@@ -279,24 +212,3 @@ def downgrade() -> None:
     )
     op.drop_index(op.f("ix_content_brief_runs_status"), table_name="content_brief_runs")
     op.drop_table("content_brief_runs")
-    op.drop_index(
-        op.f("ix_acquisition_channel_plans_status"),
-        table_name="acquisition_channel_plans",
-    )
-    op.drop_index(
-        op.f("ix_acquisition_channel_plans_geography"),
-        table_name="acquisition_channel_plans",
-    )
-    op.drop_index(
-        op.f("ix_acquisition_channel_plans_specialty"),
-        table_name="acquisition_channel_plans",
-    )
-    op.drop_index(
-        op.f("ix_acquisition_channel_plans_channel_type"),
-        table_name="acquisition_channel_plans",
-    )
-    op.drop_index(
-        op.f("ix_acquisition_channel_plans_plan_key"),
-        table_name="acquisition_channel_plans",
-    )
-    op.drop_table("acquisition_channel_plans")

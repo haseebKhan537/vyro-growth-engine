@@ -31,7 +31,8 @@ PHASE_ONE_MODELS = (
     models.OptimizerRun,
     models.OptimizerRecommendation,
     models.OperatorReviewDecision,
-    models.AcquisitionChannelPlan,
+    models.ChannelPlanRun,
+    models.ChannelPlan,
     models.ContentBriefRun,
     models.ContentBrief,
 )

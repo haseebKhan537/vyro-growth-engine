@@ -472,7 +472,7 @@ The snapshot includes:
 - recent failures with redacted error text
 - safety flags: `OUTBOUND_ENABLED`, operator halt, live-provider flags, live artifact counts
 - Phase 12 readiness/config state and `ready_for_manual_rollout`
-- pending review counts for drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, and content briefs
+- pending review counts for drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs
 - findings with severity `blocked`, `warning`, or `info`
 
 Responses are counts, statuses, and sanitized messages only. They do not include message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI. The service does not write pipeline rows, send email, place calls, book meetings, or call live providers. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
@@ -511,15 +511,54 @@ Each review item includes:
 - `executable_later` (a later phase may execute an approved item; this phase never does)
 - `executed=false`
 
+Pending artifacts include personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, optimizer recommendations, acquisition channel plans, and content briefs.
+
 Output is IDs, statuses, and sanitized labels only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
-## Phase 16 — Landing page brief and SEO content draft foundation
+## Phase 15 — Acquisition channel planning foundation (dry-run)
 
-Generate review-only landing page and SEO content briefs from stored aggregate ICP signals, pending acquisition channel plans, and explicit safe operator seeds. This layer does not publish pages, commit website content, launch ads, spend money, send email, or call OpenAI, Google Ads, Search Console, Analytics, SEO, or search APIs.
+Plan non-outbound acquisition channels from stored specialty/geography aggregates and explicit operator seed inputs. This layer does not launch campaigns, publish pages, spend money, or call live ad/SEO/search providers.
 
 CLI:
 ```bash
-vyro-growth seed-channel-plan --channel-type seo --specialty "Family Medicine" --geography TX
+vyro-growth plan-acquisition-channels
+vyro-growth plan-acquisition-channels --seed-specialty "Family Medicine" --seed-state TX \
+  --seed-keyword "medical billing" --seed-partner-type "specialty association"
+vyro-growth list-channel-plans
+```
+
+Worker job name: `generate_channel_plans`
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl -X POST http://localhost:8000/internal/channel-plans/run \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"seed_specialty":"Family Medicine","seed_state":"TX"}'
+curl http://localhost:8000/internal/channel-plans \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Each plan includes:
+
+- channel (`google_search_ads`, `seo_content`, `referral_partner`, or `specialty_geography`)
+- plan type (keyword group, landing-page topic, partner campaign, or positioning)
+- title/summary
+- target specialty/geography/ICP only when safely known from stored aggregates or seeds
+- source metric or seed input references
+- priority, confidence, generated timestamp
+- `approval_status=pending_operator_review`
+- dry-run/no-spend flags; launch and spend remain false
+
+Identical sanitized snapshots and seeds reuse the existing run. Pending plans appear in `vyro-growth review-queue` as `acquisition_channel_plan`. Recording an approval does not launch, publish, or spend. Output is counts and review text only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged. No live ad, SEO, search, or paid/external provider is called.
+
+## Phase 16 — Landing page brief and SEO content draft foundation
+
+Generate review-only landing page and SEO content briefs from stored aggregate ICP signals, pending Phase 15 acquisition channel plans, and explicit safe operator seeds. This layer does not publish pages, commit website content, launch ads, spend money, send email, or call OpenAI, Google Ads, Search Console, Analytics, SEO, or search APIs.
+
+CLI:
+```bash
 vyro-growth draft-content-briefs
 vyro-growth draft-content-briefs --specialty "Family Medicine" --brief-type specialty_landing_page
 vyro-growth list-content-briefs

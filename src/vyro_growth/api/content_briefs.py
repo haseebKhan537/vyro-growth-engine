@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from vyro_growth.config import Settings
 from vyro_growth.domain import ContentBriefType
 from vyro_growth.services.content_brief import (
-    ChannelPlanView,
     ContentBriefError,
     ContentBriefRunResult,
     ContentBriefSeed,
@@ -33,16 +32,6 @@ class GenerateContentBriefsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     seeds: list[ContentBriefSeedRequest] = Field(default_factory=list)
-
-
-class SeedChannelPlanRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    channel_type: str
-    specialty: str | None = None
-    geography: str | None = None
-    icp_label: str | None = None
-    title: str | None = None
 
 
 class ContentBriefResponse(BaseModel):
@@ -92,25 +81,6 @@ class ContentBriefRunResponse(BaseModel):
     operator_halt_after: str | None = None
     auto_published: bool = False
     briefs: list[ContentBriefResponse] = Field(default_factory=list)
-
-
-class ChannelPlanResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    id: UUID
-    plan_key: str
-    channel_type: str
-    specialty: str | None = None
-    geography: str | None = None
-    icp_label: str | None = None
-    title: str
-    summary: str
-    status: str
-    dry_run_only: bool = True
-    launched: bool = False
-    spend_attempted: bool = False
-    ads_live: bool = False
-    reused_existing: bool = False
 
 
 def brief_to_response(item: ContentBriefView) -> ContentBriefResponse:
@@ -166,25 +136,6 @@ def empty_content_brief_response() -> ContentBriefRunResponse:
     return ContentBriefRunResponse(status="not_started", auto_published=False)
 
 
-def channel_plan_to_response(item: ChannelPlanView) -> ChannelPlanResponse:
-    return ChannelPlanResponse(
-        id=item.id,
-        plan_key=item.plan_key,
-        channel_type=item.channel_type,
-        specialty=item.specialty,
-        geography=item.geography,
-        icp_label=item.icp_label,
-        title=item.title,
-        summary=item.summary,
-        status=item.status,
-        dry_run_only=item.dry_run_only,
-        launched=item.launched,
-        spend_attempted=item.spend_attempted,
-        ads_live=item.ads_live,
-        reused_existing=item.reused_existing,
-    )
-
-
 def _parse_seed(item: ContentBriefSeedRequest) -> ContentBriefSeed:
     brief_type = None
     if item.brief_type:
@@ -226,29 +177,8 @@ def build_latest_content_brief_response(
     return content_brief_run_to_response(latest)
 
 
-def build_channel_plan_response(
-    db: Session,
-    request: SeedChannelPlanRequest,
-    *,
-    service: ContentBriefService | None = None,
-) -> ChannelPlanResponse:
-    generator = service or ContentBriefService()
-    return channel_plan_to_response(
-        generator.seed_channel_plan(
-            db,
-            channel_type=request.channel_type,
-            specialty=request.specialty,
-            geography=request.geography,
-            icp_label=request.icp_label,
-            title=request.title,
-        )
-    )
-
-
 def content_brief_http_error(error: ContentBriefError) -> tuple[int, str]:
     status = {
         "unknown_brief_type": 400,
-        "unknown_channel_type": 400,
-        "unsafe_channel_plan_seed": 400,
     }.get(error.code, 400)
     return status, error.message

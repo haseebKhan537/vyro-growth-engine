@@ -6,6 +6,12 @@ from vyro_growth.services.booking_plan import (
     BookingPlanJobResult,
     BookingPlanService,
 )
+from vyro_growth.services.channel_planning import (
+    ChannelPlanningService,
+    ChannelPlanRunResult,
+    ChannelPlanSeeds,
+    ChannelPlanView,
+)
 from vyro_growth.services.contact_enrichment import (
     ContactEnrichmentError,
     ContactEnrichmentResult,
@@ -111,6 +117,10 @@ __all__ = [
     "BookingPlanError",
     "BookingPlanJobResult",
     "BookingPlanService",
+    "ChannelPlanningService",
+    "ChannelPlanRunResult",
+    "ChannelPlanSeeds",
+    "ChannelPlanView",
     "ContactEnrichmentError",
     "ContactEnrichmentResult",
     "ContactEnrichmentService",

@@ -22,16 +22,16 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings
 from vyro_growth.domain import (
-    AcquisitionChannelPlanStatus,
-    AcquisitionChannelType,
+    AcquisitionChannel,
     ContentBriefApprovalStatus,
     ContentBriefPriority,
     ContentBriefRunStatus,
     ContentBriefType,
+    RecommendationApprovalStatus,
 )
 from vyro_growth.models import (
-    AcquisitionChannelPlan,
     Activity,
+    ChannelPlan,
     ContentBrief,
     ContentBriefRun,
     Lead,
@@ -115,12 +115,11 @@ DEFAULT_COMPLIANCE_NOTES = (
     "Do not write patient-facing medical advice.",
     "Missing prospect facts stay missing. Do not invent practice details.",
 )
-CHANNEL_BRIEF_TYPES: dict[AcquisitionChannelType, ContentBriefType] = {
-    AcquisitionChannelType.GOOGLE_ADS: ContentBriefType.GOOGLE_ADS_LANDING_PAGE,
-    AcquisitionChannelType.SEO: ContentBriefType.SEO_ARTICLE,
-    AcquisitionChannelType.REFERRAL_PARTNER: ContentBriefType.REFERRAL_PARTNER_PAGE,
-    AcquisitionChannelType.INBOUND_FORM: ContentBriefType.SPECIALTY_LANDING_PAGE,
-    AcquisitionChannelType.RETARGETING: ContentBriefType.GOOGLE_ADS_LANDING_PAGE,
+CHANNEL_BRIEF_TYPES: dict[AcquisitionChannel, ContentBriefType] = {
+    AcquisitionChannel.GOOGLE_SEARCH_ADS: ContentBriefType.GOOGLE_ADS_LANDING_PAGE,
+    AcquisitionChannel.SEO_CONTENT: ContentBriefType.SEO_ARTICLE,
+    AcquisitionChannel.REFERRAL_PARTNER: ContentBriefType.REFERRAL_PARTNER_PAGE,
+    AcquisitionChannel.SPECIALTY_GEOGRAPHY: ContentBriefType.SPECIALTY_LANDING_PAGE,
 }
 
 
@@ -195,24 +194,6 @@ class ContentBriefRunResult:
     operator_halt_before: str
     operator_halt_after: str
     briefs: tuple[ContentBriefView, ...]
-
-
-@dataclass(frozen=True)
-class ChannelPlanView:
-    id: UUID
-    plan_key: str
-    channel_type: str
-    specialty: str | None
-    geography: str | None
-    icp_label: str | None
-    title: str
-    summary: str
-    status: str
-    dry_run_only: bool
-    launched: bool
-    spend_attempted: bool
-    ads_live: bool
-    reused_existing: bool
 
 
 @dataclass(frozen=True)
@@ -427,81 +408,6 @@ class ContentBriefService:
         halt = read_operator_halt(db)
         return self._view(db, run, halt_before=halt, halt_after=halt, reused=True)
 
-    def seed_channel_plan(
-        self,
-        db: Session,
-        *,
-        channel_type: str,
-        specialty: str | None = None,
-        geography: str | None = None,
-        icp_label: str | None = None,
-        title: str | None = None,
-        commit: bool = True,
-    ) -> ChannelPlanView:
-        halt_before = read_operator_halt(db)
-        parsed_type = _parse_channel_type(channel_type)
-        safe_specialty = sanitize_label(specialty)
-        safe_geography = sanitize_geography(geography)
-        safe_icp = sanitize_label(icp_label)
-        if _is_unsafe_text(specialty) or _is_unsafe_text(geography) or _is_unsafe_text(icp_label):
-            raise ContentBriefError(
-                "unsafe_channel_plan_seed",
-                "Channel plan seed contained unsafe or patient-facing text",
-            )
-        plan_key = _channel_plan_key(parsed_type, safe_specialty, safe_geography, safe_icp)
-        existing = db.scalar(
-            select(AcquisitionChannelPlan).where(AcquisitionChannelPlan.plan_key == plan_key)
-        )
-        if existing is not None:
-            return _channel_plan_view(existing, reused=True)
-        safe_title = sanitize_content_text(title) or _channel_plan_title(
-            parsed_type, safe_specialty, safe_geography
-        )
-        summary = (
-            "Review-only acquisition channel plan. No ads are launched, no spend is "
-            "attempted, and no pages are published."
-        )
-        row = AcquisitionChannelPlan(
-            plan_key=plan_key,
-            channel_type=parsed_type.value,
-            specialty=safe_specialty,
-            geography=safe_geography,
-            icp_label=safe_icp,
-            title=safe_title,
-            summary=summary,
-            source_metrics_json={"seeded_by": "operator", "dry_run_only": True},
-            status=AcquisitionChannelPlanStatus.PENDING_OPERATOR_REVIEW.value,
-            dry_run_only=True,
-            launched=False,
-            spend_attempted=False,
-            ads_live=False,
-        )
-        db.add(row)
-        db.add(
-            Activity(
-                lead_id=None,
-                actor=CONTENT_BRIEF_ACTOR,
-                action="acquisition_channel_plan_seeded",
-                details={
-                    "channel_type": parsed_type.value,
-                    "specialty": safe_specialty,
-                    "geography": safe_geography,
-                    "launched": False,
-                    "spend_attempted": False,
-                    "ads_live": False,
-                    "dry_run_only": True,
-                },
-            )
-        )
-        db.flush()
-        halt_after = read_operator_halt(db)
-        if halt_after is not halt_before:
-            raise RuntimeError("channel plan seeding must not change operator halt status")
-        if commit:
-            db.commit()
-            db.refresh(row)
-        return _channel_plan_view(row, reused=False)
-
     def _view(
         self,
         db: Session,
@@ -622,17 +528,18 @@ def _sanitize_seed(seed: ContentBriefSeed) -> _SanitizedSeed:
     )
 
 
-def _pending_channel_plans(db: Session) -> tuple[AcquisitionChannelPlan, ...]:
+def _pending_channel_plans(db: Session) -> tuple[ChannelPlan, ...]:
     rows = db.scalars(
-        select(AcquisitionChannelPlan)
+        select(ChannelPlan)
         .where(
-            AcquisitionChannelPlan.status
-            == AcquisitionChannelPlanStatus.PENDING_OPERATOR_REVIEW.value,
-            AcquisitionChannelPlan.launched.is_(False),
-            AcquisitionChannelPlan.spend_attempted.is_(False),
-            AcquisitionChannelPlan.ads_live.is_(False),
+            ChannelPlan.approval_status
+            == RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+            ChannelPlan.launched.is_(False),
+            ChannelPlan.spend_attempted.is_(False),
+            ChannelPlan.campaign_launched.is_(False),
+            ChannelPlan.pages_published.is_(False),
         )
-        .order_by(AcquisitionChannelPlan.channel_type, AcquisitionChannelPlan.plan_key)
+        .order_by(ChannelPlan.channel, ChannelPlan.plan_key)
     ).all()
     return tuple(rows)
 
@@ -700,7 +607,7 @@ def _geography_signals(db: Session) -> tuple[_GeographySignal, ...]:
 
 
 def _build_briefs(
-    plans: tuple[AcquisitionChannelPlan, ...],
+    plans: tuple[ChannelPlan, ...],
     specialties: tuple[_SpecialtySignal, ...],
     geographies: tuple[_GeographySignal, ...],
     seeds: tuple[_SanitizedSeed, ...],
@@ -715,9 +622,15 @@ def _build_briefs(
     for plan in plans:
         plan_brief = _channel_plan_brief(plan)
         drafts[plan_brief.brief_key] = plan_brief
-        if plan.specialty and f"specialty_landing_page:{_slug(plan.specialty)}" not in drafts:
+        if (
+            plan.target_specialty
+            and f"specialty_landing_page:{_slug(plan.target_specialty)}" not in drafts
+        ):
             drafts.update(_optional_specialty_from_plan(plan))
-        if plan.geography and f"geography_landing_page:{_slug(plan.geography)}" not in drafts:
+        if (
+            plan.target_geography
+            and f"geography_landing_page:{_slug(plan.target_geography)}" not in drafts
+        ):
             drafts.update(_optional_geography_from_plan(plan))
     for seed in seeds:
         if seed.skipped:
@@ -756,68 +669,67 @@ def _geography_brief(signal: _GeographySignal) -> _BriefDraft:
     )
 
 
-def _channel_plan_brief(plan: AcquisitionChannelPlan) -> _BriefDraft:
-    channel = AcquisitionChannelType(plan.channel_type)
-    brief_type = CHANNEL_BRIEF_TYPES[channel]
+def _channel_plan_brief(plan: ChannelPlan) -> _BriefDraft:
+    brief_type = _brief_type_for_channel(plan)
     return _landing_brief(
         brief_type=brief_type,
         brief_key=f"{brief_type.value}:plan:{plan.id}",
-        specialty=plan.specialty,
-        geography=plan.geography,
-        icp_label=plan.icp_label,
+        specialty=plan.target_specialty,
+        geography=plan.target_geography,
+        icp_label=plan.target_icp,
         confidence=0.7,
         priority=ContentBriefPriority.MEDIUM,
         source_kind="pending_channel_plan",
         source_channel_plan_id=plan.id,
         source_references={
             "channel_plan_id": str(plan.id),
-            "channel_type": plan.channel_type,
+            "channel": plan.channel,
             "plan_key": plan.plan_key,
         },
     )
 
 
-def _optional_specialty_from_plan(plan: AcquisitionChannelPlan) -> dict[str, _BriefDraft]:
-    specialty = plan.specialty
+def _optional_specialty_from_plan(plan: ChannelPlan) -> dict[str, _BriefDraft]:
+    specialty = plan.target_specialty
     if not specialty:
         return {}
     draft = _landing_brief(
         brief_type=ContentBriefType.SPECIALTY_LANDING_PAGE,
         brief_key=f"specialty_landing_page:{_slug(specialty)}",
         specialty=specialty,
-        geography=plan.geography,
-        icp_label=plan.icp_label,
+        geography=plan.target_geography,
+        icp_label=plan.target_icp,
         confidence=0.62,
         priority=ContentBriefPriority.LOW,
         source_kind="pending_channel_plan",
         source_channel_plan_id=plan.id,
-        source_references={"channel_plan_id": str(plan.id), "channel_type": plan.channel_type},
+        source_references={"channel_plan_id": str(plan.id), "channel": plan.channel},
     )
     return {draft.brief_key: draft}
 
 
-def _optional_geography_from_plan(plan: AcquisitionChannelPlan) -> dict[str, _BriefDraft]:
-    geography = plan.geography
+def _optional_geography_from_plan(plan: ChannelPlan) -> dict[str, _BriefDraft]:
+    geography = plan.target_geography
     if not geography:
         return {}
     draft = _landing_brief(
         brief_type=ContentBriefType.GEOGRAPHY_LANDING_PAGE,
         brief_key=f"geography_landing_page:{_slug(geography)}",
-        specialty=plan.specialty,
+        specialty=plan.target_specialty,
         geography=geography,
-        icp_label=plan.icp_label,
+        icp_label=plan.target_icp,
         confidence=0.62,
         priority=ContentBriefPriority.LOW,
         source_kind="pending_channel_plan",
         source_channel_plan_id=plan.id,
-        source_references={"channel_plan_id": str(plan.id), "channel_type": plan.channel_type},
+        source_references={"channel_plan_id": str(plan.id), "channel": plan.channel},
     )
     return {draft.brief_key: draft}
 
 
 def _seed_brief(
     seed: _SanitizedSeed,
-    plans: tuple[AcquisitionChannelPlan, ...],
+    plans: tuple[ChannelPlan, ...],
 ) -> _BriefDraft | None:
     brief_type = seed.brief_type or _infer_seed_type(seed)
     if brief_type is None:
@@ -827,9 +739,9 @@ def _seed_brief(
     return _landing_brief(
         brief_type=brief_type,
         brief_key=f"{brief_type.value}:seed:{_slug(slug_source)}",
-        specialty=seed.specialty or (plan.specialty if plan is not None else None),
-        geography=seed.geography or (plan.geography if plan is not None else None),
-        icp_label=seed.icp_label or (plan.icp_label if plan is not None else None),
+        specialty=seed.specialty or (plan.target_specialty if plan is not None else None),
+        geography=seed.geography or (plan.target_geography if plan is not None else None),
+        icp_label=seed.icp_label or (plan.target_icp if plan is not None else None),
         confidence=0.55,
         priority=ContentBriefPriority.LOW,
         source_kind="operator_seed",
@@ -857,14 +769,28 @@ def _infer_seed_type(seed: _SanitizedSeed) -> ContentBriefType | None:
 
 def _plan_for_seed(
     seed: _SanitizedSeed,
-    plans: tuple[AcquisitionChannelPlan, ...],
-) -> AcquisitionChannelPlan | None:
+    plans: tuple[ChannelPlan, ...],
+) -> ChannelPlan | None:
     if seed.channel_plan_id is None:
         return None
     for plan in plans:
         if plan.id == seed.channel_plan_id:
             return plan
     return None
+
+
+def _brief_type_for_channel(plan: ChannelPlan) -> ContentBriefType:
+    try:
+        channel = AcquisitionChannel(plan.channel)
+    except ValueError:
+        return ContentBriefType.SPECIALTY_LANDING_PAGE
+    if channel is AcquisitionChannel.SPECIALTY_GEOGRAPHY:
+        if plan.target_specialty:
+            return ContentBriefType.SPECIALTY_LANDING_PAGE
+        if plan.target_geography:
+            return ContentBriefType.GEOGRAPHY_LANDING_PAGE
+        return ContentBriefType.SPECIALTY_LANDING_PAGE
+    return CHANNEL_BRIEF_TYPES.get(channel, ContentBriefType.SPECIALTY_LANDING_PAGE)
 
 
 def _landing_brief(
@@ -1035,64 +961,13 @@ def _brief_view(row: ContentBrief) -> ContentBriefView:
     )
 
 
-def _channel_plan_view(row: AcquisitionChannelPlan, *, reused: bool) -> ChannelPlanView:
-    return ChannelPlanView(
-        id=row.id,
-        plan_key=row.plan_key,
-        channel_type=row.channel_type,
-        specialty=row.specialty,
-        geography=row.geography,
-        icp_label=row.icp_label,
-        title=row.title,
-        summary=row.summary,
-        status=row.status,
-        dry_run_only=row.dry_run_only,
-        launched=row.launched,
-        spend_attempted=row.spend_attempted,
-        ads_live=row.ads_live,
-        reused_existing=reused,
-    )
-
-
-def _parse_channel_type(value: str) -> AcquisitionChannelType:
-    try:
-        return AcquisitionChannelType(value.strip())
-    except ValueError as exc:
-        raise ContentBriefError("unknown_channel_type", "Unknown acquisition channel type") from exc
-
-
-def _channel_plan_key(
-    channel_type: AcquisitionChannelType,
-    specialty: str | None,
-    geography: str | None,
-    icp_label: str | None,
-) -> str:
-    return "|".join(
-        (
-            channel_type.value,
-            _slug(specialty or "unset"),
-            _slug(geography or "unset"),
-            _slug(icp_label or "unset"),
-        )
-    )
-
-
-def _channel_plan_title(
-    channel_type: AcquisitionChannelType,
-    specialty: str | None,
-    geography: str | None,
-) -> str:
-    audience = _audience_label(specialty, geography, None)
-    return f"Pending {channel_type.value.replace('_', ' ')} plan: {audience}"[:MAX_TITLE_LENGTH]
-
-
 def _slug(value: str) -> str:
     slug = SLUG_RE.sub("-", value.lower()).strip("-")
     return slug[:80] or "unset"
 
 
 def _sanitized_snapshot(
-    plans: tuple[AcquisitionChannelPlan, ...],
+    plans: tuple[ChannelPlan, ...],
     specialties: tuple[_SpecialtySignal, ...],
     geographies: tuple[_GeographySignal, ...],
     seeds: tuple[_SanitizedSeed, ...],
@@ -1102,10 +977,10 @@ def _sanitized_snapshot(
             {
                 "id": str(plan.id),
                 "plan_key": plan.plan_key,
-                "channel_type": plan.channel_type,
-                "specialty": plan.specialty,
-                "geography": plan.geography,
-                "icp_label": plan.icp_label,
+                "channel": plan.channel,
+                "specialty": plan.target_specialty,
+                "geography": plan.target_geography,
+                "icp_label": plan.target_icp,
             }
             for plan in plans
         ],
