@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -93,14 +93,14 @@ PLAN_SPECS: dict[ReviewArtifactType, _PlanSpec] = {
             "Artifact remains operator-approved",
             "Owner separately approves any future live enrollment",
             "Suppression checks must run immediately before any future contact",
-            "Smartlead live remains disabled until the owner approves it",
+            "Campaign-provider live remains disabled until the owner approves it",
         ),
         safety_notes=(
             "No live campaign enrollment is performed",
             "No email is sent from this plan",
         ),
         required_owner_approvals=(
-            "Owner approval before live Smartlead enrollment",
+            "Owner approval before live campaign enrollment",
             "Owner approval before enabling OUTBOUND_ENABLED",
         ),
         type_blockers=(
@@ -216,7 +216,7 @@ PLAN_SPECS: dict[ReviewArtifactType, _PlanSpec] = {
         prerequisites=(
             "Artifact remains operator-approved",
             "Owner separately approves any future publish or ad launch",
-            "No OpenAI, Ads, Search Console, Analytics, or SEO API is called",
+            "No ads, analytics, or search APIs are called",
         ),
         safety_notes=(
             "No landing page or article is published",
@@ -786,6 +786,6 @@ def _json_safe(value: object) -> Any:
     return value
 
 
-def _fingerprint(payload: dict[str, object]) -> str:
+def _fingerprint(payload: Mapping[str, object]) -> str:
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
