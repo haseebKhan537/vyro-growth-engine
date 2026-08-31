@@ -264,6 +264,15 @@ The smoke harness is a local-only demo over deterministic synthetic fixture data
 4. Output is IDs, statuses, counts, timestamps, blocker/readiness codes, and `executed=0` / `live_action=false` / `outbound_attempted=false` flags only. No PHI, emails, phones, message bodies, draft copy, evidence snippets, secrets, or unsafe error text.
 5. Operator halt on the demo session is seeded halted if missing and otherwise left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called.
 
+### Phase 26: CI dry-run smoke gate
+CI proves the Phase 25 local-only smoke harness stays safe, deterministic, and usable. It does not send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish content, launch ads, spend money, deploy, apply optimizer recommendations, execute approved items or packets, or set live owner-approved state.
+
+1. GitHub Actions job `smoke-dry-run` installs dependencies, sets `OUTBOUND_ENABLED=false` and every live-provider flag false, and unsets `DATABASE_URL` plus provider credentials.
+2. CI runs `vyro-growth smoke-dry-run --local-only --json` against the isolated in-memory demo fixture. Unexpected refusals fail the job.
+3. `vyro-growth check-smoke-output` parses the sanitized JSON and requires `executed=0`, `live_action=false`, `outbound_attempted=false`, `owner_approved=false`, `dry_run_only=true`, `no_execution=true`, and `isolated_demo_database=true`.
+4. The checker fails closed if output includes PHI, emails, phones, message bodies, draft copy, evidence snippets, secrets, live-provider enablement, or unsafe error text.
+5. Operator halt and live/runtime settings are not changed. No live provider is called.
+
 ### Event flow
 1. Practice discovered.
 2. Practice normalized/deduplicated.

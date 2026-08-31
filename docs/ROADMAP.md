@@ -322,7 +322,7 @@ Internal read-only queue over stored review decisions, execution plans, approval
 - dashboard and command-center links to the queue
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 25 — End-to-end dry-run smoke harness (current)
+## Phase 25 — End-to-end dry-run smoke harness
 Local-only dry-run smoke/demo command over deterministic synthetic fixture data. No live workflow.
 - CLI `vyro-growth smoke-dry-run` (`--local-only` / `--dev-demo` required outside development)
 - isolated in-memory demo database; does not write to `DATABASE_URL`
@@ -332,6 +332,15 @@ Local-only dry-run smoke/demo command over deterministic synthetic fixture data.
 - sanitized console/JSON summary with counts, statuses, blocker codes, readiness statuses, `executed=0`, `live_action=false`, and `outbound_attempted=false`
 - refuses production/live runs unless `--local-only`/`--dev-demo` is present; still refuses when `OUTBOUND_ENABLED` or a live-provider flag is true
 - no NPPES/search/Apollo/campaign/AI/calendar/voice/ad/SEO provider calls, email, enrollment, calls, bookings, publish, ads, spend, or deploy
+
+## Phase 26 — CI dry-run smoke gate (current)
+CI coverage for the Phase 25 local-only smoke harness. No live workflow.
+- GitHub Actions job `smoke-dry-run` runs `vyro-growth smoke-dry-run --local-only --json` after dependency install
+- CI sets `OUTBOUND_ENABLED=false` and every live-provider flag false; unsets `DATABASE_URL` and provider credentials
+- helper CLI `vyro-growth check-smoke-output` fails the job when JSON is missing no-execution signals or includes forbidden sensitive values
+- required signals: `executed=0`, `live_action=false`, `outbound_attempted=false`, `owner_approved=false`, `dry_run_only=true`, `no_execution=true`, `isolated_demo_database=true`
+- fails closed on PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, unsafe raw errors, or invented real-world prospect facts
+- does not call live providers, use real prospect data, execute approved items, or change operator halt / live settings
 
 Future smoke work (not in this phase):
 - execute an approved item or packet

@@ -26,6 +26,33 @@ jobs:
       - name: Pytest
         run: pytest -q
 
+  smoke-dry-run:
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: development
+      OUTBOUND_ENABLED: "false"
+      OPENAI_PERSONALIZATION_ENABLED: "false"
+      SMARTLEAD_LIVE_ENABLED: "false"
+      OPENAI_REPLY_CLASSIFICATION_ENABLED: "false"
+      GOOGLE_CALENDAR_LIVE_ENABLED: "false"
+      VOICE_LIVE_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Dry-run smoke gate
+        run: |
+          set -euo pipefail
+          unset DATABASE_URL OPENAI_API_KEY SMARTLEAD_API_KEY GOOGLE_CALENDAR_API_KEY VOICE_API_KEY CONTACT_ENRICHMENT_API_KEY INTERNAL_API_KEY
+          vyro-growth smoke-dry-run --local-only --json | tee "${RUNNER_TEMP}/smoke-output.json"
+          vyro-growth check-smoke-output --file "${RUNNER_TEMP}/smoke-output.json"
+
   deploy-config:
     runs-on: ubuntu-latest
     steps:

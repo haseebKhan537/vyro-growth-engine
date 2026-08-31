@@ -299,6 +299,7 @@ def test_approval_packets_do_not_call_live_providers() -> None:
 def test_smoke_dry_run_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/smoke_dry_run.py"),
+        Path("src/vyro_growth/smoke_ci_gate.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

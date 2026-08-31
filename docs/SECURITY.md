@@ -241,6 +241,14 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Print IDs, statuses, counts, timestamps, blocker/readiness codes, and `executed=0` / `live_action=false` / `outbound_attempted=false` flags only.
 - Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
 
+## CI dry-run smoke gate integrity
+- Phase 26 CI runs the Phase 25 local-only smoke harness on pull requests. It never performs a live workflow.
+- Keep `OUTBOUND_ENABLED=false` and every live-provider flag disabled in the smoke job. Unset `DATABASE_URL` and provider credentials so CI cannot read live secrets for that gate.
+- Fail the job if `vyro-growth smoke-dry-run --local-only --json` refuses unexpectedly or reports `executed`, `live_action`, `outbound_attempted`, `owner_approved`, or other live side-effect flags other than the dry-run defaults.
+- `vyro-growth check-smoke-output` must require `dry_run_only=true`, `no_execution=true`, and `isolated_demo_database=true`.
+- Fail CI if logs or JSON expose PHI, real emails, real phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw errors, or invented real-world prospect facts.
+- Do not call live providers, use real prospect data, execute approved items or packets, or change operator halt / live settings from CI.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.
