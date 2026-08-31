@@ -540,10 +540,20 @@ def _remaining_checklist(
         FindingSeverity.INFO.value,
         "release_artifact_manifest",
     )
-    for item in handoff.remaining_manual_owner_checklist:
-        add(item.code, item.severity, item.source_section, status=item.status)
-    for item in manifest.remaining_manual_owner_checklist:
-        add(item.code, item.severity, item.source_section, status=item.status)
+    for handoff_item in handoff.remaining_manual_owner_checklist:
+        add(
+            handoff_item.code,
+            handoff_item.severity,
+            handoff_item.source_section,
+            status=handoff_item.status,
+        )
+    for manifest_item in manifest.remaining_manual_owner_checklist:
+        add(
+            manifest_item.code,
+            manifest_item.severity,
+            manifest_item.source_section,
+            status=manifest_item.status,
+        )
     for action in command_center.next_actions:
         add(
             action.code,
