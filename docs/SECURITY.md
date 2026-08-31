@@ -231,6 +231,16 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Keep executed, outbound, call, spend, launch, publish, apply, and live owner-approved flags false.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by the readiness queue.
 
+## Dry-run smoke harness integrity
+- Phase 25 smoke is a local-only dry-run/demo over deterministic synthetic fixture data. It never performs a live workflow.
+- Do not use real prospect data, PHI, real emails, or real phone numbers. Seed synthetic demo records only.
+- Do not scrape websites or call NPPES, search, Apollo, campaign, generative-AI, calendar, voice, ad, or SEO providers.
+- Do not send email, enroll live campaigns, generate sendable autonomous replies, create calendar events, create Google Meet links, place calls, publish pages or content, launch ads, spend money, deploy, apply optimizer recommendations, execute approved review items or approval packets, or set live owner-approved state.
+- Do not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign live settings, scoring thresholds, or operator halt on runtime data. The CLI uses an isolated in-memory demo database.
+- Refuse production/live execution unless `--local-only` or `--dev-demo` is present. Still refuse when outbound or a live-provider flag is enabled.
+- Print IDs, statuses, counts, timestamps, blocker/readiness codes, and `executed=0` / `live_action=false` / `outbound_attempted=false` flags only.
+- Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

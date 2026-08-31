@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import sys
+from contextlib import redirect_stdout
+from io import StringIO
 from uuid import UUID
 
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
@@ -72,6 +74,12 @@ from vyro_growth.services.review_queue import (
     ReviewQueueError,
     ReviewQueueResult,
     ReviewQueueService,
+)
+from vyro_growth.services.smoke_dry_run import (
+    SmokeDryRunRefused,
+    format_smoke_summary,
+    isolated_demo_session,
+    run_smoke_dry_run,
 )
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
@@ -400,6 +408,28 @@ def build_parser() -> argparse.ArgumentParser:
         "--decision-status",
         help="Limit to one review decision status (approved, rejected, needs_changes, missing)",
     )
+    smoke = subparsers.add_parser(
+        "smoke-dry-run",
+        help=(
+            "Run a local-only dry-run smoke harness against synthetic demo data "
+            "(does not send, enroll, book, call, publish, spend, deploy, or execute)"
+        ),
+    )
+    smoke.add_argument(
+        "--local-only",
+        action="store_true",
+        help="Acknowledge this is a local demo/dry-run (required outside development)",
+    )
+    smoke.add_argument(
+        "--dev-demo",
+        action="store_true",
+        help="Alias for --local-only",
+    )
+    smoke.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized summary as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -522,6 +552,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "action-readiness":
         return _run_action_readiness(args)
+
+    if args.command == "smoke-dry-run":
+        return _run_smoke_dry_run(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1541,6 +1574,26 @@ def _print_approval_packet_result(result: ApprovalPacketRunResult) -> None:
             f"owner_approval_required={item.owner_approval_required}",
             f"action={item.proposed_action}",
         )
+
+
+def _run_smoke_dry_run(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    local_only = bool(args.local_only or args.dev_demo)
+    log_buffer = StringIO()
+    try:
+        with isolated_demo_session() as db:
+            with redirect_stdout(log_buffer):
+                result = run_smoke_dry_run(
+                    db,
+                    settings,
+                    local_only=local_only,
+                    isolated_demo_database=True,
+                )
+    except SmokeDryRunRefused as exc:
+        print(exc.message, file=sys.stderr)
+        return 1
+    print(format_smoke_summary(result, as_json=args.json))
+    return 0
 
 
 def _run_action_readiness(args: argparse.Namespace) -> int:

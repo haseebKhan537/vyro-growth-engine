@@ -742,6 +742,22 @@ The queue shows candidate/action id, artifact type/id, plan family, review decis
 
 Rendered HTML and JSON are IDs, statuses, counts, timestamps, codes, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 25 — End-to-end dry-run smoke harness (local demo only)
+
+Run one local-only dry-run smoke command against deterministic synthetic fixture data. This is not a live workflow. It does not scrape websites, call NPPES/search/Apollo/campaign/AI/calendar/voice/ad/SEO providers, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, deploy, apply optimizer recommendations, execute approved review items or approval packets, or set live `owner_approved`.
+
+CLI:
+```bash
+vyro-growth smoke-dry-run --local-only
+vyro-growth smoke-dry-run --dev-demo --json
+```
+
+Outside `ENVIRONMENT=development`, `--local-only` or `--dev-demo` is required. The command still refuses to run when `OUTBOUND_ENABLED` is true or any live-provider flag is enabled. The CLI uses an isolated in-memory demo database and does not write to `DATABASE_URL` or change operator halt on runtime data.
+
+The command seeds a synthetic practice and lead plus safe public-business facts (no PHI), then exercises existing dry-run services: scoring, personalization, outreach planning, reply classification, booking, voice, optimizer, channel plans, content briefs, operator review decisions, execution plans, owner approval packets, packet decision records, and the action-readiness queue.
+
+Output is a sanitized console or JSON summary: counts, statuses, blocker codes, readiness statuses, timestamps, and flags including `executed=0`, `live_action=false`, and `outbound_attempted=false`. It does not include PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, unsafe raw error text, or invented real-world prospect facts. `OUTBOUND_ENABLED` remains false by default.
+
 ## Phase 1
 
 Production foundation:
