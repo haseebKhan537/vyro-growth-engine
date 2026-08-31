@@ -1857,6 +1857,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     manifest = parser.parse_args(["release-artifact-manifest", "--json"])
     assert manifest.command == "release-artifact-manifest"
     assert manifest.json is True
+    index = parser.parse_args(["go-live-readiness-index", "--json"])
+    assert index.command == "go-live-readiness-index"
+    assert index.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

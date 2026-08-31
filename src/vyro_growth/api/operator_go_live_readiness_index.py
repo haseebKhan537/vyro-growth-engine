@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.api.operator_ui import (
     COMPLIANCE_EVIDENCE_BINDER_JSON_PATH,
+    GO_LIVE_READINESS_INDEX_JSON_PATH,
     LAUNCH_READINESS_JSON_PATH,
     NO_STORE_HEADERS,
     OPERATOR_AUDIT_TIMELINE_PATH,
@@ -164,6 +165,7 @@ def _render_related_links() -> str:
     runbook_json_href = escape(RELEASE_CANDIDATE_RUNBOOK_JSON_PATH)
     manifest_href = escape(OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH)
     manifest_json_href = escape(RELEASE_ARTIFACT_MANIFEST_JSON_PATH)
+    index_json_href = escape(GO_LIVE_READINESS_INDEX_JSON_PATH)
     timeline_href = escape(OPERATOR_AUDIT_TIMELINE_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Linked readiness surfaces">\n'
@@ -179,6 +181,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{runbook_json_href}">JSON runbook</a>\n'
         f'      <a class="nav-link" href="{manifest_href}">Release manifest</a>\n'
         f'      <a class="nav-link" href="{manifest_json_href}">JSON manifest</a>\n'
+        f'      <a class="nav-link" href="{index_json_href}">JSON index</a>\n'
         f'      <a class="nav-link" href="{timeline_href}">Audit timeline</a>\n'
         "    </nav>"
     )

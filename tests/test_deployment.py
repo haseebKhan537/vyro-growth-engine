@@ -101,6 +101,8 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "release-artifact-manifest" in runbook
     assert "operator-release-artifact-manifest" in runbook
     assert "operator-go-live-readiness-index" in runbook
+    assert "/internal/go-live-readiness-index" in runbook
+    assert "vyro-growth go-live-readiness-index" in runbook
     assert "018_live_settings_change_requests" in runbook
 
 

@@ -73,6 +73,10 @@ from vyro_growth.services.execution_planning import (
     ExecutionPlanningService,
     ExecutionPlanRunResult,
 )
+from vyro_growth.services.go_live_readiness_index import (
+    GoLiveReadinessIndexService,
+    format_go_live_readiness_index,
+)
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
 from vyro_growth.services.launch_readiness import (
     LaunchReadinessService,
@@ -638,6 +642,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized release artifact manifest as JSON",
     )
+    index = subparsers.add_parser(
+        "go-live-readiness-index",
+        help=(
+            "Export a sanitized go-live readiness index "
+            "(read-only; does not execute, apply settings, or go live)"
+        ),
+    )
+    index.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized go-live readiness index as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -799,6 +815,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "release-artifact-manifest":
         return _run_release_artifact_manifest(args)
+
+    if args.command == "go-live-readiness-index":
+        return _run_go_live_readiness_index(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2013,6 +2032,14 @@ def _run_release_artifact_manifest(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         manifest = ReleaseArtifactManifestService().build(db, settings)
     print(format_release_artifact_manifest(manifest, as_json=args.json))
+    return 0
+
+
+def _run_go_live_readiness_index(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        index = GoLiveReadinessIndexService().build(db, settings)
+    print(format_go_live_readiness_index(index, as_json=args.json))
     return 0
 
 

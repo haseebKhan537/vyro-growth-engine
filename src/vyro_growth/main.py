@@ -52,6 +52,10 @@ from vyro_growth.api.execution_plans import (
     build_latest_execution_plan_response,
     execution_planning_http_error,
 )
+from vyro_growth.api.go_live_readiness_index import (
+    GoLiveReadinessIndexResponse,
+    build_go_live_readiness_index_response,
+)
 from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
@@ -769,6 +773,16 @@ def release_artifact_manifest(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_release_artifact_manifest_response(db, active_settings)
+
+
+@app.get("/internal/go-live-readiness-index", tags=["internal"])
+def go_live_readiness_index(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> GoLiveReadinessIndexResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_go_live_readiness_index_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

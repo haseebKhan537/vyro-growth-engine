@@ -487,7 +487,7 @@ Internal operator HTML view of the Phase 39 release artifact manifest. Read-only
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 41 — Operator go-live readiness index UI (current)
+## Phase 41 — Operator go-live readiness index UI
 Internal operator HTML index of existing owner/operator readiness, evidence, runbook, manifest, and audit surfaces. Read-only, no execution.
 - `GET /internal/operator-go-live-readiness-index`
 - Reuses existing read-only builders/summaries and links to the existing JSON and HTML surfaces
@@ -497,6 +497,18 @@ Internal operator HTML index of existing owner/operator readiness, evidence, run
 - Page states this is an index/review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 42 — Go-live readiness index CLI and JSON export (current)
+Sanitized read-only CLI and internal JSON export of the Phase 41 go-live readiness index. Review export only, no execution.
+- CLI `vyro-growth go-live-readiness-index` with Markdown output and `--json` output
+- Internal JSON `GET /internal/go-live-readiness-index`
+- Reuses existing Phase 41 `GoLiveReadinessIndexService` and payload helper
+- Same safe readiness rollup: operator dashboard / command center, launch readiness, settings execution preflight, owner handoff packet, compliance evidence binder, release-candidate runbook, release artifact manifest, operator audit timeline counts, and manual owner checklist rollup
+- Live-blocking flags using safe metadata only: `OUTBOUND_ENABLED=false`, operator halt status, closed live-provider flags, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `build_allowed=false`, `artifact_publish_allowed=false`, and that the index is not permission to go live
+- Safe metadata only: statuses, counts, codes, routes, commands, flag names/states, missing credential variable names, sanitized timestamps, and checklist labels
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- This is a review export only, not permission to go live and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

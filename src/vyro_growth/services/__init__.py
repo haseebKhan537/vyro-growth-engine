@@ -65,6 +65,7 @@ from vyro_growth.services.execution_planning import (
 from vyro_growth.services.go_live_readiness_index import (
     GoLiveReadinessIndex,
     GoLiveReadinessIndexService,
+    format_go_live_readiness_index,
 )
 from vyro_growth.services.growth_optimizer import (
     GrowthOptimizerService,
@@ -297,6 +298,7 @@ __all__ = [
     "database_is_ready",
     "domain_from_email",
     "format_compliance_evidence_binder",
+    "format_go_live_readiness_index",
     "format_launch_readiness",
     "format_release_artifact_manifest",
     "format_release_candidate_runbook",
