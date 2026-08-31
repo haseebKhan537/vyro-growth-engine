@@ -142,6 +142,7 @@ def test_renderer_empty_state_is_read_only() -> None:
     assert "There are no apply, execute, enable outbound, or lift-halt controls" in html
     assert "/internal/launch-readiness" in html
     assert "/internal/operator-settings-execution-preflight" in html
+    assert "/internal/operator-owner-handoff-packet" in html
     for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 
@@ -184,6 +185,7 @@ def test_detail_renderer_and_missing_pages_are_safe() -> None:
     assert 'id="operator-settings-change-request"' in html
     assert 'data-decision-record-only="true"' in html
     assert "/internal/operator-settings-execution-preflight" in html
+    assert "/internal/operator-owner-handoff-packet" in html
     assert XSS_LABEL not in html
     assert escape_marker() in html
     assert "OUTBOUND_ENABLED" in html

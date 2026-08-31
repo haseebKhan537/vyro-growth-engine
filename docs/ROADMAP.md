@@ -392,7 +392,7 @@ Internal operator HTML view of the Phase 30 dry-run simulator. Read-only, no exe
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 32 — Owner go-live handoff packet export (current)
+## Phase 32 — Owner go-live handoff packet export
 Read-only owner-review packet consolidating existing safe summaries. No execution.
 - Service plus CLI `vyro-growth owner-handoff-packet` and internal JSON `GET /internal/owner-handoff-packet`
 - Reuses launch readiness, settings change requests, settings execution preflight, owner approval packets, and approved action readiness
@@ -400,6 +400,17 @@ Read-only owner-review packet consolidating existing safe summaries. No executio
 - Sanitized metadata only: overall status, blocker/gate/approval codes, pending/approved/rejected counts, request IDs, packet IDs, candidate IDs, setting names, desired booleans/statuses, missing credential variable names, closed provider flag names, timestamps, and no-execution flags
 - `execution_allowed=false` and `go_live_permitted=false`; this packet is not permission or machinery for going live
 - Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 33 — Owner go-live handoff packet UI shell (current)
+Internal operator HTML view of the Phase 32 owner go-live handoff packet. Read-only, no execution.
+- `GET /internal/operator-owner-handoff-packet`
+- Renders existing Phase 32 handoff packet as a sanitized HTML page
+- Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, settings change request UI, and settings execution preflight UI
+- Shows all six handoff sections: launch readiness, settings change requests, settings execution preflight, owner approval packets, approved action readiness, and remaining manual owner checklist
+- Sanitized fields only: overall status, blocker/gate/approval codes, pending/approved/rejected counts, request IDs, packet IDs, candidate IDs, setting names, desired booleans/statuses, missing credential variable names, closed provider flag names, timestamps, and no-execution flags
+- Page states `go_live_permitted=false`, `execution_allowed=false`, and manual-review-only/no-execution semantics
+- No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

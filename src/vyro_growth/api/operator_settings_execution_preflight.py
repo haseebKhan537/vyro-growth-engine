@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.api.operator_ui import (
     NO_STORE_HEADERS,
+    OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_UI_STYLES,
@@ -230,6 +231,7 @@ def _render_filters(
         )
     json_href = escape(SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH)
     requests_href = escape(OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH)
+    handoff_href = escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Request type filters">'
         f"{' '.join(type_links)}</nav>\n"
@@ -239,6 +241,7 @@ def _render_filters(
         f"{' '.join(execution_links)}\n"
         f'      <a class="nav-link nav-json" href="{json_href}">JSON preflight</a>\n'
         f'      <a class="nav-link" href="{requests_href}">Settings requests</a>\n'
+        f'      <a class="nav-link" href="{handoff_href}">Owner handoff packet</a>\n'
         "    </nav>"
     )
 

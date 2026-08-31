@@ -112,8 +112,10 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "Read-only dry-run view; do not execute."
     ),
     NextActionCode.HANDOFF_IS_NOT_GO_LIVE: (
-        "This handoff packet is for manual owner review only. "
-        "It is not permission or machinery for going live."
+        "Inspect the owner go-live handoff packet at "
+        "/internal/operator-owner-handoff-packet. "
+        "Read-only manual-review view; it is not permission or machinery "
+        "for going live."
     ),
 }
 
@@ -467,6 +469,11 @@ def _next_actions(
         NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT,
         FindingSeverity.INFO,
         phase="settings_execution_preflight",
+    )
+    add(
+        NextActionCode.HANDOFF_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="owner_handoff",
     )
 
     return tuple(
