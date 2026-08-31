@@ -23,7 +23,6 @@ from vyro_growth.api.command_center import (
     CommandCenterResponse,
     build_command_center_response,
 )
-from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.content_briefs import (
     ContentBriefRunResponse,
     GenerateContentBriefsRequest,
@@ -52,6 +51,7 @@ from vyro_growth.api.monitoring import (
     MonitoringStatusResponse,
     build_monitoring_status_response,
 )
+from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
     build_latest_optimizer_response,

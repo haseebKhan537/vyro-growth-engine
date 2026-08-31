@@ -407,10 +407,11 @@ def test_operator_dashboard_failure_state_redacts_errors(
     response = api_client.get(OPERATOR_DASHBOARD_PATH)
 
     assert response.status_code == 500
-    assert "Unable to load the operator dashboard" in response.text
-    assert "sk-testsecret12345" not in response.text
-    assert "diabetes" not in response.text.lower()
-    assert "No pipeline rows were written" in response.text
+    body = " ".join(response.text.split())
+    assert "Unable to load the operator dashboard" in body
+    assert "sk-testsecret12345" not in body
+    assert "diabetes" not in body.lower()
+    assert "No pipeline rows were written" in body
     for marker in ACTION_MARKERS:
         assert marker not in response.text.lower()
 
@@ -442,6 +443,9 @@ def test_operator_dashboard_reports_packets_without_executing(
     assert "Outbound attempted=no" in body
     assert PHI_SNIPPET not in body
     assert PROSPECT_EMAIL not in body
-    assert db_session.scalar(select(func.count()).select_from(OwnerApprovalPacket)) == before_packets
+    assert (
+        db_session.scalar(select(func.count()).select_from(OwnerApprovalPacket))
+        == before_packets
+    )
     assert db_session.scalar(select(func.count()).select_from(Activity)) == before_activities
     assert read_operator_halt(db_session) is HaltStatus.HALTED

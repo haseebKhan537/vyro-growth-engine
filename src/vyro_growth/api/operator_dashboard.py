@@ -116,9 +116,9 @@ _FAILURE_PAGE = """<!DOCTYPE html>
   <main id="operator-dashboard-error">
     <div class="banner">Unable to load the operator dashboard.</div>
     <h1>Read-only view unavailable</h1>
-    <p>The sanitized command-center summary could not be rendered. No pipeline
-    rows were written and no outbound, booking, calling, publish, spend, or
-    deploy action was executed.</p>
+    <p>The sanitized command-center summary could not be rendered.
+    No pipeline rows were written and no outbound, booking, calling,
+    publish, spend, or deploy action was executed.</p>
     <p>Retry after checking database connectivity and runtime config. Operator
     halt state was not changed.</p>
   </main>
@@ -157,6 +157,7 @@ def render_operator_dashboard(
 ) -> str:
     title = "Operator dashboard"
     generated = _safe(_format_dt(summary.generated_at))
+    findings = _render_findings(summary.finding_counts, summary.findings)
     return (
         "<!DOCTYPE html>\n"
         '<html lang="en">\n'
@@ -175,7 +176,7 @@ def render_operator_dashboard(
         f"{_maybe(section, 'runs', _render_runs(summary.latest_runs, summary.recent_failures))}\n"
         f"{_maybe(section, 'review', _render_review(summary.outstanding_review))}\n"
         f"{_maybe(section, 'packets', _render_packets(summary.approval_packets))}\n"
-        f"{_maybe(section, 'findings', _render_findings(summary.finding_counts, summary.findings))}\n"
+        f"{_maybe(section, 'findings', findings)}\n"
         f"{_maybe(section, 'actions', _render_actions(summary.next_actions))}\n"
         f"{_render_footer(summary, generated)}\n"
         "  </main>\n"
@@ -214,7 +215,11 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
     links = []
     for name in _DASHBOARD_SECTIONS:
         label = _SECTION_LABELS[name]
-        href = OPERATOR_DASHBOARD_PATH if name == "all" else f"{OPERATOR_DASHBOARD_PATH}?section={name}"
+        href = (
+            OPERATOR_DASHBOARD_PATH
+            if name == "all"
+            else f"{OPERATOR_DASHBOARD_PATH}?section={name}"
+        )
         current = ' aria-current="page"' if name == section else ""
         cls = "nav-link is-current" if name == section else "nav-link"
         links.append(f'<a class="{cls}" href="{escape(href)}"{current}>{escape(label)}</a>')
@@ -276,7 +281,7 @@ def _render_safety(
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
         f"        {_metric('Settings halt', _flag(safety.outbound_halted_settings))}\n"
         f"        {_metric('Operator halt', safety.operator_halt_status)}\n"
-        f"        {_metric('Live providers', 'off' if not safety.live_providers_enabled else 'on')}\n"
+        f"        {_metric('Live providers', _flag(safety.live_providers_enabled))}\n"
         f"        {_metric('Calendar events', safety.live_calendar_events)}\n"
         f"        {_metric('Video-meet links', safety.live_meet_links)}\n"
         f"        {_metric('Phone calls', safety.live_phone_calls)}\n"
