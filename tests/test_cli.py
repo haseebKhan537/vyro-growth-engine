@@ -12,6 +12,7 @@ from vyro_growth.domain import (
     ContentBriefRunStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
+    ExecutionPlanRunStatus,
     FindingCode,
     FindingSeverity,
     OptimizerRunStatus,
@@ -43,6 +44,7 @@ from vyro_growth.services.dashboard import (
     WebsiteEnrichmentSummary,
 )
 from vyro_growth.services.discovery import DiscoveryRunResult
+from vyro_growth.services.execution_planning import ExecutionPlanRunResult, ExecutionPlanView
 from vyro_growth.services.growth_optimizer import (
     OptimizerRecommendationView,
     OptimizerRunResult,
@@ -1251,6 +1253,118 @@ def test_cli_main_runs_plan_acquisition_channels(
     assert "launched=False" in output
 
     list_code = main(["list-channel-plans"])
+    assert list_code == 0
+
+
+def test_parser_accepts_execution_plan_commands() -> None:
+    parser = build_parser()
+    planned = parser.parse_args(
+        [
+            "plan-approved-execution",
+            "--artifact-type",
+            "personalization_draft",
+        ]
+    )
+    listed = parser.parse_args(["list-execution-plans"])
+
+    assert planned.command == "plan-approved-execution"
+    assert planned.artifact_type == "personalization_draft"
+    assert listed.command == "list-execution-plans"
+
+
+def test_cli_main_runs_plan_approved_execution(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    artifact_id = uuid4()
+    plan = ExecutionPlanView(
+        id=uuid4(),
+        source_review_decision_id=uuid4(),
+        source_artifact_type="personalization_draft",
+        source_artifact_id=artifact_id,
+        lead_id=None,
+        organization_id=None,
+        plan_type="personalization_draft",
+        proposed_action="Prepare later owner-approved outreach from this dry-run draft",
+        readiness_status="blocked",
+        dry_run_only=True,
+        no_execution=True,
+        executed=False,
+        execution_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        ads_launched=False,
+        owner_approval_required=True,
+        owner_approved=False,
+        generated_at=datetime.now(tz=UTC),
+        idempotency_key="abc123",
+        prerequisites=({"code": "artifact_operator_approved", "label": "approved", "met": True},),
+        blockers=({"code": "execution_disabled_in_this_phase", "label": "dry-run only"},),
+        safety_notes=("No email is sent from this plan",),
+        required_owner_approvals=("Owner approval before any live outreach send",),
+    )
+    result = ExecutionPlanRunResult(
+        execution_plan_run_id=uuid4(),
+        status=ExecutionPlanRunStatus.COMPLETED,
+        model_version="execution-planning-v1",
+        snapshot_fingerprint="abc123",
+        plan_count=1,
+        reused_existing=False,
+        reused_count=0,
+        ignored_non_approved_count=0,
+        executed_count=0,
+        dry_run_only=True,
+        no_execution=True,
+        execution_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        ads_launched=False,
+        generated_at=datetime.now(tz=UTC),
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        plans=(plan,),
+    )
+
+    class DummyService:
+        def generate(
+            self, _db: object, _settings: object, **_kwargs: object
+        ) -> ExecutionPlanRunResult:
+            return result
+
+        def latest(self, _db: object) -> ExecutionPlanRunResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ExecutionPlanningService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["plan-approved-execution"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"id={result.execution_plan_run_id}" in output
+    assert "plans=1" in output
+    assert "executed=0" in output
+    assert "no_execution=True" in output
+    assert "outbound_attempted=False" in output
+    assert f"artifact_id={artifact_id}" in output
+
+    list_code = main(["list-execution-plans"])
     assert list_code == 0
 
 

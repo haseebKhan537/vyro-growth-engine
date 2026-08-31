@@ -25,6 +25,13 @@ from vyro_growth.api.dashboard import (
     build_dashboard_summary_response,
 )
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
+from vyro_growth.api.execution_plans import (
+    ExecutionPlanRunRequest,
+    ExecutionPlanRunResponse,
+    build_execution_plan_run_response,
+    build_latest_execution_plan_response,
+    execution_planning_http_error,
+)
 from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
@@ -50,6 +57,7 @@ from vyro_growth.config import Settings, get_settings, require_valid_runtime_set
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
 from vyro_growth.services.content_brief import ContentBriefError
+from vyro_growth.services.execution_planning import ExecutionPlanningError
 from vyro_growth.services.readiness import HealthPayload, assess_readiness, build_health_payload
 from vyro_growth.services.review_queue import ReviewQueueError
 
@@ -182,6 +190,31 @@ def latest_content_briefs(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_content_brief_response(db)
+
+
+@app.post("/internal/execution-plans/run", tags=["internal"])
+def run_execution_planning(
+    db: DbSession,
+    request: ExecutionPlanRunRequest | None = None,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ExecutionPlanRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_execution_plan_run_response(db, active_settings, request)
+    except ExecutionPlanningError as exc:
+        status_code, detail = execution_planning_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.get("/internal/execution-plans", tags=["internal"])
+def latest_execution_plans(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ExecutionPlanRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_latest_execution_plan_response(db)
 
 
 @app.get("/internal/review-queue", tags=["internal"])

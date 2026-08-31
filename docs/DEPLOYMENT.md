@@ -84,6 +84,10 @@ Current revision chain (do not skip):
 9. `009_booking_plans`
 10. `010_voice_qualification`
 11. `011_optimizer_recommendations`
+12. `012_operator_review_decisions`
+13. `013_channel_plans`
+14. `014_content_briefs`
+15. `015_execution_plans`
 
 Check status:
 

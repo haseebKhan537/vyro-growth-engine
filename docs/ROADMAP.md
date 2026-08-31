@@ -203,7 +203,7 @@ Future channel work (not in this phase):
 - retargeting
 - partner outreach
 
-## Phase 16 — Landing page brief and SEO content draft foundation (current)
+## Phase 16 — Landing page brief and SEO content draft foundation
 Review-only content planning. No publishing, ads, spend, or prospect contact.
 - deterministic briefs from stored aggregate ICP signals, pending Phase 15 channel plans, and explicit safe operator seeds
 - brief types: specialty landing page, geography landing page, Google Ads landing page concept, SEO article outline, referral/partner page concept
@@ -217,3 +217,21 @@ Future content work (not in this phase):
 - launch Google Ads or spend budget
 - generate full page/article copy
 - contact prospects from a brief
+
+## Phase 17 — Approved-item execution plan foundation (current)
+Dry-run execution plans only. No live action.
+- deterministic plans from approved operator review decisions and sanitized artifact metadata
+- artifact types: personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, optimizer recommendations, acquisition channel plans, and content briefs
+- persisted idempotent execution-plan runs with prerequisites, blockers, safety notes, required owner approvals, and dry-run/no-execution flags
+- CLI `plan-approved-execution` / `list-execution-plans`, worker job `generate_execution_plans`, and internal HTTP run/list routes
+- non-approved artifacts are ignored; approval still does not execute
+- no email, enrollment, autonomous replies, calendar events, Meet links, calls, publish, ads, spend, deploy, or optimizer apply
+
+Future execution work (not in this phase):
+- execute an approved outreach enrollment
+- generate or send an approved reply
+- create an approved calendar event or Meet link
+- place an approved consent-based call
+- apply an approved optimizer recommendation
+- launch an approved acquisition channel plan
+- publish an approved content brief

@@ -28,6 +28,10 @@ from vyro_growth.workers.discovery_handler import (
     DISCOVER_NPPES_PRACTICES_JOB,
     DiscoverNppesPracticesHandler,
 )
+from vyro_growth.workers.execution_planning_handler import (
+    GENERATE_EXECUTION_PLANS_JOB,
+    GenerateExecutionPlansHandler,
+)
 from vyro_growth.workers.growth_optimizer_handler import (
     GENERATE_GROWTH_RECOMMENDATIONS_JOB,
     GenerateGrowthRecommendationsHandler,
@@ -73,9 +77,11 @@ __all__ = [
     "CLASSIFY_INBOUND_REPLIES_JOB",
     "GENERATE_CHANNEL_PLANS_JOB",
     "GENERATE_CONTENT_BRIEFS_JOB",
+    "GENERATE_EXECUTION_PLANS_JOB",
     "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
     "GenerateChannelPlansHandler",
     "GenerateContentBriefsHandler",
+    "GenerateExecutionPlansHandler",
     "GenerateGrowthRecommendationsHandler",
     "PLAN_BOOKING_SLOTS_JOB",
     "PlanBookingSlotsHandler",

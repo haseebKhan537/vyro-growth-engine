@@ -33,6 +33,13 @@ from vyro_growth.services.discovery import (
     DiscoveryRunResult,
     NppesDiscoveryService,
 )
+from vyro_growth.services.execution_planning import (
+    ExecutionPlanFilters,
+    ExecutionPlanningError,
+    ExecutionPlanningService,
+    ExecutionPlanRunResult,
+    ExecutionPlanView,
+)
 from vyro_growth.services.growth_optimizer import (
     GrowthOptimizerService,
     OptimizerRecommendationView,
@@ -129,6 +136,11 @@ __all__ = [
     "ContentBriefService",
     "ContentBriefView",
     "DashboardAnalyticsService",
+    "ExecutionPlanFilters",
+    "ExecutionPlanningError",
+    "ExecutionPlanningService",
+    "ExecutionPlanRunResult",
+    "ExecutionPlanView",
     "DashboardSummary",
     "GrowthOptimizerService",
     "OptimizerRecommendationView",
