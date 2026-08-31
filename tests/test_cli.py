@@ -1854,6 +1854,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     runbook = parser.parse_args(["release-candidate-runbook", "--json"])
     assert runbook.command == "release-candidate-runbook"
     assert runbook.json is True
+    manifest = parser.parse_args(["release-artifact-manifest", "--json"])
+    assert manifest.command == "release-artifact-manifest"
+    assert manifest.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

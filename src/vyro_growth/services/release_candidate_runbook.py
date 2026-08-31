@@ -76,6 +76,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "compliance-evidence-binder",
     "system-status",
     CLI_COMMAND,
+    "release-artifact-manifest",
 )
 RELATED_ROUTES: tuple[str, ...] = (
     "/health",
@@ -89,6 +90,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-compliance-evidence-binder",
     HTTP_ROUTE,
     "/internal/operator-release-candidate-runbook",
+    "/internal/release-artifact-manifest",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
