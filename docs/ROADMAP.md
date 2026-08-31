@@ -254,7 +254,7 @@ Future live-readiness work (not in this phase):
 - launch an approved acquisition channel plan
 - publish an approved content brief
 
-## Phase 19 — Operator command center summary (current)
+## Phase 19 — Operator command center summary
 Sanitized read-only operator summary only. No live action.
 - aggregation over existing safe pipeline artifacts: discovery/enrichment/scoring, personalization drafts, outreach dry-run plans, reply follow-up plans, booking plans, consent-based voice plans, optimizer recommendations, acquisition channel plans, content briefs, execution plans, owner approval packets, review queue, and monitoring
 - internal `GET /internal/operator-command-center` and CLI `operator-command-center`
@@ -263,6 +263,19 @@ Sanitized read-only operator summary only. No live action.
 - no email, enrollment, autonomous replies, calendar events, Meet links, calls, publish, ads, spend, deploy, optimizer apply, or live/scoring/campaign/provider setting changes
 
 Future command-center work (not in this phase):
-- polished frontend
 - execute an approved live action from the summary
+- change operator halt, outbound, or live-provider flags
+
+## Phase 20 — Read-only operator dashboard UI shell (current)
+Internal HTML view over the sanitized command-center summary. No live action.
+- one internal `GET /internal/operator-dashboard` route that server-renders the Phase 19 summary
+- overall status/readiness, outbound-disabled and operator-halt safety, pipeline counts, latest run statuses, outstanding review counts, approval packet/preflight counts, blocked/warning/info summary, and safe next-action labels
+- quiet, dense, operator-focused layout with empty and failure states
+- navigation/filter query only; no execute, send, enroll, book, call, publish, spend, or deploy controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- no PHI, emails, phones, message bodies, draft copy, evidence snippets, secrets, or unsafe error text in rendered HTML
+
+Future dashboard-UI work (not in this phase):
+- richer visualization or additional operator surfaces
+- execute an approved live action from the UI
 - change operator halt, outbound, or live-provider flags

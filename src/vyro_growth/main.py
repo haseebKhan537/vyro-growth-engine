@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.approval_packets import (
@@ -23,6 +23,7 @@ from vyro_growth.api.command_center import (
     CommandCenterResponse,
     build_command_center_response,
 )
+from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.content_briefs import (
     ContentBriefRunResponse,
     GenerateContentBriefsRequest,
@@ -146,6 +147,17 @@ def operator_command_center(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_command_center_response(db, active_settings)
+
+
+@app.get("/internal/operator-dashboard", tags=["internal"], response_class=HTMLResponse)
+def operator_dashboard(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    section: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_dashboard_response(db, active_settings, section=section)
 
 
 @app.post("/internal/optimizer/run", tags=["internal"])

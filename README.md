@@ -649,6 +649,21 @@ curl http://localhost:8000/internal/operator-command-center \
 
 The summary includes pipeline counts, latest run statuses, readiness, blocked/warning/info finding counts, outstanding review counts, approval packet counts, and safe next-action labels. Output is IDs, statuses, counts, timestamps, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 20 — Read-only operator dashboard UI shell
+
+Open one internal HTML view of the sanitized command-center summary. This layer does not send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish pages, launch ads, spend money, deploy, apply optimizer recommendations, or change live/scoring/campaign/provider/deployment settings.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-dashboard \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The page is a quiet, dense operator view: overall status and readiness, outbound-disabled and operator-halt safety, pipeline counts, latest run statuses, outstanding review counts, approval packet/preflight counts, blocked/warning/info findings, and safe next-action labels. Optional `?section=` values (`safety`, `pipeline`, `runs`, `review`, `packets`, `findings`, `actions`) are read-only filters. There are no execute/send/enroll/book/call/publish/spend/deploy controls.
+
+Rendered HTML is counts, statuses, timestamps, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. Empty databases show empty states. Render failures return a sanitized error page. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:
