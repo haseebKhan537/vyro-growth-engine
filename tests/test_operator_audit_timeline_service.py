@@ -175,15 +175,17 @@ def test_timeline_sanitizes_and_filters_existing_records(db_session: Session) ->
     )
     windowed = OperatorAuditTimelineService().timeline(db_session, settings, window="7d")
     payload = " ".join(
-        [
-            item.event_type,
-            item.source_surface,
-            item.actor_label or "",
-            item.reason_label or "",
-            str(item.packet_id or ""),
-            str(item.artifact_id or ""),
-            str(item.request_id or ""),
-        ]
+        " ".join(
+            [
+                item.event_type,
+                item.source_surface,
+                item.actor_label or "",
+                item.reason_label or "",
+                str(item.packet_id or ""),
+                str(item.artifact_id or ""),
+                str(item.request_id or ""),
+            ]
+        )
         for item in result.entries
     )
 
