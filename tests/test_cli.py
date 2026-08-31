@@ -16,6 +16,7 @@ from vyro_growth.domain import (
     ExecutionPlanRunStatus,
     FindingCode,
     FindingSeverity,
+    NextActionCode,
     OptimizerRunStatus,
     OutreachPlanRunStatus,
     PersonalizationReadiness,
@@ -28,6 +29,14 @@ from vyro_growth.domain import (
 from vyro_growth.services.approval_packets import ApprovalPacketRunResult, ApprovalPacketView
 from vyro_growth.services.booking_plan import BookingPlanJobResult
 from vyro_growth.services.channel_planning import ChannelPlanRunResult, ChannelPlanView
+from vyro_growth.services.command_center import (
+    ApprovalPacketSummary,
+    CommandCenterSummary,
+    FindingCounts,
+    NextAction,
+    OutstandingReviewSummary,
+    PipelineCounts,
+)
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
 from vyro_growth.services.content_brief import ContentBriefRunResult, ContentBriefView
 from vyro_growth.services.dashboard import (
@@ -991,6 +1000,157 @@ def test_cli_main_runs_system_status(
     assert "job=discover_nppes_practices" in output
     assert "code=safe_defaults" in output
     assert "action=seeded" in output
+
+
+def test_parser_accepts_operator_command_center() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["operator-command-center"])
+
+    assert args.command == "operator-command-center"
+
+
+def test_cli_main_runs_operator_command_center(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    summary = CommandCenterSummary(
+        generated_at=datetime.now(tz=UTC),
+        read_only=True,
+        overall_severity=FindingSeverity.INFO,
+        safety=MonitoringSafety(
+            outbound_enabled=False,
+            outbound_halted_settings=False,
+            operator_halt_status="halted",
+            operator_halt_reason="incident",
+            live_providers_enabled=False,
+            live_providers={"voice": False},
+            live_calendar_events=0,
+            live_meet_links=0,
+            live_phone_calls=0,
+            live_send_attempted_enrollments=0,
+            outbound_attempted_classifications=0,
+            booking_events_created=0,
+            booking_meet_links_created=0,
+            voice_calls_placed=0,
+            phi_fields_present=False,
+        ),
+        readiness=MonitoringReadiness(
+            status="ready",
+            environment="development",
+            database="ok",
+            config_ok=True,
+            config_issues=(),
+            outbound_enabled=False,
+            live_providers_enabled=False,
+            live_providers={"voice": False},
+            ready_for_manual_rollout=True,
+        ),
+        pipeline=PipelineCounts(
+            organizations=3,
+            leads=2,
+            discovery_runs=1,
+            website_enrichment_runs=1,
+            decision_maker_contacts=1,
+            latest_scores=2,
+            personalization_drafts=1,
+            outreach_plans_planned=1,
+            reply_classifications=1,
+            booking_plans=1,
+            voice_qualification_plans=0,
+            optimizer_recommendations=1,
+            channel_plans=0,
+            content_briefs=0,
+            execution_plans=0,
+            approval_packets=0,
+        ),
+        latest_runs=(
+            LatestJobStatus(
+                phase="discovery",
+                job_name="discover_nppes_practices",
+                implemented=True,
+                status="completed",
+                started_at=None,
+                finished_at=None,
+                run_id=uuid4(),
+            ),
+        ),
+        recent_failures=(),
+        finding_counts=FindingCounts(blocked=0, warning=0, info=1, total=1),
+        findings=(
+            OperationalFinding(
+                FindingSeverity.INFO,
+                FindingCode.SAFE_DEFAULTS,
+                "Outbound and live-provider flags remain disabled.",
+            ),
+        ),
+        outstanding_review=OutstandingReviewSummary(
+            pending_count=2,
+            decided_count=0,
+            approved_count=0,
+            rejected_count=0,
+            needs_changes_count=0,
+            by_artifact_type={"personalization_draft": 1},
+            executed_count=0,
+        ),
+        approval_packets=ApprovalPacketSummary(
+            packets=0,
+            by_preflight_status={},
+            by_plan_family={},
+            owner_approved=0,
+            executed=0,
+            latest_run_status="not_started",
+            latest_run_id=None,
+        ),
+        next_actions=(
+            NextAction(
+                code=NextActionCode.REVIEW_PENDING_ARTIFACTS.value,
+                label="Review 2 pending dry-run artifact(s) in the operator review queue.",
+                severity="info",
+            ),
+            NextAction(
+                code=NextActionCode.KEEP_OUTBOUND_DISABLED.value,
+                label="Keep OUTBOUND_ENABLED=false.",
+                severity="info",
+            ),
+        ),
+        executed_count=0,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        ads_launched=False,
+    )
+
+    class DummyService:
+        def summarize(self, _db: object, _settings: object) -> CommandCenterSummary:
+            return summary
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.OperatorCommandCenterService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["operator-command-center"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "overall=info" in output
+    assert "read_only=True" in output
+    assert "outbound_enabled=False" in output
+    assert "organizations=3" in output
+    assert "pending=2" in output
+    assert "packets=0" in output
+    assert "code=review_pending_artifacts" in output
+    assert "Keep OUTBOUND_ENABLED=false." in output
+    assert "phi_fields_present=False" in output
 
 
 def test_parser_accepts_recommend_growth() -> None:

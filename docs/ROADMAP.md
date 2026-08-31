@@ -236,7 +236,7 @@ Future execution work (not in this phase):
 - launch an approved acquisition channel plan
 - publish an approved content brief
 
-## Phase 18 — Live-readiness preflight and owner approval packets (current)
+## Phase 18 — Live-readiness preflight and owner approval packets
 Approval/readiness planning only. No live action.
 - deterministic preflight over dry-run execution plans and safe local/config metadata
 - plan families: outreach enrollment, reply follow-up, booking, consent-based voice, optimizer apply, channel launch, content publish, and personalization draft review
@@ -253,3 +253,16 @@ Future live-readiness work (not in this phase):
 - apply an approved optimizer recommendation
 - launch an approved acquisition channel plan
 - publish an approved content brief
+
+## Phase 19 — Operator command center summary (current)
+Sanitized read-only operator summary only. No live action.
+- aggregation over existing safe pipeline artifacts: discovery/enrichment/scoring, personalization drafts, outreach dry-run plans, reply follow-up plans, booking plans, consent-based voice plans, optimizer recommendations, acquisition channel plans, content briefs, execution plans, owner approval packets, review queue, and monitoring
+- internal `GET /internal/operator-command-center` and CLI `operator-command-center`
+- counts, latest run statuses, readiness, blocked/warning/info summaries, outstanding review counts, approval packet counts, and safe next-action labels
+- IDs, statuses, counts, timestamps, and redacted labels only; no PHI, emails, phones, message bodies, draft copy, evidence snippets, secrets, or unsafe error text
+- no email, enrollment, autonomous replies, calendar events, Meet links, calls, publish, ads, spend, deploy, optimizer apply, or live/scoring/campaign/provider setting changes
+
+Future command-center work (not in this phase):
+- polished frontend
+- execute an approved live action from the summary
+- change operator halt, outbound, or live-provider flags

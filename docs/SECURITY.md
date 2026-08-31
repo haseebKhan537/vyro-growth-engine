@@ -28,9 +28,9 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `/ready` reports config issues and database availability. It must not call live providers or return secrets.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/operator-command-center`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
-- Dashboard and monitoring routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`) does not use the HTTP key and does not write pipeline state.
+- Dashboard, monitoring, and command-center routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`, `vyro-growth operator-command-center`) does not use the HTTP key and does not write pipeline state.
 - Review-queue list is read-only over stored artifacts. `record-review` writes a decision and audit row only; it does not execute the artifact.
 - These routes require explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
 - Outside development, a missing or blank `INTERNAL_API_KEY` fails closed. A missing or invalid request key is rejected.
@@ -189,6 +189,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not return message bodies, personalization copy, emails, phones, evidence snippets, API keys, provider secrets, or PHI in API/CLI output.
 - Keep `executed`, `execution_attempted`, outbound, call, spend, launch, publish, and apply flags false.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by approval-packet generation.
+
+## Operator command center integrity
+- Phase 19 command-center output is a sanitized read-only summary. It never performs the underlying live action.
+- Do not send email, enroll live campaigns, generate sendable autonomous replies, create calendar events, create Google Meet links, place calls, publish pages or content, launch ads, spend money, deploy, apply optimizer recommendations, or change scoring/campaign/provider/live/deployment settings.
+- Do not call OpenAI, Smartlead, Apollo, Google Calendar, Google Ads, Search Console, Analytics, SEO/search, voice providers, or other paid/external providers from this layer.
+- Return IDs, artifact types, statuses, counts, timestamps, redacted labels, and high-level category summaries only.
+- Do not return PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented prospect facts.
+- Keep executed, outbound, call, spend, launch, publish, and apply flags false.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by the command center.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

@@ -19,6 +19,10 @@ from vyro_growth.api.channel_plans import (
     build_channel_plan_run_response,
     build_latest_channel_plan_response,
 )
+from vyro_growth.api.command_center import (
+    CommandCenterResponse,
+    build_command_center_response,
+)
 from vyro_growth.api.content_briefs import (
     ContentBriefRunResponse,
     GenerateContentBriefsRequest,
@@ -132,6 +136,16 @@ def monitoring_status(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_monitoring_status_response(db, active_settings)
+
+
+@app.get("/internal/operator-command-center", tags=["internal"])
+def operator_command_center(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> CommandCenterResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_command_center_response(db, active_settings)
 
 
 @app.post("/internal/optimizer/run", tags=["internal"])

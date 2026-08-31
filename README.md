@@ -631,6 +631,24 @@ curl http://localhost:8000/internal/approval-packets \
 
 Each packet includes source execution plan id/run id, artifact type/id, sanitized proposed action, preflight checklist, missing prerequisites, blocked/warning/info findings, required owner decisions, dry-run/no-execution flags, generated timestamp, and an idempotency key. Preflight reports whether required settings are present or absent and never prints secret values. Identical plan-set fingerprints reuse the existing run. Output is IDs, statuses, and sanitized labels only: no message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 19 — Operator command center summary (read-only)
+
+Aggregate existing safe pipeline artifacts into one sanitized operator summary. This layer does not send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish pages, launch ads, spend money, deploy, or apply optimizer recommendations.
+
+CLI:
+```bash
+vyro-growth operator-command-center
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-command-center \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The summary includes pipeline counts, latest run statuses, readiness, blocked/warning/info finding counts, outstanding review counts, approval packet counts, and safe next-action labels. Output is IDs, statuses, counts, timestamps, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:
