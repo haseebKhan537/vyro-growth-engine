@@ -84,6 +84,7 @@ class PendingReviewCountsResponse(BaseModel):
     booking_plans: int
     voice_plans: int
     optimizer_recommendations: int
+    channel_plans: int
     total: int
 
 
@@ -181,6 +182,7 @@ def _pending_to_response(item: PendingReviewCounts) -> PendingReviewCountsRespon
         booking_plans=item.booking_plans,
         voice_plans=item.voice_plans,
         optimizer_recommendations=item.optimizer_recommendations,
+        channel_plans=item.channel_plans,
         total=item.total,
     )
 

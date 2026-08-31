@@ -8,6 +8,7 @@ import pytest
 from vyro_growth.cli import build_parser, main
 from vyro_growth.domain import (
     BookingPlanRunStatus,
+    ChannelPlanRunStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
     FindingCode,
@@ -22,6 +23,7 @@ from vyro_growth.domain import (
     WebsiteMatchStatus,
 )
 from vyro_growth.services.booking_plan import BookingPlanJobResult
+from vyro_growth.services.channel_planning import ChannelPlanRunResult, ChannelPlanView
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
 from vyro_growth.services.dashboard import (
     BookingPlanSummary,
@@ -942,6 +944,7 @@ def test_cli_main_runs_system_status(
             booking_plans=0,
             voice_plans=0,
             optimizer_recommendations=1,
+            channel_plans=0,
         ),
         activity_summary=(ActivityActionCount(action="seeded", count=1),),
         findings=(
@@ -1050,6 +1053,108 @@ def test_cli_main_runs_recommend_growth(
     assert "approval=pending_operator_review" in output
     assert "key=website_enrichment_gap" in output
     assert "applied=False" in output
+
+
+def test_parser_accepts_plan_acquisition_channels() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "plan-acquisition-channels",
+            "--seed-specialty",
+            "Family Medicine",
+            "--seed-state",
+            "TX",
+            "--seed-keyword",
+            "medical billing",
+        ]
+    )
+
+    assert args.command == "plan-acquisition-channels"
+    assert args.seed_specialty == "Family Medicine"
+    assert args.seed_state == "TX"
+    assert args.seed_keywords == ["medical billing"]
+
+
+def test_cli_main_runs_plan_acquisition_channels(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    plan = ChannelPlanView(
+        id=uuid4(),
+        plan_key="google_search_ads:family-medicine:tx",
+        channel="google_search_ads",
+        plan_type="keyword_group",
+        title="Search ads concept for Family Medicine in TX",
+        summary="Keyword-group concept from stored aggregates.",
+        target_specialty="Family Medicine",
+        target_geography="TX",
+        target_icp=None,
+        priority="medium",
+        confidence=0.62,
+        source_metrics={"organizations": 1},
+        seed_input_refs={},
+        generated_at=datetime.now(tz=UTC),
+        approval_status=RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+        dry_run_only=True,
+        no_spend=True,
+        launched=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        outbound_attempted=False,
+    )
+    result = ChannelPlanRunResult(
+        channel_plan_run_id=uuid4(),
+        status=ChannelPlanRunStatus.COMPLETED,
+        model_version="channel-planning-v1",
+        snapshot_fingerprint="abc123",
+        plan_count=1,
+        reused_existing=False,
+        dry_run_only=True,
+        no_spend=True,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        generated_at=datetime.now(tz=UTC),
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        plans=(plan,),
+    )
+
+    class DummyService:
+        def plan(self, _db: object, seeds: object = None) -> ChannelPlanRunResult:
+            del seeds
+            return result
+
+        def latest(self, _db: object) -> ChannelPlanRunResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ChannelPlanningService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+
+    exit_code = main(["plan-acquisition-channels", "--seed-state", "TX"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"id={result.channel_plan_run_id}" in output
+    assert "plans=1" in output
+    assert "no_spend=True" in output
+    assert "spend_attempted=False" in output
+    assert "approval=pending_operator_review" in output
+    assert "key=google_search_ads:family-medicine:tx" in output
+    assert "launched=False" in output
+
+    list_code = main(["list-channel-plans"])
+    assert list_code == 0
 
 
 def test_parser_accepts_check_config_and_worker() -> None:
