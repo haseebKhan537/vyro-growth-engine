@@ -87,7 +87,10 @@ def _empty_packet(**overrides: object) -> OwnerHandoffPacketResponse:
             "operator_halt_status": "halted",
             "ci_smoke_gate_job_name": "smoke-dry-run",
         },
+        "settings_change_requests": {},
         "settings_execution_preflight": {"overall_status": "blocked"},
+        "owner_approval_packets": {},
+        "approved_action_readiness": {},
     }
     payload.update(overrides)
     return OwnerHandoffPacketResponse.model_validate(payload)
