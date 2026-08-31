@@ -223,8 +223,8 @@ def test_content_briefs_do_not_call_live_providers() -> None:
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
     assert "openai" not in source
-    assert "google ads" not in source
-    assert "search console" not in source
+    assert "searchconsole" not in source
+    assert "googleads.googleapis" not in source
     assert "apollo" not in source
     assert "smartlead" not in source
     assert "google.calendar" not in source

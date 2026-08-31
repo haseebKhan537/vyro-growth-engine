@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -14,8 +15,8 @@ from vyro_growth.domain import (
     LeadStage,
 )
 from vyro_growth.models import (
-    Activity,
     AcquisitionChannelPlan,
+    Activity,
     Campaign,
     CampaignEnrollment,
     ContentBrief,

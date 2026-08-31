@@ -239,6 +239,12 @@ class _SanitizedSeed:
         }
 
 
+@dataclass
+class _CountBucket:
+    leads: int
+    labels: set[str]
+
+
 @dataclass(frozen=True)
 class _SpecialtySignal:
     specialty: str
@@ -413,7 +419,9 @@ class ContentBriefService:
         return result
 
     def latest(self, db: Session) -> ContentBriefRunResult | None:
-        run = db.scalars(select(ContentBriefRun).order_by(ContentBriefRun.created_at.desc())).first()
+        run = db.scalars(
+            select(ContentBriefRun).order_by(ContentBriefRun.created_at.desc())
+        ).first()
         if run is None:
             return None
         halt = read_operator_halt(db)
@@ -636,26 +644,27 @@ def _specialty_signals(db: Session) -> tuple[_SpecialtySignal, ...]:
         .where(Organization.specialty.is_not(None), Organization.specialty != "")
         .group_by(Organization.specialty, Organization.state)
     ).all()
-    grouped: dict[str, dict[str, object]] = {}
+    grouped: dict[str, _CountBucket] = {}
     for specialty, state, count in rows:
         label = sanitize_label(str(specialty))
         if label is None:
             continue
-        bucket = grouped.setdefault(label, {"leads": 0, "states": set()})
-        bucket["leads"] = int(bucket["leads"]) + int(count)
+        bucket = grouped.setdefault(label, _CountBucket(leads=0, labels=set()))
+        bucket.leads += int(count)
         geo = sanitize_geography(str(state) if state else None)
         if geo:
-            states = bucket["states"]
-            if isinstance(states, set):
-                states.add(geo)
+            bucket.labels.add(geo)
     results: list[_SpecialtySignal] = []
-    for specialty, counts in sorted(grouped.items()):
-        leads = int(counts["leads"])
-        if leads < MIN_SIGNAL_SAMPLE:
+    for specialty, bucket in sorted(grouped.items()):
+        if bucket.leads < MIN_SIGNAL_SAMPLE:
             continue
-        states = counts["states"]
-        state_tuple = tuple(sorted(states)) if isinstance(states, set) else ()
-        results.append(_SpecialtySignal(specialty=specialty, leads=leads, states=state_tuple))
+        results.append(
+            _SpecialtySignal(
+                specialty=specialty,
+                leads=bucket.leads,
+                states=tuple(sorted(bucket.labels)),
+            )
+        )
     return tuple(results)
 
 
@@ -666,27 +675,26 @@ def _geography_signals(db: Session) -> tuple[_GeographySignal, ...]:
         .where(Organization.state.is_not(None), Organization.state != "")
         .group_by(Organization.state, Organization.specialty)
     ).all()
-    grouped: dict[str, dict[str, object]] = {}
+    grouped: dict[str, _CountBucket] = {}
     for state, specialty, count in rows:
         geography = sanitize_geography(str(state))
         if geography is None:
             continue
-        bucket = grouped.setdefault(geography, {"leads": 0, "specialties": set()})
-        bucket["leads"] = int(bucket["leads"]) + int(count)
+        bucket = grouped.setdefault(geography, _CountBucket(leads=0, labels=set()))
+        bucket.leads += int(count)
         label = sanitize_label(str(specialty) if specialty else None)
         if label:
-            specialties = bucket["specialties"]
-            if isinstance(specialties, set):
-                specialties.add(label)
+            bucket.labels.add(label)
     results: list[_GeographySignal] = []
-    for geography, counts in sorted(grouped.items()):
-        leads = int(counts["leads"])
-        if leads < MIN_SIGNAL_SAMPLE:
+    for geography, bucket in sorted(grouped.items()):
+        if bucket.leads < MIN_SIGNAL_SAMPLE:
             continue
-        specialties = counts["specialties"]
-        specialty_tuple = tuple(sorted(specialties)) if isinstance(specialties, set) else ()
         results.append(
-            _GeographySignal(geography=geography, leads=leads, specialties=specialty_tuple)
+            _GeographySignal(
+                geography=geography,
+                leads=bucket.leads,
+                specialties=tuple(sorted(bucket.labels)),
+            )
         )
     return tuple(results)
 
@@ -698,15 +706,15 @@ def _build_briefs(
     seeds: tuple[_SanitizedSeed, ...],
 ) -> tuple[_BriefDraft, ...]:
     drafts: dict[str, _BriefDraft] = {}
-    for signal in specialties:
-        draft = _specialty_brief(signal)
-        drafts[draft.brief_key] = draft
-    for signal in geographies:
-        draft = _geography_brief(signal)
-        drafts[draft.brief_key] = draft
+    for specialty_signal in specialties:
+        specialty_brief = _specialty_brief(specialty_signal)
+        drafts[specialty_brief.brief_key] = specialty_brief
+    for geography_signal in geographies:
+        geography_brief = _geography_brief(geography_signal)
+        drafts[geography_brief.brief_key] = geography_brief
     for plan in plans:
-        draft = _channel_plan_brief(plan)
-        drafts[draft.brief_key] = draft
+        plan_brief = _channel_plan_brief(plan)
+        drafts[plan_brief.brief_key] = plan_brief
         if plan.specialty and f"specialty_landing_page:{_slug(plan.specialty)}" not in drafts:
             drafts.update(_optional_specialty_from_plan(plan))
         if plan.geography and f"geography_landing_page:{_slug(plan.geography)}" not in drafts:
@@ -714,9 +722,9 @@ def _build_briefs(
     for seed in seeds:
         if seed.skipped:
             continue
-        draft = _seed_brief(seed, plans)
-        if draft is not None:
-            drafts[draft.brief_key] = draft
+        seed_brief = _seed_brief(seed, plans)
+        if seed_brief is not None:
+            drafts[seed_brief.brief_key] = seed_brief
     return tuple(sorted(drafts.values(), key=lambda item: (item.brief_type.value, item.brief_key)))
 
 
@@ -830,7 +838,9 @@ def _seed_brief(
             "seed": seed.as_dict(),
             "channel_plan_id": str(plan.id) if plan is not None else None,
         },
-        extra_notes=("Operator seed omitted an unverifiable claim." if seed.claim_omitted else None),
+        extra_notes=(
+            "Operator seed omitted an unverified claim." if seed.claim_omitted else None
+        ),
         topic=seed.topic,
     )
 
