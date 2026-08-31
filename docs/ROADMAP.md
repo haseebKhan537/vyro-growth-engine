@@ -465,7 +465,7 @@ Internal operator HTML view of the Phase 37 release-candidate deployment runbook
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 39 — Release artifact manifest and provenance export (current)
+## Phase 39 — Release artifact manifest and provenance export
 Read-only owner/operator review export describing a future release candidate. No build, publish, or deploy.
 - Service plus CLI `vyro-growth release-artifact-manifest` and internal JSON `GET /internal/release-artifact-manifest`
 - Reuses release-candidate runbook, compliance evidence binder, launch readiness, settings execution preflight, owner handoff packet, operator audit timeline, deployment safe defaults, CI smoke/deploy-config gate names, and documented compliance guardrails
@@ -474,6 +474,17 @@ Read-only owner/operator review export describing a future release candidate. No
 - Safe metadata only: statuses, counts, codes, filenames, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text
 - `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `build_allowed=false`, `artifact_publish_allowed=false`, `runbook_is_not_deployment=true`, and `manifest_is_not_a_build_or_deploy=true`; this manifest is not a build, artifact publishing, deployment mechanism, or permission to go live
 - Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 40 — Release artifact manifest UI shell (current)
+Internal operator HTML view of the Phase 39 release artifact manifest. Read-only, no build, publish, or deploy.
+- `GET /internal/operator-release-artifact-manifest`
+- Renders existing Phase 39 manifest as a sanitized HTML page
+- Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, and release-candidate runbook UI
+- Shows all manifest sections: source and provenance expectations, artifact inventory, migration inventory, runtime command inventory, safety gate inventory, no-build/no-deploy evidence, reused read-only summaries, and remaining unresolved blockers/manual owner checklist items
+- Sanitized fields only: statuses, counts, codes, filenames, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text
+- Page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `build_allowed=false`, `artifact_publish_allowed=false`, `runbook_is_not_deployment=true`, and `manifest_is_not_a_build_or_deploy=true`
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

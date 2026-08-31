@@ -99,6 +99,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "release-candidate-runbook" in runbook
     assert "operator-release-candidate-runbook" in runbook
     assert "release-artifact-manifest" in runbook
+    assert "operator-release-artifact-manifest" in runbook
     assert "018_live_settings_change_requests" in runbook
 
 

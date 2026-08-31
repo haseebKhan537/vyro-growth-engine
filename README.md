@@ -1039,6 +1039,21 @@ Output is a sanitized Markdown or JSON packet with sections for source/provenanc
 
 JSON is statuses, setting names, codes, timestamps, counts, filenames, command names, route names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 40 — Release artifact manifest UI shell (read-only)
+
+Open an internal HTML view of the Phase 39 release artifact manifest. The owner can inspect release provenance, artifact inventory, migration inventory, runtime commands, safety gates, and remaining blockers in the browser. This layer does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a read-only owner-review view, not a build, artifact publishing, deployment mechanism, or permission to go live.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-release-artifact-manifest \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, and release-candidate runbook UI link to this page. The page shows all manifest sections: source and provenance expectations, artifact inventory, migration inventory, runtime command inventory, safety gate inventory, no-build/no-deploy evidence, reused read-only summaries, and remaining unresolved blockers/manual owner checklist items. Fields are statuses, counts, codes, filenames, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `build_allowed=false`, `artifact_publish_allowed=false`, `runbook_is_not_deployment=true`, and `manifest_is_not_a_build_or_deploy=true`. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, or spend controls.
+
+Rendered HTML is statuses, setting names, codes, timestamps, counts, filenames, command names, route names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

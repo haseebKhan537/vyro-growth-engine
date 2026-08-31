@@ -171,6 +171,7 @@ def test_empty_manifest_is_read_only_without_side_effects(db_session: Session) -
     assert manifest.source_provenance.git_provider_called is False
     assert manifest.source_provenance.github_actions_called is False
     assert manifest.source_provenance.local_git.git_provider_called is False
+    assert "/internal/operator-release-artifact-manifest" in manifest.related_routes
     present = {item.kind: item.present for item in manifest.artifact_inventory}
     assert present["package_directory"] is True
     assert present["dockerfile"] is True

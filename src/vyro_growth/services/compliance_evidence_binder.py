@@ -82,6 +82,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/release-candidate-runbook",
     "/internal/operator-release-candidate-runbook",
     "/internal/release-artifact-manifest",
+    "/internal/operator-release-artifact-manifest",
 )
 GUARDRAIL_DOC_CHECKS: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
     (
