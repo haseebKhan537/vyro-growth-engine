@@ -431,6 +431,9 @@ class NextActionCode(StrEnum):
     BINDER_IS_NOT_GO_LIVE = "binder_is_not_permission_to_go_live"
     RUNBOOK_IS_NOT_DEPLOYMENT = "runbook_is_not_a_deployment_mechanism"
     MANIFEST_IS_NOT_BUILD_OR_DEPLOY = "manifest_is_not_a_build_or_deploy"
+    GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION = (
+        "go_live_readiness_index_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

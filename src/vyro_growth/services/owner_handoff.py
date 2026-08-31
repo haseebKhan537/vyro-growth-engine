@@ -1017,6 +1017,9 @@ def _format_markdown(packet: OwnerHandoffPacket, payload: dict[str, Any]) -> str
         "/internal/operator-release-artifact-manifest "
         "or /internal/release-artifact-manifest "
         "(read-only owner-review view, not a build or deploy).",
+        "Inspect the go-live readiness index at "
+        "/internal/operator-go-live-readiness-index "
+        "(read-only index/review view, not permission to go live).",
         "",
         f"- overall: {payload['overall_status']}",
         f"- packet_kind: {payload['packet_kind']}",

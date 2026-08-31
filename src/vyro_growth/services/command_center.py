@@ -139,6 +139,12 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "Read-only owner-review view; it is not a build, artifact "
         "publishing, or deployment mechanism."
     ),
+    NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION: (
+        "Inspect the go-live readiness index at "
+        "/internal/operator-go-live-readiness-index. "
+        "Read-only owner-review view; it is not permission to go live "
+        "and is not an execution surface."
+    ),
 }
 
 
@@ -511,6 +517,11 @@ def _next_actions(
         NextActionCode.MANIFEST_IS_NOT_BUILD_OR_DEPLOY,
         FindingSeverity.INFO,
         phase="release_artifact_manifest",
+    )
+    add(
+        NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION,
+        FindingSeverity.INFO,
+        phase="go_live_readiness_index",
     )
 
     return tuple(

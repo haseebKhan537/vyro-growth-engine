@@ -95,6 +95,7 @@ def test_empty_command_center_is_zeroed_and_safe(db_session: Session) -> None:
     assert NextActionCode.HANDOFF_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.RUNBOOK_IS_NOT_DEPLOYMENT.value in codes
     assert NextActionCode.MANIFEST_IS_NOT_BUILD_OR_DEPLOY.value in codes
+    assert NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION.value in codes
     assert NextActionCode.RUN_DISCOVERY_WHEN_READY.value in codes
     assert summary.finding_counts.warning >= 1
     assert summary.finding_counts.blocked == 0

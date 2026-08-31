@@ -87,6 +87,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-release-candidate-runbook",
     HTTP_ROUTE,
     "/internal/operator-release-artifact-manifest",
+    "/internal/operator-go-live-readiness-index",
 )
 EXPECTED_ARTIFACTS: tuple[tuple[str, str, bool], ...] = (
     ("package_directory", "src/vyro_growth", True),
