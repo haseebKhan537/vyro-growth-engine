@@ -123,6 +123,13 @@ from vyro_growth.services.review_queue import (
     ReviewQueueResult,
     ReviewQueueService,
 )
+from vyro_growth.services.smoke_dry_run import (
+    SmokeDryRunRefused,
+    SmokeDryRunResult,
+    format_smoke_summary,
+    isolated_demo_session,
+    run_smoke_dry_run,
+)
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
     VoiceItemResult,
@@ -206,6 +213,8 @@ __all__ = [
     "ReviewQueueService",
     "SafetyCard",
     "ScoringResult",
+    "SmokeDryRunRefused",
+    "SmokeDryRunResult",
     "VoiceConsentInput",
     "VoiceItemResult",
     "VoiceQualificationJobResult",
@@ -221,10 +230,13 @@ __all__ = [
     "build_health_payload",
     "database_is_ready",
     "domain_from_email",
+    "format_smoke_summary",
+    "isolated_demo_session",
     "normalize_domain",
     "normalize_email",
     "normalize_phone",
     "read_operator_halt",
+    "run_smoke_dry_run",
     "score_snapshot",
     "set_operator_halt",
     "suppression_status",

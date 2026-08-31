@@ -255,6 +255,15 @@ The approved action readiness queue is a read-only join of stored review decisio
 5. Rendered HTML and JSON never include message bodies, draft copy, emails, phones, evidence snippets, API keys, env secret values, PHI, or raw error text. There are no execute/send/enroll/book/call/publish/spend/deploy controls.
 6. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called.
 
+### Phase 25: end-to-end dry-run smoke harness
+The smoke harness is a local-only demo over deterministic synthetic fixture data. It does not send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish content, launch ads, spend money, deploy, apply optimizer recommendations, execute approved items or packets, or set live owner-approved state.
+
+1. Operator runs `vyro-growth smoke-dry-run`. Outside development, `--local-only` or `--dev-demo` is required. The command refuses `OUTBOUND_ENABLED=true` and any live-provider flag.
+2. The CLI creates an isolated in-memory demo database. It does not use `DATABASE_URL` and does not change operator halt on runtime data.
+3. The smoke runner seeds a synthetic practice/lead and safe public-business facts, then calls existing dry-run services through scoring, personalization, outreach, replies, booking, voice, optimizer, channel plans, content briefs, review decisions, execution plans, approval packets, packet decision records, and action readiness.
+4. Output is IDs, statuses, counts, timestamps, blocker/readiness codes, and `executed=0` / `live_action=false` / `outbound_attempted=false` flags only. No PHI, emails, phones, message bodies, draft copy, evidence snippets, secrets, or unsafe error text.
+5. Operator halt on the demo session is seeded halted if missing and otherwise left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called.
+
 ### Event flow
 1. Practice discovered.
 2. Practice normalized/deduplicated.

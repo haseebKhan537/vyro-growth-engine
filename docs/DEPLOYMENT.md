@@ -141,6 +141,8 @@ vyro-growth plan-outreach --limit 25
 vyro-growth recommend-growth
 ```
 
+`vyro-growth smoke-dry-run --local-only` is a developer demo only. It uses an isolated in-memory database, refuses production/live settings unless `--local-only`/`--dev-demo` is passed, and is not a deployable worker job.
+
 Do not schedule `send_email`, `schedule_meeting`, or `place_consent_callback`. Those names exist only as fail-closed outbound guards and are not deployable jobs.
 
 ## Scheduler and queue assumptions

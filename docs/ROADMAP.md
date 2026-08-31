@@ -311,7 +311,7 @@ Internal HTML decision-record form on approval-packet detail pages. No execution
 - approval-packet list pages and review-queue decision UI stay as they are
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 24 — Approved action readiness queue (current)
+## Phase 24 — Approved action readiness queue
 Internal read-only queue over stored review decisions, execution plans, approval packets, and packet decision records. No execution.
 - Combine existing records only; do not generate new outreach, packets, plans, or content
 - JSON `GET /internal/action-readiness` and HTML `GET /internal/operator-action-readiness`
@@ -322,7 +322,18 @@ Internal read-only queue over stored review decisions, execution plans, approval
 - dashboard and command-center links to the queue
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-Future live-readiness work (not in this phase):
-- execute an approved item or packet from the HTML pages
-- treat an approval-packet decision as live owner approval
-- change operator halt, outbound, or live-provider flags
+## Phase 25 — End-to-end dry-run smoke harness (current)
+Local-only dry-run smoke/demo command over deterministic synthetic fixture data. No live workflow.
+- CLI `vyro-growth smoke-dry-run` (`--local-only` / `--dev-demo` required outside development)
+- isolated in-memory demo database; does not write to `DATABASE_URL`
+- seeds a synthetic practice/lead and safe public-business facts with no PHI
+- exercises existing scoring, personalization, outreach, reply, booking, voice, optimizer, channel, content, review, execution-plan, approval-packet, and action-readiness services
+- records operator review and approval-packet decisions only; does not execute or set live `owner_approved`
+- sanitized console/JSON summary with counts, statuses, blocker codes, readiness statuses, `executed=0`, `live_action=false`, and `outbound_attempted=false`
+- refuses production/live runs unless `--local-only`/`--dev-demo` is present; still refuses when `OUTBOUND_ENABLED` or a live-provider flag is true
+- no NPPES/search/Apollo/campaign/AI/calendar/voice/ad/SEO provider calls, email, enrollment, calls, bookings, publish, ads, spend, or deploy
+
+Future smoke work (not in this phase):
+- execute an approved item or packet
+- run against the configured application database
+- enable outbound or live providers
