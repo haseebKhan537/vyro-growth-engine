@@ -109,4 +109,4 @@ def test_worker_catalog_excludes_outbound_send_jobs() -> None:
     assert "place_consent_callback" not in names
     assert undeployed_outbound_job_names() == UNDEPLOYED_OUTBOUND_JOBS
     assert set(UNDEPLOYED_OUTBOUND_JOBS).isdisjoint(names)
-    assert len(DEPLOYABLE_JOBS) == 10
+    assert len(DEPLOYABLE_JOBS) == 11

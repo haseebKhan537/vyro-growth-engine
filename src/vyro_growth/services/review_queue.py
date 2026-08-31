@@ -2,7 +2,7 @@
 
 Phase 14 is a control-plane foundation only. Listing and recording a decision
 never sends email, enrolls campaigns, books meetings, places calls, generates
-sendable autonomous replies, or applies optimizer recommendations.
+sendable autonomous replies, applies optimizer recommendations, or publishes content.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from vyro_growth.config import Settings
 from vyro_growth.domain import (
     BookingPlanStatus,
+    ContentBriefApprovalStatus,
     EnrollmentStatus,
     PersonalizationReadiness,
     RecommendationApprovalStatus,
@@ -35,6 +36,7 @@ from vyro_growth.models import (
     Activity,
     BookingPlan,
     CampaignEnrollment,
+    ContentBrief,
     OperatorReviewDecision,
     OptimizerRecommendation,
     PersonalizationDraft,
@@ -408,6 +410,7 @@ def _collect_candidates(db: Session) -> list[_Candidate]:
         *_booking_candidates(db),
         *_voice_candidates(db),
         *_optimizer_candidates(db),
+        *_content_brief_candidates(db),
     ]
 
 
@@ -551,6 +554,36 @@ def _optimizer_candidates(db: Session) -> list[_Candidate]:
     return items
 
 
+def _content_brief_candidates(db: Session) -> list[_Candidate]:
+    rows = db.scalars(
+        select(ContentBrief).where(
+            ContentBrief.approval_status
+            == ContentBriefApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+            ContentBrief.published.is_(False),
+            ContentBrief.publish_attempted.is_(False),
+        )
+    ).all()
+    items: list[_Candidate] = []
+    for row in rows:
+        fallback = f"Content brief ({row.brief_type})"
+        title = sanitize_operator_text(row.title) or fallback
+        if title == "[REDACTED_UNSAFE_TEXT]":
+            title = fallback
+        items.append(
+            _Candidate(
+                artifact_type=ReviewArtifactType.CONTENT_BRIEF,
+                artifact_id=row.id,
+                lead_id=None,
+                organization_id=None,
+                title=title,
+                summary="Review-only landing page or SEO brief. Approval does not publish.",
+                created_at=_as_utc(row.generated_at),
+                extra_labels=("dry_run_brief", "not_published", "no_ads_launched"),
+            )
+        )
+    return items
+
+
 def _require_reviewable_candidate(
     db: Session,
     artifact_type: ReviewArtifactType,
@@ -578,6 +611,7 @@ def _artifact_exists(db: Session, artifact_type: ReviewArtifactType, artifact_id
         ReviewArtifactType.BOOKING_PLAN: BookingPlan,
         ReviewArtifactType.VOICE_QUALIFICATION_PLAN: VoiceQualificationPlan,
         ReviewArtifactType.OPTIMIZER_RECOMMENDATION: OptimizerRecommendation,
+        ReviewArtifactType.CONTENT_BRIEF: ContentBrief,
     }[artifact_type]
     return db.get(model, artifact_id) is not None
 

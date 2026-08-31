@@ -472,7 +472,7 @@ The snapshot includes:
 - recent failures with redacted error text
 - safety flags: `OUTBOUND_ENABLED`, operator halt, live-provider flags, live artifact counts
 - Phase 12 readiness/config state and `ready_for_manual_rollout`
-- pending review counts for drafts, enrollment plans, booking plans, voice plans, and optimizer recommendations
+- pending review counts for drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, and content briefs
 - findings with severity `blocked`, `warning`, or `info`
 
 Responses are counts, statuses, and sanitized messages only. They do not include message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI. The service does not write pipeline rows, send email, place calls, book meetings, or call live providers. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
@@ -512,6 +512,33 @@ Each review item includes:
 - `executed=false`
 
 Output is IDs, statuses, and sanitized labels only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 16 — Landing page brief and SEO content draft foundation
+
+Generate review-only landing page and SEO content briefs from stored aggregate ICP signals, pending acquisition channel plans, and explicit safe operator seeds. This layer does not publish pages, commit website content, launch ads, spend money, send email, or call OpenAI, Google Ads, Search Console, Analytics, SEO, or search APIs.
+
+CLI:
+```bash
+vyro-growth seed-channel-plan --channel-type seo --specialty "Family Medicine" --geography TX
+vyro-growth draft-content-briefs
+vyro-growth draft-content-briefs --specialty "Family Medicine" --brief-type specialty_landing_page
+vyro-growth list-content-briefs
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl -X POST http://localhost:8000/internal/content-briefs/generate \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"seeds":[{"brief_type":"seo_article","specialty":"Family Medicine","topic":"billing operations questions"}]}'
+curl http://localhost:8000/internal/content-briefs \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Worker job name: `generate_content_briefs`
+
+Each brief includes type, optional channel-plan id, known specialty/geography/ICP only, title, sanitized summary, outline sections, CTA concept, compliance notes, source metric/seed references, confidence/priority, generated timestamp, `pending_operator_review`, and `published=false`. Approval in the review queue records a decision only and does not publish. Unverifiable claims (clients, savings, certifications, years of experience, case studies, testimonials, provider counts, revenue improvement) and patient-facing medical advice are omitted.
 
 ## Phase 1
 

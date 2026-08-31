@@ -16,6 +16,10 @@ from vyro_growth.workers.contact_enrichment_handler import (
     ENRICH_DECISION_MAKERS_JOB,
     EnrichDecisionMakersHandler,
 )
+from vyro_growth.workers.content_brief_handler import (
+    GENERATE_CONTENT_BRIEFS_JOB,
+    GenerateContentBriefsHandler,
+)
 from vyro_growth.workers.discovery_handler import (
     DISCOVER_NPPES_PRACTICES_JOB,
     DiscoverNppesPracticesHandler,
@@ -63,7 +67,9 @@ __all__ = [
     "UNDEPLOYED_OUTBOUND_JOBS",
     "WorkerJobSpec",
     "CLASSIFY_INBOUND_REPLIES_JOB",
+    "GENERATE_CONTENT_BRIEFS_JOB",
     "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
+    "GenerateContentBriefsHandler",
     "GenerateGrowthRecommendationsHandler",
     "PLAN_BOOKING_SLOTS_JOB",
     "PlanBookingSlotsHandler",

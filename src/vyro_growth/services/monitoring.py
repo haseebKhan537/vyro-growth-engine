@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings, any_live_provider_enabled, live_provider_flags
 from vyro_growth.domain import (
+    ContentBriefApprovalStatus,
     EnrollmentStatus,
     FindingCode,
     FindingSeverity,
@@ -21,6 +22,8 @@ from vyro_growth.models import (
     BookingPlan,
     BookingPlanRun,
     CampaignEnrollment,
+    ContentBrief,
+    ContentBriefRun,
     DiscoveryRun,
     EnrichmentRun,
     OptimizerRecommendation,
@@ -45,6 +48,7 @@ from vyro_growth.workers.outreach_enrollment_handler import PLAN_OUTREACH_ENROLL
 from vyro_growth.workers.personalization_handler import PERSONALIZE_SCORED_LEADS_JOB
 from vyro_growth.workers.reply_classification_handler import CLASSIFY_INBOUND_REPLIES_JOB
 from vyro_growth.workers.scoring_handler import SCORE_DISCOVERED_LEADS_JOB
+from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.voice_qualification_handler import PLAN_VOICE_QUALIFICATIONS_JOB
 from vyro_growth.workers.website_enrichment_handler import ENRICH_ORGANIZATION_WEBSITES_JOB
 
@@ -68,6 +72,7 @@ PHASE_JOB_NAMES: dict[str, str] = {
     "booking_plans": PLAN_BOOKING_SLOTS_JOB,
     "voice_qualification_plans": PLAN_VOICE_QUALIFICATIONS_JOB,
     "growth_optimizer": GENERATE_GROWTH_RECOMMENDATIONS_JOB,
+    "content_briefs": GENERATE_CONTENT_BRIEFS_JOB,
 }
 
 
@@ -130,6 +135,7 @@ class PendingReviewCounts:
     booking_plans: int
     voice_plans: int
     optimizer_recommendations: int
+    content_briefs: int
 
     @property
     def total(self) -> int:
@@ -139,6 +145,7 @@ class PendingReviewCounts:
             + self.booking_plans
             + self.voice_plans
             + self.optimizer_recommendations
+            + self.content_briefs
         )
 
 
@@ -261,6 +268,31 @@ class OperatorMonitoringService:
                     run_id=optimizer.id,
                 )
             )
+        briefs = _latest_row(db, ContentBriefRun)
+        if briefs is None:
+            runs.append(
+                LatestJobStatus(
+                    phase="content_briefs",
+                    job_name=PHASE_JOB_NAMES["content_briefs"],
+                    implemented=True,
+                    status="not_started",
+                    started_at=None,
+                    finished_at=None,
+                    run_id=None,
+                )
+            )
+        else:
+            runs.append(
+                LatestJobStatus(
+                    phase="content_briefs",
+                    job_name=PHASE_JOB_NAMES["content_briefs"],
+                    implemented=True,
+                    status=briefs.status,
+                    started_at=briefs.started_at,
+                    finished_at=briefs.finished_at,
+                    run_id=briefs.id,
+                )
+            )
         return tuple(runs)
 
     def _recent_failures(self, db: Session) -> tuple[SanitizedFailure, ...]:
@@ -282,6 +314,7 @@ class OperatorMonitoringService:
             ("booking_plans", BookingPlanRun, None),
             ("voice_qualification_plans", VoiceQualificationRun, None),
             ("growth_optimizer", OptimizerRun, None),
+            ("content_briefs", ContentBriefRun, None),
         )
         for phase, model, extra in sources:
             stmt = select(model).where(model.status == FAILED_STATUS)
@@ -368,6 +401,13 @@ class OperatorMonitoringService:
                 OptimizerRecommendation.approval_status
                 == RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
                 OptimizerRecommendation.applied.is_(False),
+            ),
+            content_briefs=_count_rows(
+                db,
+                ContentBrief,
+                ContentBrief.approval_status
+                == ContentBriefApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+                ContentBrief.published.is_(False),
             ),
         )
 

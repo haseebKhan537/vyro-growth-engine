@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from tests.test_dashboard_service import PHI_SNIPPET, PROSPECT_EMAIL, _seed_pipeline
 from vyro_growth.config import Settings
 from vyro_growth.domain import (
+    ContentBriefApprovalStatus,
     EnrollmentStatus,
     RecommendationApprovalStatus,
     ReviewArtifactType,
@@ -19,6 +20,8 @@ from vyro_growth.domain import (
 from vyro_growth.models import (
     Activity,
     CampaignEnrollment,
+    ContentBrief,
+    ContentBriefRun,
     Lead,
     Meeting,
     OperatorReviewDecision,
@@ -267,6 +270,38 @@ def test_output_is_sanitized(db_session: Session) -> None:
     assert recorded.reviewer_notes == "[REDACTED_UNSAFE_TEXT]"
 
 
+def test_content_briefs_appear_in_queue_and_approval_does_not_publish(
+    db_session: Session,
+) -> None:
+    brief = _seed_content_brief(db_session)
+    set_operator_halt(db_session, halted=True, reason="keep-halted")
+
+    listed = ReviewQueueService().list_queue(
+        db_session,
+        _settings(),
+        artifact_type=ReviewArtifactType.CONTENT_BRIEF.value,
+    )
+    recorded = ReviewQueueService().record_decision(
+        db_session,
+        artifact_type=ReviewArtifactType.CONTENT_BRIEF.value,
+        artifact_id=brief.id,
+        decision=ReviewDecisionStatus.APPROVED.value,
+        reviewer="ops",
+    )
+
+    assert listed.pending_count == 1
+    assert listed.items[0].artifact_id == brief.id
+    assert listed.items[0].executed is False
+    assert "not_published" in listed.items[0].risk_labels
+    assert recorded.executed is False
+    assert recorded.execution_attempted is False
+    assert recorded.outbound_attempted is False
+    db_session.refresh(brief)
+    assert brief.published is False
+    assert brief.publish_attempted is False
+    assert read_operator_halt(db_session) is HaltStatus.HALTED
+
+
 def test_list_queue_does_not_write_rows(db_session: Session) -> None:
     _seed_pipeline(db_session)
     set_operator_halt(db_session, halted=True, reason="keep-halted")
@@ -310,6 +345,49 @@ def _seed_optimizer_recommendation(db: Session) -> OptimizerRecommendation:
         generated_at=now,
         approval_status=RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
         applied=False,
+    )
+    db.add(row)
+    db.flush()
+    return row
+
+
+def _seed_content_brief(db: Session) -> ContentBrief:
+    now = datetime.now(tz=UTC)
+    run = ContentBriefRun(
+        status="completed",
+        model_version="content-brief-v1",
+        snapshot_fingerprint=f"review-{uuid4().hex}",
+        brief_count=1,
+        dry_run_only=True,
+        published=False,
+        publish_attempted=False,
+        outbound_attempted=False,
+        ads_launched=False,
+        spend_attempted=False,
+        started_at=now,
+        finished_at=now,
+    )
+    db.add(run)
+    db.flush()
+    row = ContentBrief(
+        content_brief_run_id=run.id,
+        brief_key="specialty_landing_page:family-medicine",
+        brief_type="specialty_landing_page",
+        specialty="Family Medicine",
+        geography="TX",
+        priority="low",
+        confidence=0.6,
+        title="Specialty landing page brief: Family Medicine / TX",
+        summary="Review-only outline. No page is published.",
+        outline_sections=["Audience: Family Medicine / TX."],
+        recommended_cta="Invite a practice decision-maker to request a conversation.",
+        compliance_notes=["Review-only brief. Do not publish this page or article."],
+        source_references={"source_kind": "operator_seed"},
+        generated_at=now,
+        approval_status=ContentBriefApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+        published=False,
+        publish_attempted=False,
+        dry_run_only=True,
     )
     db.add(row)
     db.flush()

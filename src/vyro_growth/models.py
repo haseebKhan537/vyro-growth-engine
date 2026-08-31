@@ -20,8 +20,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
 from vyro_growth.domain import (
+    AcquisitionChannelPlanStatus,
     BookingPlanRunStatus,
     BookingPlanStatus,
+    ContentBriefApprovalStatus,
+    ContentBriefRunStatus,
     ConversationStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
@@ -595,3 +598,106 @@ class OperatorReviewDecision(TimestampMixin, Base):
     live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
     recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+
+
+class AcquisitionChannelPlan(TimestampMixin, Base):
+    """Review-only acquisition channel plan. Never launched and never spends."""
+
+    __tablename__ = "acquisition_channel_plans"
+    __table_args__ = (
+        UniqueConstraint(
+            "plan_key",
+            name="uq_acquisition_channel_plans_plan_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    plan_key: Mapped[str] = mapped_column(String(255), index=True)
+    channel_type: Mapped[str] = mapped_column(String(64), index=True)
+    specialty: Mapped[str | None] = mapped_column(String(120), index=True)
+    geography: Mapped[str | None] = mapped_column(String(120), index=True)
+    icp_label: Mapped[str | None] = mapped_column(String(120))
+    title: Mapped[str] = mapped_column(String(255))
+    summary: Mapped[str] = mapped_column(Text)
+    source_metrics_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    status: Mapped[str] = mapped_column(
+        String(64),
+        default=AcquisitionChannelPlanStatus.PENDING_OPERATOR_REVIEW.value,
+        index=True,
+    )
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_live: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ContentBriefRun(TimestampMixin, Base):
+    __tablename__ = "content_brief_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "snapshot_fingerprint",
+            name="uq_content_brief_runs_snapshot_fingerprint",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(
+        String(32), default=ContentBriefRunStatus.PENDING.value, index=True
+    )
+    model_version: Mapped[str] = mapped_column(String(64), default="content-brief-v1")
+    snapshot_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    brief_count: Mapped[int] = mapped_column(default=0)
+    reused_count: Mapped[int] = mapped_column(default=0)
+    published_count: Mapped[int] = mapped_column(default=0)
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    published: Mapped[bool] = mapped_column(Boolean, default=False)
+    publish_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    snapshot_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    briefs: Mapped[list[ContentBrief]] = relationship(back_populates="content_brief_run")
+
+
+class ContentBrief(TimestampMixin, Base):
+    __tablename__ = "content_briefs"
+    __table_args__ = (
+        UniqueConstraint(
+            "content_brief_run_id",
+            "brief_key",
+            name="uq_content_briefs_run_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    content_brief_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("content_brief_runs.id"), index=True
+    )
+    brief_key: Mapped[str] = mapped_column(String(255), index=True)
+    brief_type: Mapped[str] = mapped_column(String(64), index=True)
+    source_channel_plan_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("acquisition_channel_plans.id"), index=True
+    )
+    specialty: Mapped[str | None] = mapped_column(String(120), index=True)
+    geography: Mapped[str | None] = mapped_column(String(120), index=True)
+    icp_label: Mapped[str | None] = mapped_column(String(120))
+    priority: Mapped[str] = mapped_column(String(32), index=True)
+    confidence: Mapped[float] = mapped_column(Float)
+    title: Mapped[str] = mapped_column(String(255))
+    summary: Mapped[str] = mapped_column(Text)
+    outline_sections: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    recommended_cta: Mapped[str] = mapped_column(String(255))
+    compliance_notes: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    source_references: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    approval_status: Mapped[str] = mapped_column(
+        String(64),
+        default=ContentBriefApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+        index=True,
+    )
+    published: Mapped[bool] = mapped_column(Boolean, default=False)
+    publish_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    content_brief_run: Mapped[ContentBriefRun] = relationship(back_populates="briefs")

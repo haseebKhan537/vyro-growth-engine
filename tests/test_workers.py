@@ -19,6 +19,7 @@ from vyro_growth.workers import (
 )
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
+from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outbound import (
     PLACE_CONSENT_CALLBACK_JOB,
@@ -299,6 +300,7 @@ def test_deployable_catalog_excludes_outbound_guard_jobs() -> None:
     names = deployable_job_names()
 
     assert GENERATE_GROWTH_RECOMMENDATIONS_JOB in names
+    assert GENERATE_CONTENT_BRIEFS_JOB in names
     assert SCORE_DISCOVERED_LEADS_JOB in names
     assert set(undeployed_outbound_job_names()) == {
         SEND_EMAIL_JOB,

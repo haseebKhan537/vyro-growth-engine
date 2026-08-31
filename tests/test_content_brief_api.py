@@ -1,0 +1,196 @@
+from __future__ import annotations
+
+from collections.abc import Generator
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from tests.test_dashboard_service import PHI_SNIPPET, PROSPECT_EMAIL, _seed_pipeline
+from vyro_growth.config import Settings
+from vyro_growth.database import get_db
+from vyro_growth.domain import ContentBriefApprovalStatus
+from vyro_growth.main import app
+from vyro_growth.models import Activity, CampaignEnrollment, Meeting, OutreachMessage
+from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
+
+
+@pytest.fixture
+def api_client(db_session: Session) -> Generator[TestClient, None, None]:
+    def override_get_db() -> Generator[Session, None, None]:
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    client = TestClient(app)
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.clear()
+
+
+def _patch_settings(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> None:
+    monkeypatch.setattr("vyro_growth.main.get_settings", lambda: settings)
+
+
+def test_generate_open_in_development(
+    api_client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(monkeypatch, Settings(environment="development", internal_api_key=""))
+
+    response = api_client.post("/internal/content-briefs/generate")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["dry_run_only"] is True
+    assert body["auto_published"] is False
+    assert body["published"] is False
+    assert body["publish_attempted"] is False
+    assert body["outbound_attempted"] is False
+    assert body["ads_launched"] is False
+    assert body["spend_attempted"] is False
+    assert body["brief_count"] == len(body["briefs"])
+    assert db_session.scalar(select(func.count()).select_from(Activity)) == 1
+
+
+def test_generate_rejects_non_development_without_key(
+    api_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(monkeypatch, Settings(environment="production", internal_api_key=""))
+
+    response = api_client.post("/internal/content-briefs/generate")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Internal operator route requires INTERNAL_API_KEY"
+
+
+def test_generate_rejects_invalid_key(
+    api_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(
+        monkeypatch,
+        Settings(environment="production", internal_api_key="internal-secret"),
+    )
+
+    response = api_client.post(
+        "/internal/content-briefs/generate",
+        headers={"X-Internal-Api-Key": "wrong-secret"},
+    )
+    assert response.status_code == 401
+
+
+def test_generate_accepts_valid_key_and_stays_unpublished(
+    api_client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(
+        monkeypatch,
+        Settings(environment="production", internal_api_key="internal-secret"),
+    )
+    _seed_pipeline(db_session)
+    set_operator_halt(db_session, halted=True, reason="keep-halted")
+    before_meetings = db_session.scalar(select(func.count()).select_from(Meeting))
+    before_enrollments = db_session.scalar(select(func.count()).select_from(CampaignEnrollment))
+    before_messages = db_session.scalar(select(func.count()).select_from(OutreachMessage))
+
+    response = api_client.post(
+        "/internal/content-briefs/generate",
+        headers={"X-Internal-Api-Key": "internal-secret"},
+        json={
+            "seeds": [
+                {
+                    "brief_type": "seo_article",
+                    "specialty": "Family Medicine",
+                    "topic": "billing operations questions",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "completed"
+    assert body["auto_published"] is False
+    assert body["published"] is False
+    assert all(
+        item["approval_status"] == ContentBriefApprovalStatus.PENDING_OPERATOR_REVIEW.value
+        for item in body["briefs"]
+    )
+    assert all(item["published"] is False for item in body["briefs"])
+    assert PHI_SNIPPET not in response.text
+    assert PROSPECT_EMAIL not in response.text
+    assert "diabetes" not in response.text.lower()
+    assert db_session.scalar(select(func.count()).select_from(Meeting)) == before_meetings
+    assert (
+        db_session.scalar(select(func.count()).select_from(CampaignEnrollment))
+        == before_enrollments
+    )
+    assert db_session.scalar(select(func.count()).select_from(OutreachMessage)) == before_messages
+    assert read_operator_halt(db_session) is HaltStatus.HALTED
+
+
+def test_latest_briefs_require_auth_and_reuse_run(
+    api_client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(
+        monkeypatch,
+        Settings(environment="production", internal_api_key="internal-secret"),
+    )
+    empty = api_client.get(
+        "/internal/content-briefs",
+        headers={"X-Internal-Api-Key": "internal-secret"},
+    )
+    assert empty.status_code == 200
+    assert empty.json()["status"] == "not_started"
+    assert empty.json()["briefs"] == []
+
+    created = api_client.post(
+        "/internal/content-briefs/generate",
+        headers={"X-Internal-Api-Key": "internal-secret"},
+    )
+    latest = api_client.get(
+        "/internal/content-briefs",
+        headers={"X-Internal-Api-Key": "internal-secret"},
+    )
+    denied = api_client.get("/internal/content-briefs")
+
+    assert created.status_code == 200
+    assert latest.status_code == 200
+    assert latest.json()["content_brief_run_id"] == created.json()["content_brief_run_id"]
+    assert denied.status_code == 401
+    assert db_session is not None
+
+
+def test_seed_channel_plan_requires_auth_and_stays_unlaunched(
+    api_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(
+        monkeypatch,
+        Settings(environment="production", internal_api_key="internal-secret"),
+    )
+    denied = api_client.post(
+        "/internal/channel-plans",
+        json={"channel_type": "seo", "specialty": "Family Medicine"},
+    )
+    response = api_client.post(
+        "/internal/channel-plans",
+        headers={"X-Internal-Api-Key": "internal-secret"},
+        json={"channel_type": "seo", "specialty": "Family Medicine", "geography": "TX"},
+    )
+
+    assert denied.status_code == 401
+    assert response.status_code == 200
+    body = response.json()
+    assert body["launched"] is False
+    assert body["spend_attempted"] is False
+    assert body["ads_live"] is False
+    assert body["dry_run_only"] is True
+    assert body["status"] == "pending_operator_review"

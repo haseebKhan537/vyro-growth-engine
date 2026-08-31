@@ -6,7 +6,7 @@ Vyro Growth Engine is an event-driven sales automation platform. Core business r
 ## Major components
 
 ### API
-FastAPI exposes health, readiness, operator controls, webhook endpoints, internal dashboard summaries, operator monitoring, and the operator review queue. `GET /health` is liveness-only. `GET /ready` checks database connectivity and runtime config and does not call live providers. Internal operator routes such as `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/review-queue`, and `POST /internal/review-queue/decisions` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing. Dashboard, monitoring, and review-queue list routes are read-only. Recording a review decision writes an audit row only and does not execute the artifact. Outside development, a missing `INTERNAL_API_KEY` or `DATABASE_URL` also fails process start.
+FastAPI exposes health, readiness, operator controls, webhook endpoints, internal dashboard summaries, operator monitoring, and the operator review queue. `GET /health` is liveness-only. `GET /ready` checks database connectivity and runtime config and does not call live providers. Internal operator routes such as `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `POST /internal/content-briefs/generate`, `GET /internal/content-briefs`, `POST /internal/channel-plans`, `GET /internal/review-queue`, and `POST /internal/review-queue/decisions` are not public: they require `INTERNAL_API_KEY` outside development and are fail-closed when that key is missing. Dashboard, monitoring, and review-queue list routes are read-only. Recording a review decision writes an audit row only and does not execute the artifact. Outside development, a missing `INTERNAL_API_KEY` or `DATABASE_URL` also fails process start.
 
 ### Database
 PostgreSQL is the system of record for organizations, contacts, leads, evidence, enrichment runs, outreach, conversations, meetings, activities, suppressions, and operator safety controls.
@@ -153,11 +153,21 @@ Monitoring is read-only operational visibility. It does not send email, enroll c
 The review queue is a decision-recording layer. It does not send email, enroll campaigns, book meetings, place calls, generate sendable autonomous replies, or apply optimizer recommendations.
 
 1. Operator requests `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `vyro-growth review-queue`, or `vyro-growth record-review`. HTTP paths use the same `INTERNAL_API_KEY` gate as discovery and the dashboard. CLI does not.
-2. `ReviewQueueService` reads pending dry-run artifacts: ready personalization drafts, planned outreach enrollments, classified follow-up replies, planned booking and voice rows, and pending optimizer recommendations.
+2. `ReviewQueueService` reads pending dry-run artifacts: ready personalization drafts, planned outreach enrollments, classified follow-up replies, planned booking and voice rows, pending optimizer recommendations, and pending content briefs.
 3. Items are normalized to artifact type/id, optional lead/organization UUIDs, a sanitized title/summary, status, timestamp, risk/safety labels, and `executable_later` (never `executed` in this phase).
 4. Decisions persist on `operator_review_decisions` as `approved`, `rejected`, or `needs_changes` with reviewer, source, notes, and timestamp. Re-recording updates the current decision and writes another activity.
 5. API/CLI output is titles, statuses, labels, and IDs only. It does not include message bodies, draft copy, emails, phones, evidence snippets, or PHI.
 6. Existing artifact tables are not executed or applied. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
+
+### Phase 16: review-only landing page and SEO content briefs
+Content briefing is planning only. It does not publish pages, launch ads, spend money, send email, or call SEO/search/AI providers.
+
+1. Operator or worker submits `POST /internal/content-briefs/generate`, `vyro-growth draft-content-briefs`, or job `generate_content_briefs`. HTTP paths use the same `INTERNAL_API_KEY` gate as discovery and the dashboard. CLI and worker paths do not.
+2. `ContentBriefService` reads stored specialty/geography aggregates, pending `acquisition_channel_plans`, and explicit safe operator seeds. Missing facts stay missing.
+3. Briefs persist on `content_brief_runs` / `content_briefs`. An identical sanitized snapshot fingerprint reuses the existing run.
+4. Every brief includes type, optional channel-plan id, known specialty/geography/ICP only, title, sanitized summary, outline sections, CTA concept, compliance notes, source references, confidence/priority, generated timestamp, and `approval_status=pending_operator_review`. `published` remains false.
+5. API/CLI output is titles, outlines, and counts only. It does not include outreach copy, emails, phones, evidence snippets, or PHI. Unverifiable claims are omitted.
+6. Review-queue approval of a content brief is a recorded decision only and does not publish. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
 
 ### Event flow
 1. Practice discovered.

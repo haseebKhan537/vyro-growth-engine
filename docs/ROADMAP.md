@@ -171,7 +171,7 @@ Future observability work (not in this phase):
 - long-retention metrics backends
 - public status pages
 
-## Phase 14 — Operator review queue foundation (current)
+## Phase 14 — Operator review queue foundation
 Recorded operator decisions only. No outbound execution.
 - one review queue over pending dry-run artifacts: personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, and optimizer recommendations
 - normalized review items with artifact type/id, safe lead/organization references, title/summary, status, timestamp, risk labels, and executable-later (not executed)
@@ -192,3 +192,18 @@ Future review-queue work (not in this phase):
 - referral/partner campaigns
 - inbound forms
 - retargeting where appropriate
+
+## Phase 16 — Landing page brief and SEO content draft foundation (current)
+Review-only content planning. No publishing, ads, spend, or prospect contact.
+- deterministic briefs from stored aggregate ICP signals, pending acquisition channel plans, and explicit safe operator seeds
+- brief types: specialty landing page, geography landing page, Google Ads landing page concept, SEO article outline, referral/partner page concept
+- persisted idempotent brief runs with source references, compliance notes, and `pending_operator_review`
+- CLI `draft-content-briefs` / `list-content-briefs` / `seed-channel-plan`, worker job `generate_content_briefs`, and internal HTTP generate/list routes
+- review-queue and monitoring integration; approval remains decision-recording only
+- no OpenAI, Google Ads, Search Console, Analytics, SEO, or search API calls
+
+Future content work (not in this phase):
+- publish a landing page or article
+- launch Google Ads or spend budget
+- generate full page/article copy
+- contact prospects from a brief

@@ -13,7 +13,7 @@ from vyro_growth.config import (
     validate_runtime_settings,
 )
 from vyro_growth.database import SessionLocal
-from vyro_growth.domain import VoiceConsentChannel, VoiceConsentSource
+from vyro_growth.domain import ContentBriefType, VoiceConsentChannel, VoiceConsentSource
 from vyro_growth.providers.calendar_booking import build_booking_calendar_provider
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
@@ -28,6 +28,13 @@ from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
 from vyro_growth.services.booking_plan import BookingPlanService
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
+from vyro_growth.services.content_brief import (
+    ChannelPlanView,
+    ContentBriefError,
+    ContentBriefRunResult,
+    ContentBriefSeed,
+    ContentBriefService,
+)
 from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
 from vyro_growth.services.lead_scoring import LeadScoringService
@@ -278,6 +285,45 @@ def build_parser() -> argparse.ArgumentParser:
     )
     decide.add_argument("--notes", help="Optional sanitized reviewer notes")
     decide.add_argument("--reviewer", help="Reviewer label (default: operator)")
+    briefs = subparsers.add_parser(
+        "draft-content-briefs",
+        help=(
+            "Generate review-only landing page and SEO content briefs "
+            "(does not publish pages, launch ads, or spend money)"
+        ),
+    )
+    briefs.add_argument("--specialty", help="Safe specialty seed when known")
+    briefs.add_argument("--geography", help="Safe geography/state seed when known")
+    briefs.add_argument(
+        "--brief-type",
+        help=(
+            "Optional brief type: specialty_landing_page, geography_landing_page, "
+            "google_ads_landing_page, seo_article, referral_partner_page"
+        ),
+    )
+    briefs.add_argument("--topic", help="Safe operator topic seed (no unverifiable claims)")
+    briefs.add_argument("--icp-label", help="Safe ICP label when known")
+    briefs.add_argument("--channel-plan-id", help="Existing pending channel-plan UUID")
+    subparsers.add_parser(
+        "list-content-briefs",
+        help="List the latest review-only content brief run (no publish side effects)",
+    )
+    channel = subparsers.add_parser(
+        "seed-channel-plan",
+        help=(
+            "Record a pending review-only acquisition channel plan "
+            "(does not launch ads or spend money)"
+        ),
+    )
+    channel.add_argument(
+        "--channel-type",
+        required=True,
+        help="google_ads, seo, referral_partner, inbound_form, or retargeting",
+    )
+    channel.add_argument("--specialty", help="Safe specialty when known")
+    channel.add_argument("--geography", help="Safe geography/state when known")
+    channel.add_argument("--icp-label", help="Safe ICP label when known")
+    channel.add_argument("--title", help="Optional sanitized plan title")
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -370,6 +416,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "record-review":
         return _run_record_review(args)
+
+    if args.command == "draft-content-briefs":
+        return _run_draft_content_briefs(parser, args)
+
+    if args.command == "list-content-briefs":
+        return _run_list_content_briefs()
+
+    if args.command == "seed-channel-plan":
+        return _run_seed_channel_plan(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -846,6 +901,7 @@ def _print_system_status(snapshot: MonitoringSnapshot) -> None:
         f"bookings={pending.booking_plans}",
         f"voice={pending.voice_plans}",
         f"optimizer={pending.optimizer_recommendations}",
+        f"content_briefs={pending.content_briefs}",
         f"total={pending.total}",
     )
     for run in snapshot.latest_runs:
@@ -1019,6 +1075,123 @@ def _print_review_decision(result: ReviewDecisionResult) -> None:
         f"executed={result.executed}",
         f"outbound_attempted={result.outbound_attempted}",
         f"recommendation_applied={result.recommendation_applied}",
+    )
+
+
+def _run_draft_content_briefs(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    seed = _content_brief_seed(parser, args)
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            result = ContentBriefService().generate(
+                db,
+                settings,
+                seeds=(seed,) if seed is not None else (),
+            )
+        except ContentBriefError as exc:
+            print(f"Content brief error: {exc.message}")
+            return 1
+    _print_content_brief_result(result)
+    return 0
+
+
+def _content_brief_seed(
+    parser: argparse.ArgumentParser, args: argparse.Namespace
+) -> ContentBriefSeed | None:
+    brief_type = None
+    if args.brief_type:
+        try:
+            brief_type = ContentBriefType(args.brief_type)
+        except ValueError:
+            parser.error("Unknown --brief-type")
+    channel_plan_id = None
+    if args.channel_plan_id:
+        try:
+            channel_plan_id = UUID(args.channel_plan_id)
+        except ValueError:
+            parser.error("--channel-plan-id must be a UUID")
+    if (
+        brief_type is None
+        and not args.specialty
+        and not args.geography
+        and not args.topic
+        and not args.icp_label
+        and channel_plan_id is None
+    ):
+        return None
+    return ContentBriefSeed(
+        brief_type=brief_type,
+        specialty=args.specialty,
+        geography=args.geography,
+        icp_label=args.icp_label,
+        topic=args.topic,
+        channel_plan_id=channel_plan_id,
+    )
+
+
+def _run_list_content_briefs() -> int:
+    with SessionLocal() as db:
+        result = ContentBriefService().latest(db)
+    if result is None:
+        print("Content briefs: status=not_started briefs=0 published=False")
+        return 0
+    _print_content_brief_result(result)
+    return 0
+
+
+def _print_content_brief_result(result: ContentBriefRunResult) -> None:
+    print(
+        "Content brief run:",
+        f"id={result.content_brief_run_id}",
+        f"briefs={result.brief_count}",
+        f"reused={result.reused_existing}",
+        f"published={result.published}",
+        "approval=pending_operator_review",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"ads_launched={result.ads_launched}",
+        f"spend_attempted={result.spend_attempted}",
+        f"status={result.status.value}",
+    )
+    for item in result.briefs:
+        print(
+            "Content brief:",
+            f"key={item.brief_key}",
+            f"type={item.brief_type}",
+            f"priority={item.priority}",
+            f"confidence={item.confidence}",
+            f"approval={item.approval_status}",
+            f"published={item.published}",
+        )
+
+
+def _run_seed_channel_plan(args: argparse.Namespace) -> int:
+    with SessionLocal() as db:
+        try:
+            result = ContentBriefService().seed_channel_plan(
+                db,
+                channel_type=args.channel_type,
+                specialty=args.specialty,
+                geography=args.geography,
+                icp_label=args.icp_label,
+                title=args.title,
+            )
+        except ContentBriefError as exc:
+            print(f"Channel plan error: {exc.message}")
+            return 1
+    _print_channel_plan(result)
+    return 0
+
+
+def _print_channel_plan(result: ChannelPlanView) -> None:
+    print(
+        "Channel plan:",
+        f"id={result.id}",
+        f"type={result.channel_type}",
+        f"status={result.status}",
+        f"reused={result.reused_existing}",
+        f"launched={result.launched}",
+        f"spend_attempted={result.spend_attempted}",
+        f"ads_live={result.ads_live}",
     )
 
 
