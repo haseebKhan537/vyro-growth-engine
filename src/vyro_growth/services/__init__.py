@@ -29,6 +29,11 @@ from vyro_growth.services.command_center import (
     CommandCenterSummary,
     OperatorCommandCenterService,
 )
+from vyro_growth.services.compliance_evidence_binder import (
+    ComplianceEvidenceBinder,
+    ComplianceEvidenceBinderService,
+    format_compliance_evidence_binder,
+)
 from vyro_growth.services.contact_enrichment import (
     ContactEnrichmentError,
     ContactEnrichmentResult,
@@ -187,6 +192,8 @@ __all__ = [
     "ChannelPlanSeeds",
     "ChannelPlanView",
     "CommandCenterSummary",
+    "ComplianceEvidenceBinder",
+    "ComplianceEvidenceBinderService",
     "ContactEnrichmentError",
     "ContactEnrichmentResult",
     "ContactEnrichmentService",
@@ -269,6 +276,7 @@ __all__ = [
     "build_health_payload",
     "database_is_ready",
     "domain_from_email",
+    "format_compliance_evidence_binder",
     "format_launch_readiness",
     "format_owner_handoff",
     "format_settings_change_list",

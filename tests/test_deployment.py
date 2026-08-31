@@ -94,6 +94,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "owner-handoff-packet" in runbook
     assert "operator-owner-handoff-packet" in runbook
     assert "operator-audit-timeline" in runbook
+    assert "compliance-evidence-binder" in runbook
     assert "018_live_settings_change_requests" in runbook
 
 

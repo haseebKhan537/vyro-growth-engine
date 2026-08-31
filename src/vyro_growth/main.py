@@ -28,6 +28,10 @@ from vyro_growth.api.command_center import (
     CommandCenterResponse,
     build_command_center_response,
 )
+from vyro_growth.api.compliance_evidence_binder import (
+    ComplianceEvidenceBinderResponse,
+    build_compliance_evidence_binder_response,
+)
 from vyro_growth.api.content_briefs import (
     ContentBriefRunResponse,
     GenerateContentBriefsRequest,
@@ -659,6 +663,16 @@ def owner_handoff_packet(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_owner_handoff_response(db, active_settings)
+
+
+@app.get("/internal/compliance-evidence-binder", tags=["internal"])
+def compliance_evidence_binder(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ComplianceEvidenceBinderResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_compliance_evidence_binder_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

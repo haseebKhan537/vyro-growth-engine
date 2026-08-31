@@ -1848,6 +1848,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     handoff = parser.parse_args(["owner-handoff-packet", "--json"])
     assert handoff.command == "owner-handoff-packet"
     assert handoff.json is True
+    binder = parser.parse_args(["compliance-evidence-binder", "--json"])
+    assert binder.command == "compliance-evidence-binder"
+    assert binder.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:
