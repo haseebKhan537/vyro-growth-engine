@@ -66,6 +66,7 @@ ruff check .
 mypy src
 pytest -q
 vyro-growth smoke-dry-run --local-only --json
+vyro-growth launch-readiness --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -775,6 +776,25 @@ vyro-growth check-smoke-output --file "$RUNNER_TEMP/smoke-output.json"
 The job sets `OUTBOUND_ENABLED=false` and every live-provider flag to false, unsets `DATABASE_URL` and provider credentials, and fails if the smoke command refuses unexpectedly or reports a live side effect. `check-smoke-output` requires sanitized JSON signals including `executed=0`, `live_action=false`, `outbound_attempted=false`, `owner_approved=false`, `dry_run_only=true`, `no_execution=true`, and `isolated_demo_database=true`. It also fails if the output includes PHI, real emails or phones, message bodies, outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw errors, or invented real-world prospect facts.
 
 This gate is not a production workflow and does not change operator halt, live settings, or runtime data.
+
+## Phase 27 — Launch readiness checklist (read-only)
+
+Print a sanitized go/no-go checklist of what remains blocked before any live acquisition activity can be approved. This layer does not execute approved items or packets, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, deploy, call GitHub Actions or live providers, set live `owner_approved`, or change operator halt / outbound / live-provider settings. Secret values are never printed.
+
+CLI:
+```bash
+vyro-growth launch-readiness
+vyro-growth launch-readiness --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/launch-readiness \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized console or JSON checklist: overall status (`blocked`, `warning`, or `ready_for_owner_review`), blocker codes, next-action labels, required configuration names, secret inventory as variable names plus present/missing/redacted status, operator halt, outbound and live-provider flag booleans, whether the CI smoke gate is documented, pending owner approval packet counts, and action-readiness blocker counts. The command exits nonzero only when overall status is `blocked`. `ready_for_owner_review` is not permission to enable outbound or lift halt.
 
 ## Phase 1
 

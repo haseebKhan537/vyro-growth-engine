@@ -89,6 +89,16 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "Run bounded practice discovery when ready (no outbound)."
     ),
     NextActionCode.KEEP_OUTBOUND_DISABLED: "Keep OUTBOUND_ENABLED=false.",
+    NextActionCode.KEEP_LIVE_PROVIDERS_DISABLED: "Keep every live-provider flag disabled.",
+    NextActionCode.KEEP_OPERATOR_HALT: (
+        "Keep operator halt active until a separate explicit owner action."
+    ),
+    NextActionCode.RESTORE_CI_SMOKE_GATE: (
+        "Restore the documented CI smoke-dry-run job and check-smoke-output gate."
+    ),
+    NextActionCode.CONFIGURE_REQUIRED_CREDENTIALS: (
+        "Configure the named required credential in local env. Do not paste values here."
+    ),
 }
 
 

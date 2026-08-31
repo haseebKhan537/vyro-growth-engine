@@ -143,6 +143,8 @@ vyro-growth recommend-growth
 
 `vyro-growth smoke-dry-run --local-only` is a developer demo only. It uses an isolated in-memory database, refuses production/live settings unless `--local-only`/`--dev-demo` is passed, and is not a deployable worker job. CI job `smoke-dry-run` runs `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and live-provider flags disabled, then `vyro-growth check-smoke-output` to fail the build on live side effects or unsanitized output. CI unsets `DATABASE_URL` and provider credentials for that job.
 
+`vyro-growth launch-readiness` is a read-only owner-facing checklist. It does not execute, call providers, print secret values, or change operator halt / live settings. Use it to see remaining blockers before any live acquisition activity is approved. `ready_for_owner_review` is not permission to enable outbound.
+
 Do not schedule `send_email`, `schedule_meeting`, or `place_consent_callback`. Those names exist only as fail-closed outbound guards and are not deployable jobs.
 
 ## Scheduler and queue assumptions

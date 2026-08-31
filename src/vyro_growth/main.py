@@ -51,6 +51,10 @@ from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
 )
+from vyro_growth.api.launch_readiness import (
+    LaunchReadinessResponse,
+    build_launch_readiness_response,
+)
 from vyro_growth.api.monitoring import (
     MonitoringStatusResponse,
     build_monitoring_status_response,
@@ -468,6 +472,16 @@ def latest_approval_packets(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_approval_packet_response(db)
+
+
+@app.get("/internal/launch-readiness", tags=["internal"])
+def launch_readiness_checklist(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> LaunchReadinessResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_launch_readiness_response(db, active_settings)
 
 
 @app.get("/internal/action-readiness", tags=["internal"])

@@ -87,6 +87,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "Do not ingest or expose PHI" in runbook
     assert "check-smoke-output" in runbook
     assert "smoke-dry-run --local-only --json" in runbook
+    assert "launch-readiness" in runbook
 
 
 def test_readiness_and_catalog_do_not_call_providers() -> None:
