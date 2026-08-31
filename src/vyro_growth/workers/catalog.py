@@ -7,6 +7,7 @@ from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.discovery_handler import DISCOVER_NPPES_PRACTICES_JOB
+from vyro_growth.workers.execution_planning_handler import GENERATE_EXECUTION_PLANS_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outbound import (
     PLACE_CONSENT_CALLBACK_JOB,
@@ -88,6 +89,11 @@ DEPLOYABLE_JOBS: tuple[WorkerJobSpec, ...] = (
         GENERATE_CONTENT_BRIEFS_JOB,
         "draft-content-briefs",
         "Review-only landing page and SEO content briefs",
+    ),
+    WorkerJobSpec(
+        GENERATE_EXECUTION_PLANS_JOB,
+        "plan-approved-execution",
+        "Dry-run execution plans for approved review artifacts",
     ),
 )
 

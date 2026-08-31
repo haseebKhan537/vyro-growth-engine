@@ -28,6 +28,8 @@ from vyro_growth.models import (
     ContentBriefRun,
     DiscoveryRun,
     EnrichmentRun,
+    ExecutionPlan,
+    ExecutionPlanRun,
     OptimizerRecommendation,
     OptimizerRun,
     OutreachPlanRun,
@@ -47,6 +49,7 @@ from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.discovery_handler import DISCOVER_NPPES_PRACTICES_JOB
+from vyro_growth.workers.execution_planning_handler import GENERATE_EXECUTION_PLANS_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outreach_enrollment_handler import PLAN_OUTREACH_ENROLLMENTS_JOB
 from vyro_growth.workers.personalization_handler import PERSONALIZE_SCORED_LEADS_JOB
@@ -77,6 +80,7 @@ PHASE_JOB_NAMES: dict[str, str] = {
     "growth_optimizer": GENERATE_GROWTH_RECOMMENDATIONS_JOB,
     "acquisition_channel_plans": GENERATE_CHANNEL_PLANS_JOB,
     "content_briefs": GENERATE_CONTENT_BRIEFS_JOB,
+    "execution_plans": GENERATE_EXECUTION_PLANS_JOB,
 }
 
 
@@ -205,11 +209,13 @@ class OperatorMonitoringService:
         safety = self._safety(summary.safety, settings)
         readiness = self._readiness(readiness_payload, safety)
         activity_summary = self._activity_summary(db)
+        execution_plans = _count_rows(db, ExecutionPlan, ExecutionPlan.executed.is_(False))
         findings = self._findings(
             safety=safety,
             readiness=readiness,
             pending=pending,
             failures=failures,
+            execution_plans=execution_plans,
         )
         snapshot = MonitoringSnapshot(
             generated_at=datetime.now(tz=UTC),
@@ -324,6 +330,31 @@ class OperatorMonitoringService:
                     run_id=briefs.id,
                 )
             )
+        execution_run = _latest_row(db, ExecutionPlanRun)
+        if execution_run is None:
+            runs.append(
+                LatestJobStatus(
+                    phase="execution_plans",
+                    job_name=PHASE_JOB_NAMES["execution_plans"],
+                    implemented=True,
+                    status="not_started",
+                    started_at=None,
+                    finished_at=None,
+                    run_id=None,
+                )
+            )
+        else:
+            runs.append(
+                LatestJobStatus(
+                    phase="execution_plans",
+                    job_name=PHASE_JOB_NAMES["execution_plans"],
+                    implemented=True,
+                    status=execution_run.status,
+                    started_at=execution_run.started_at,
+                    finished_at=execution_run.finished_at,
+                    run_id=execution_run.id,
+                )
+            )
         return tuple(runs)
 
     def _recent_failures(self, db: Session) -> tuple[SanitizedFailure, ...]:
@@ -347,6 +378,7 @@ class OperatorMonitoringService:
             ("growth_optimizer", OptimizerRun, None),
             ("acquisition_channel_plans", ChannelPlanRun, None),
             ("content_briefs", ContentBriefRun, None),
+            ("execution_plans", ExecutionPlanRun, None),
         )
         for phase, model, extra in sources:
             stmt = select(model).where(model.status == FAILED_STATUS)
@@ -467,6 +499,7 @@ class OperatorMonitoringService:
         readiness: MonitoringReadiness,
         pending: PendingReviewCounts,
         failures: tuple[SanitizedFailure, ...],
+        execution_plans: int,
     ) -> tuple[OperationalFinding, ...]:
         findings: list[OperationalFinding] = []
         if safety.outbound_enabled:
@@ -541,6 +574,18 @@ class OperatorMonitoringService:
                     FindingSeverity.INFO,
                     FindingCode.PENDING_OPERATOR_REVIEW,
                     f"{pending.total} item(s) are waiting for operator review.",
+                )
+            )
+        if execution_plans:
+            findings.append(
+                OperationalFinding(
+                    FindingSeverity.INFO,
+                    FindingCode.EXECUTION_PLANS_DRY_RUN,
+                    (
+                        f"{execution_plans} dry-run execution plan(s) exist. "
+                        "None were executed."
+                    ),
+                    phase="execution_plans",
                 )
             )
         if safety.operator_halt_status == HaltStatus.HALTED.value:

@@ -397,6 +397,7 @@ class FindingCode(StrEnum):
     PENDING_OPERATOR_REVIEW = "pending_operator_review"
     OPERATOR_HALT_ACTIVE = "operator_halt_active"
     SAFE_DEFAULTS = "safe_defaults"
+    EXECUTION_PLANS_DRY_RUN = "execution_plans_dry_run"
 
 
 class ReviewArtifactType(StrEnum):
@@ -446,6 +447,28 @@ class ReviewItemStatus(StrEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
     NEEDS_CHANGES = "needs_changes"
+
+
+class ExecutionPlanRunStatus(StrEnum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ExecutionPlanType(StrEnum):
+    PERSONALIZATION_DRAFT = "personalization_draft"
+    OUTREACH_ENROLLMENT = "outreach_enrollment"
+    REPLY_FOLLOW_UP = "reply_follow_up"
+    BOOKING = "booking"
+    VOICE_QUALIFICATION = "voice_qualification"
+    OPTIMIZER_APPLY = "optimizer_apply"
+    ACQUISITION_CHANNEL_LAUNCH = "acquisition_channel_launch"
+    CONTENT_PUBLISH = "content_publish"
+
+
+class ExecutionReadinessStatus(StrEnum):
+    BLOCKED = "blocked"
+    AWAITING_OWNER_APPROVAL = "awaiting_owner_approval"
 
 
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(

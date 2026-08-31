@@ -35,6 +35,8 @@ PHASE_ONE_MODELS = (
     models.ChannelPlan,
     models.ContentBriefRun,
     models.ContentBrief,
+    models.ExecutionPlanRun,
+    models.ExecutionPlan,
 )
 
 

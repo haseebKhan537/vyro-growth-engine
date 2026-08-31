@@ -29,6 +29,8 @@ from vyro_growth.domain import (
     DiscoveryRunStatus,
     EnrichmentRunStatus,
     EnrollmentStatus,
+    ExecutionPlanRunStatus,
+    ExecutionReadinessStatus,
     LeadStage,
     OptimizerRunStatus,
     OutreachPlanRunStatus,
@@ -747,3 +749,101 @@ class ContentBrief(TimestampMixin, Base):
     publish_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
     dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
     content_brief_run: Mapped[ContentBriefRun] = relationship(back_populates="briefs")
+
+
+class ExecutionPlanRun(TimestampMixin, Base):
+    """Batch of dry-run execution plans for approved review artifacts.
+
+    Phase 17 never performs the underlying live action.
+    """
+
+    __tablename__ = "execution_plan_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "snapshot_fingerprint",
+            name="uq_execution_plan_runs_snapshot_fingerprint",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(
+        String(32), default=ExecutionPlanRunStatus.PENDING.value, index=True
+    )
+    model_version: Mapped[str] = mapped_column(String(64), default="execution-planning-v1")
+    snapshot_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    plan_count: Mapped[int] = mapped_column(default=0)
+    reused_count: Mapped[int] = mapped_column(default=0)
+    ignored_non_approved_count: Mapped[int] = mapped_column(default=0)
+    executed_count: Mapped[int] = mapped_column(default=0)
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    no_execution: Mapped[bool] = mapped_column(Boolean, default=True)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    campaign_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    pages_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    snapshot_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    plans: Mapped[list[ExecutionPlan]] = relationship(back_populates="plan_run")
+
+
+class ExecutionPlan(TimestampMixin, Base):
+    """Structured dry-run execution plan for one approved review artifact."""
+
+    __tablename__ = "execution_plans"
+    __table_args__ = (
+        UniqueConstraint(
+            "execution_plan_run_id",
+            "source_review_decision_id",
+            name="uq_execution_plans_run_decision",
+        ),
+        UniqueConstraint(
+            "execution_plan_run_id",
+            "idempotency_key",
+            name="uq_execution_plans_run_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    execution_plan_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("execution_plan_runs.id"), index=True
+    )
+    source_review_decision_id: Mapped[UUID] = mapped_column(
+        ForeignKey("operator_review_decisions.id"), index=True
+    )
+    source_artifact_type: Mapped[str] = mapped_column(String(64), index=True)
+    source_artifact_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), index=True)
+    lead_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), index=True)
+    organization_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), index=True)
+    plan_type: Mapped[str] = mapped_column(String(64), index=True)
+    proposed_action: Mapped[str] = mapped_column(String(255))
+    readiness_status: Mapped[str] = mapped_column(
+        String(64),
+        default=ExecutionReadinessStatus.BLOCKED.value,
+        index=True,
+    )
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    no_execution: Mapped[bool] = mapped_column(Boolean, default=True)
+    executed: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    campaign_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    pages_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_approval_required: Mapped[bool] = mapped_column(Boolean, default=True)
+    owner_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    idempotency_key: Mapped[str] = mapped_column(String(64), index=True)
+    prerequisites_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    blockers_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    safety_notes_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    required_owner_approvals_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    plan_run: Mapped[ExecutionPlanRun] = relationship(back_populates="plans")

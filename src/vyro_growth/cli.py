@@ -40,6 +40,12 @@ from vyro_growth.services.content_brief import (
     ContentBriefService,
 )
 from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
+from vyro_growth.services.execution_planning import (
+    ExecutionPlanFilters,
+    ExecutionPlanningError,
+    ExecutionPlanningService,
+    ExecutionPlanRunResult,
+)
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.monitoring import MonitoringSnapshot, OperatorMonitoringService
@@ -332,6 +338,19 @@ def build_parser() -> argparse.ArgumentParser:
         "list-content-briefs",
         help="List the latest review-only content brief run (no publish side effects)",
     )
+    execute = subparsers.add_parser(
+        "plan-approved-execution",
+        help=(
+            "Generate dry-run execution plans for operator-approved review artifacts "
+            "(does not send, enroll, book, call, publish, spend, or apply changes)"
+        ),
+    )
+    execute.add_argument("--artifact-type", help="Limit planning to one approved artifact type")
+    execute.add_argument("--artifact-id", help="Limit planning to one approved artifact UUID")
+    subparsers.add_parser(
+        "list-execution-plans",
+        help="List the latest dry-run execution plans (no live action)",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -436,6 +455,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "list-content-briefs":
         return _run_list_content_briefs()
+
+    if args.command == "plan-approved-execution":
+        return _run_plan_approved_execution(args)
+
+    if args.command == "list-execution-plans":
+        return _run_list_execution_plans()
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1225,6 +1250,66 @@ def _print_content_brief_result(result: ContentBriefRunResult) -> None:
             f"confidence={item.confidence}",
             f"approval={item.approval_status}",
             f"published={item.published}",
+        )
+
+
+def _run_plan_approved_execution(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    artifact_id = None
+    if args.artifact_id:
+        try:
+            artifact_id = UUID(args.artifact_id)
+        except ValueError:
+            print("Execution plan error: artifact id must be a UUID")
+            return 1
+    filters = ExecutionPlanFilters(
+        artifact_type=args.artifact_type,
+        artifact_id=artifact_id,
+    )
+    with SessionLocal() as db:
+        try:
+            result = ExecutionPlanningService().generate(db, settings, filters=filters)
+        except ExecutionPlanningError as exc:
+            print(f"Execution plan error: {exc.message}")
+            return 1
+    _print_execution_plan_result(result)
+    return 0
+
+
+def _run_list_execution_plans() -> int:
+    with SessionLocal() as db:
+        result = ExecutionPlanningService().latest(db)
+    if result is None:
+        print("Execution plans: status=not_started plans=0 executed=0")
+        return 0
+    _print_execution_plan_result(result)
+    return 0
+
+
+def _print_execution_plan_result(result: ExecutionPlanRunResult) -> None:
+    print(
+        "Execution plan run:",
+        f"id={result.execution_plan_run_id}",
+        f"plans={result.plan_count}",
+        f"reused={result.reused_existing}",
+        f"ignored_non_approved={result.ignored_non_approved_count}",
+        f"executed={result.executed_count}",
+        f"dry_run_only={result.dry_run_only}",
+        f"no_execution={result.no_execution}",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"recommendation_applied={result.recommendation_applied}",
+        f"status={result.status.value}",
+    )
+    for item in result.plans:
+        print(
+            "Execution plan:",
+            f"type={item.plan_type}",
+            f"artifact_type={item.source_artifact_type}",
+            f"artifact_id={item.source_artifact_id}",
+            f"readiness={item.readiness_status}",
+            f"executed={item.executed}",
+            f"owner_approval_required={item.owner_approval_required}",
+            f"action={item.proposed_action}",
         )
 
 

@@ -28,7 +28,7 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `/ready` reports config issues and database availability. It must not call live providers or return secrets.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/review-queue`, and `POST /internal/review-queue/decisions` are internal operator routes, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
 - Dashboard and monitoring routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`) does not use the HTTP key and does not write pipeline state.
 - Review-queue list is read-only over stored artifacts. `record-review` writes a decision and audit row only; it does not execute the artifact.
@@ -169,6 +169,16 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not send email, generate sendable autonomous replies, place calls, book meetings, create Google Meet links, create calendar events, or enroll campaigns.
 - Review-queue approval of a channel plan is a recorded decision only. It must not launch, publish, or spend.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by channel planning.
+
+## Approved-item execution planning integrity
+- Phase 17 execution plans are dry-run readiness records only. They never perform the underlying live action.
+- Do not send email, enroll live campaigns, generate sendable autonomous replies, create calendar events, create Google Meet links, place calls, publish pages or content, launch ads, spend money, deploy, apply optimizer recommendations, or change scoring/campaign/provider settings.
+- Do not call OpenAI, Smartlead, Apollo, Google Calendar, Google Ads, Search Console, Analytics, SEO/search, voice providers, or other paid/external providers from this layer.
+- Read only approved operator review decisions and sanitized artifact metadata. Ignore pending, rejected, and needs-changes items.
+- Do not invent prospect facts. Missing facts remain missing.
+- Do not return message bodies, personalization copy, emails, phones, evidence snippets, API keys, provider secrets, or PHI in API/CLI output.
+- Keep `executed`, `execution_attempted`, outbound, call, spend, launch, publish, and apply flags false.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by execution planning.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

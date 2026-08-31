@@ -28,7 +28,7 @@ CLI does not use the HTTP key. Both paths are read-only.
 - Safety flags: `OUTBOUND_ENABLED`, persistent operator halt, live-provider flags, live artifact counts
 - Phase 12 readiness/config state (`/ready` fields plus `ready_for_manual_rollout`)
 - Pending operator-review counts: personalization drafts, planned enrollments, booking plans, voice plans, optimizer recommendations, acquisition channel plans, content briefs
-- Findings with severity `blocked`, `warning`, or `info`
+- Findings with severity `blocked`, `warning`, or `info`, including an info finding when dry-run execution plans exist and none were executed
 
 Output is counts, statuses, timestamps, and sanitized messages only. It does not include message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI.
 
@@ -49,6 +49,6 @@ Output is counts, statuses, timestamps, and sanitized messages only. It does not
 3. Probe `/health` and `/ready`
 4. `vyro-growth system-status`
 5. Review `blocked` and `warning` findings. Do not enable outbound to "clear" them.
-6. Review pending drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs on their existing dry-run surfaces. Approval does not publish pages or launch ads.
+6. Review pending drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs on their existing dry-run surfaces. Approval does not publish pages or launch ads. `vyro-growth plan-approved-execution` records a dry-run plan only and does not execute.
 
 Do not invent prospect facts. Do not ingest or expose PHI. Do not lift the operator halt from this command.

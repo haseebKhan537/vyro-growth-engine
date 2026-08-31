@@ -579,6 +579,32 @@ Worker job name: `generate_content_briefs`
 
 Each brief includes type, optional channel-plan id, known specialty/geography/ICP only, title, sanitized summary, outline sections, CTA concept, compliance notes, source metric/seed references, confidence/priority, generated timestamp, `pending_operator_review`, and `published=false`. Approval in the review queue records a decision only and does not publish. Unverifiable claims (clients, savings, certifications, years of experience, case studies, testimonials, provider counts, revenue improvement) and patient-facing medical advice are omitted.
 
+## Phase 17 — Approved-item execution plan foundation (dry-run)
+
+Turn operator-approved review artifacts into structured, auditable execution plans without performing the underlying live action. This layer does not send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish pages, launch ads, spend money, deploy, or apply optimizer recommendations.
+
+CLI:
+```bash
+vyro-growth plan-approved-execution
+vyro-growth plan-approved-execution --artifact-type personalization_draft
+vyro-growth list-execution-plans
+```
+
+Worker job name: `generate_execution_plans`
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl -X POST http://localhost:8000/internal/execution-plans/run \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+curl http://localhost:8000/internal/execution-plans \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Each plan includes source review decision id, artifact type/id, plan type, proposed action, prerequisites/checklist, blockers and readiness status, safety notes, required owner approvals, dry-run/no-execution flags, generated timestamp, and an idempotency key. Non-approved artifacts are ignored. Identical approved-set fingerprints reuse the existing run. Output is IDs, statuses, and sanitized labels only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:
