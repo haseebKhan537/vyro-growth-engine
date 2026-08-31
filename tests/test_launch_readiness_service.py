@@ -279,6 +279,9 @@ def test_documented_smoke_gate_and_cleared_halt_is_ready_for_owner_review(
     assert NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT.value in {
         item.next_action_code for item in checklist.next_actions
     }
+    assert NextActionCode.INSPECT_OPERATOR_AUDIT_TIMELINE.value in {
+        item.next_action_code for item in checklist.next_actions
+    }
     assert NextActionCode.HANDOFF_IS_NOT_GO_LIVE.value in {
         item.next_action_code for item in checklist.next_actions
     }

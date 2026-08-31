@@ -415,6 +415,28 @@ def test_owner_handoff_packet_does_not_call_live_providers() -> None:
     assert "OUTBOUND_ENABLED=false" in env_example
 
 
+def test_operator_audit_timeline_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/operator_audit_timeline.py"),
+        Path("src/vyro_growth/api/operator_audit_timeline.py"),
+        Path("tests/test_operator_audit_timeline_service.py"),
+        Path("tests/test_operator_audit_timeline_api.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "openai" not in source
+    assert "smartlead" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
 def test_action_readiness_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/action_readiness.py"),
@@ -470,6 +492,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_settings_change_requests.py"),
         Path("src/vyro_growth/api/operator_settings_execution_preflight.py"),
         Path("src/vyro_growth/api/operator_owner_handoff.py"),
+        Path("src/vyro_growth/api/operator_audit_timeline.py"),
         Path("tests/test_operator_dashboard_api.py"),
         Path("tests/test_operator_review_queue_api.py"),
         Path("tests/test_operator_review_decision_api.py"),
@@ -480,6 +503,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("tests/test_operator_settings_change_decision_api.py"),
         Path("tests/test_operator_settings_execution_preflight_api.py"),
         Path("tests/test_operator_owner_handoff_api.py"),
+        Path("tests/test_operator_audit_timeline_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -505,12 +529,14 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_settings_change_requests.py"),
         Path("src/vyro_growth/api/operator_settings_execution_preflight.py"),
         Path("src/vyro_growth/api/operator_owner_handoff.py"),
+        Path("src/vyro_growth/api/operator_audit_timeline.py"),
         Path("tests/test_operator_review_decision_api.py"),
         Path("tests/test_operator_approval_packet_decision_api.py"),
         Path("tests/test_operator_action_readiness_api.py"),
         Path("tests/test_operator_settings_change_decision_api.py"),
         Path("tests/test_operator_settings_execution_preflight_api.py"),
         Path("tests/test_operator_owner_handoff_api.py"),
+        Path("tests/test_operator_audit_timeline_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

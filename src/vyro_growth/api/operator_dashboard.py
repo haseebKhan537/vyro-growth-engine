@@ -37,6 +37,7 @@ from vyro_growth.api.monitoring import (
 from vyro_growth.api.operator_ui import (
     OPERATOR_ACTION_READINESS_PATH,
     OPERATOR_APPROVAL_PACKETS_PATH,
+    OPERATOR_AUDIT_TIMELINE_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_REVIEW_QUEUE_PATH,
     OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
@@ -254,7 +255,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)}">'
         "Settings preflight</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)}">'
-        "Owner handoff</a>\n"
+        "Owner handoff</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_AUDIT_TIMELINE_PATH)}">'
+        "Audit timeline</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -310,6 +313,9 @@ def _render_safety(
         "No execution. "
         f'<a class="nav-link" href="{escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)}">'
         "Open owner go-live handoff packet</a> — read-only manual-review view. "
+        "No execution. "
+        f'<a class="nav-link" href="{escape(OPERATOR_AUDIT_TIMELINE_PATH)}">'
+        "Open activity audit timeline</a> — read-only history. "
         "No execution.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
@@ -489,6 +495,9 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "No execute controls. "
         f'<a class="nav-link" href="{escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)}">'
         "Open owner go-live handoff packet</a> — read-only manual review. "
+        "No execute controls. "
+        f'<a class="nav-link" href="{escape(OPERATOR_AUDIT_TIMELINE_PATH)}">'
+        "Open activity audit timeline</a> — read-only history. "
         "No execute controls.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"

@@ -726,6 +726,11 @@ def _remaining_checklist(
 
     add(HANDOFF_NOT_GO_LIVE_CODE, FindingSeverity.INFO.value, SECTION_HANDOFF)
     add(EXECUTION_DISABLED_CODE, FindingSeverity.INFO.value, SECTION_HANDOFF)
+    add(
+        NextActionCode.INSPECT_OPERATOR_AUDIT_TIMELINE.value,
+        FindingSeverity.INFO.value,
+        SECTION_HANDOFF,
+    )
     for code in launch.next_action_codes:
         severity = FindingSeverity.INFO.value
         if code in launch.blocker_codes or code in {
@@ -1000,6 +1005,8 @@ def _format_markdown(packet: OwnerHandoffPacket, payload: dict[str, Any]) -> str
         "",
         "This packet is for manual owner review only. It is not permission or "
         "machinery for going live.",
+        "Inspect recent operator activity at /internal/operator-audit-timeline "
+        "(read-only, no execution).",
         "",
         f"- overall: {payload['overall_status']}",
         f"- packet_kind: {payload['packet_kind']}",

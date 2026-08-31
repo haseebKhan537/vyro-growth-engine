@@ -426,6 +426,7 @@ class NextActionCode(StrEnum):
     CONFIGURE_REQUIRED_CREDENTIALS = "configure_required_credentials"
     REVIEW_SETTINGS_CHANGE_REQUESTS = "review_settings_change_requests"
     INSPECT_SETTINGS_EXECUTION_PREFLIGHT = "inspect_settings_execution_preflight"
+    INSPECT_OPERATOR_AUDIT_TIMELINE = "inspect_operator_audit_timeline"
     HANDOFF_IS_NOT_GO_LIVE = "handoff_is_not_permission_to_go_live"
 
 

@@ -148,8 +148,10 @@ def test_empty_handoff_is_read_only_without_side_effects(db_session: Session) ->
     assert packet.approved_action_readiness.candidate_count == 0
     codes = {item.code for item in packet.remaining_manual_owner_checklist}
     assert NextActionCode.HANDOFF_IS_NOT_GO_LIVE.value in codes
+    assert NextActionCode.INSPECT_OPERATOR_AUDIT_TIMELINE.value in codes
     assert "execution_disabled_in_this_phase" in codes
     assert NextActionCode.KEEP_OUTBOUND_DISABLED.value in codes
+    assert "/internal/operator-audit-timeline" in markdown
     assert "## Launch readiness summary" in markdown
     assert "## Settings change request summary" in markdown
     assert "## Settings execution preflight summary" in markdown

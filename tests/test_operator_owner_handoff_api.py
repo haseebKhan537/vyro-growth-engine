@@ -193,6 +193,7 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
     assert 'data-go-live-permitted="false"' in html
     assert 'data-manual-review-only="true"' in html
     assert 'data-no-execution="true"' in html
+    assert "/internal/operator-audit-timeline" in html
     for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 

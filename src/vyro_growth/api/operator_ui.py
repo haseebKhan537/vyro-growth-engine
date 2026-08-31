@@ -20,6 +20,7 @@ OPERATOR_ACTION_READINESS_PATH = "/internal/operator-action-readiness"
 OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH = "/internal/operator-settings-change-requests"
 OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH = "/internal/operator-settings-execution-preflight"
 OPERATOR_OWNER_HANDOFF_PACKET_PATH = "/internal/operator-owner-handoff-packet"
+OPERATOR_AUDIT_TIMELINE_PATH = "/internal/operator-audit-timeline"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -38,6 +39,7 @@ OperatorSurface = Literal[
     "settings-change-requests",
     "settings-execution-preflight",
     "owner-handoff-packet",
+    "audit-timeline",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -48,6 +50,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "settings-change-requests": "Settings requests",
     "settings-execution-preflight": "Settings preflight",
     "owner-handoff-packet": "Owner handoff",
+    "audit-timeline": "Audit timeline",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -57,6 +60,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "settings-change-requests": OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
     "settings-execution-preflight": OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     "owner-handoff-packet": OPERATOR_OWNER_HANDOFF_PACKET_PATH,
+    "audit-timeline": OPERATOR_AUDIT_TIMELINE_PATH,
 }
 
 
@@ -116,6 +120,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "settings-change-requests",
         "settings-execution-preflight",
         "owner-handoff-packet",
+        "audit-timeline",
     )
     links = []
     for name in surfaces:
