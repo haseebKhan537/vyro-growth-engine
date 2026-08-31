@@ -38,6 +38,14 @@ from vyro_growth.services.settings_change_requests import (
 DB_SECRET_URL = "postgresql+psycopg://vyro:super-db-password@localhost:5432/vyro_growth"
 
 
+def _json_from_cli(output: str) -> dict[str, object]:
+    start = output.find("{")
+    assert start != -1
+    payload = json.loads(output[start:])
+    assert isinstance(payload, dict)
+    return payload
+
+
 def _settings(**overrides: object) -> Settings:
     return Settings(**overrides)
 
@@ -385,21 +393,21 @@ def test_cli_create_list_detail_decision_and_propose(
     )
     created_out = capsys.readouterr().out
     assert create_code == 0
-    created = json.loads(created_out)
-    request_id = created["request_id"]
+    created = _json_from_cli(created_out)
+    request_id = str(created["request_id"])
     _assert_no_leakage(created_out, SECRET_VALUE)
 
     list_code = main(["settings-change-requests", "--json"])
     listed_out = capsys.readouterr().out
     assert list_code == 0
-    listed = json.loads(listed_out)
+    listed = _json_from_cli(listed_out)
     assert listed["request_count"] >= 1
     assert listed["settings_applied"] is False
 
     detail_code = main(["settings-change-request", "--id", request_id, "--json"])
     detail_out = capsys.readouterr().out
     assert detail_code == 0
-    assert json.loads(detail_out)["request_id"] == request_id
+    assert _json_from_cli(detail_out)["request_id"] == request_id
 
     decide_code = main(
         [
@@ -413,7 +421,7 @@ def test_cli_create_list_detail_decision_and_propose(
     )
     decide_out = capsys.readouterr().out
     assert decide_code == 0
-    decided = json.loads(decide_out)
+    decided = _json_from_cli(decide_out)
     assert decided["owner_decision_status"] == "rejected"
     assert decided["settings_applied"] is False
     assert decided["owner_approved"] is False
@@ -423,7 +431,7 @@ def test_cli_create_list_detail_decision_and_propose(
     propose_code = main(["propose-settings-changes", "--json"])
     propose_out = capsys.readouterr().out
     assert propose_code == 0
-    proposed = json.loads(propose_out)
+    proposed = _json_from_cli(propose_out)
     assert proposed["settings_applied"] is False
     assert proposed["live_action"] is False
     _assert_no_leakage(propose_out, SECRET_VALUE)

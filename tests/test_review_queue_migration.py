@@ -34,4 +34,4 @@ def test_migration_012_follows_optimizer_recommendations() -> None:
     revision = script.get_revision("012_operator_review_decisions")
     assert revision is not None
     assert revision.down_revision == "011_optimizer_recommendations"
-    assert script.get_current_head() == "017_approval_packet_decisions"
+    assert script.get_current_head() == "018_live_settings_change_requests"

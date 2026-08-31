@@ -90,6 +90,7 @@ Current revision chain (do not skip):
 15. `015_execution_plans`
 16. `016_approval_packets`
 17. `017_approval_packet_decisions`
+18. `018_live_settings_change_requests`
 
 Check status:
 

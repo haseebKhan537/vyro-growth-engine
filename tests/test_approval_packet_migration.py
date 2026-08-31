@@ -55,4 +55,4 @@ def test_migration_016_follows_execution_plans() -> None:
     revision = script.get_revision("016_approval_packets")
     assert revision is not None
     assert revision.down_revision == "015_execution_plans"
-    assert script.get_current_head() == "017_approval_packet_decisions"
+    assert script.get_current_head() == "018_live_settings_change_requests"

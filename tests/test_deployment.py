@@ -89,6 +89,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "smoke-dry-run --local-only --json" in runbook
     assert "launch-readiness" in runbook
     assert "settings-change-requests" in runbook
+    assert "018_live_settings_change_requests" in runbook
 
 
 def test_readiness_and_catalog_do_not_call_providers() -> None:
