@@ -300,7 +300,7 @@ Internal HTML decision-record form on review-item detail pages. No execution.
 - no execute controls; operator halt is unchanged
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 23 — Owner approval packet decision UI (current)
+## Phase 23 — Owner approval packet decision UI
 Internal HTML decision-record form on approval-packet detail pages. No execution.
 - `POST /internal/operator-approval-packets/{packet_id}/decision` records `approved`, `rejected`, or `needs_changes`
 - optional short owner/reviewer label and notes, sanitized/redacted before persist and render
@@ -311,7 +311,18 @@ Internal HTML decision-record form on approval-packet detail pages. No execution
 - approval-packet list pages and review-queue decision UI stay as they are
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-Future review/approval-UI work (not in this phase):
+## Phase 24 — Approved action readiness queue (current)
+Internal read-only queue over stored review decisions, execution plans, approval packets, and packet decision records. No execution.
+- Combine existing records only; do not generate new outreach, packets, plans, or content
+- JSON `GET /internal/action-readiness` and HTML `GET /internal/operator-action-readiness`
+- candidates include approved review items with matching execution plans and approval packets
+- explicit statuses: `blocked`, `missing_review_decision`, `missing_owner_packet_decision`, `preflight_blocked`, `approved_but_halted`, `ready_pending_explicit_live_owner_action`
+- a ready-like status still requires a future explicit owner action before live execution
+- filters: plan family, readiness status, blocker status, and review decision status
+- dashboard and command-center links to the queue
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+Future live-readiness work (not in this phase):
 - execute an approved item or packet from the HTML pages
 - treat an approval-packet decision as live owner approval
 - change operator halt, outbound, or live-provider flags

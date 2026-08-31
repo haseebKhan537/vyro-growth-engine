@@ -82,6 +82,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     NextActionCode.OWNER_REVIEW_APPROVAL_PACKETS: (
         "Owner-review live-readiness packets. Do not execute underlying actions."
     ),
+    NextActionCode.INSPECT_ACTION_READINESS: (
+        "Inspect the approved action readiness queue. Read-only; do not execute."
+    ),
     NextActionCode.RUN_DISCOVERY_WHEN_READY: (
         "Run bounded practice discovery when ready (no outbound)."
     ),
@@ -395,6 +398,11 @@ def _next_actions(
                     FindingSeverity.INFO,
                     phase="approval_packets",
                 )
+                add(
+                    NextActionCode.INSPECT_ACTION_READINESS,
+                    FindingSeverity.INFO,
+                    phase="action_readiness",
+                )
             case _:
                 pass
 
@@ -418,6 +426,12 @@ def _next_actions(
             NextActionCode.GENERATE_APPROVAL_PACKETS,
             FindingSeverity.INFO,
             phase="approval_packets",
+        )
+    if packets.packets and NextActionCode.INSPECT_ACTION_READINESS not in selected:
+        add(
+            NextActionCode.INSPECT_ACTION_READINESS,
+            FindingSeverity.INFO,
+            phase="action_readiness",
         )
     if pipeline.organizations == 0:
         add(NextActionCode.RUN_DISCOVERY_WHEN_READY, FindingSeverity.INFO, phase="discovery")

@@ -6,6 +6,10 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
+from vyro_growth.api.action_readiness import (
+    ActionReadinessQueueResponse,
+    build_action_readiness_response,
+)
 from vyro_growth.api.approval_packets import (
     ApprovalPacketRunRequest,
     ApprovalPacketRunResponse,
@@ -50,6 +54,10 @@ from vyro_growth.api.internal_auth import (
 from vyro_growth.api.monitoring import (
     MonitoringStatusResponse,
     build_monitoring_status_response,
+)
+from vyro_growth.api.operator_action_readiness import (
+    build_operator_action_readiness_item_response,
+    build_operator_action_readiness_response,
 )
 from vyro_growth.api.operator_approval_packets import (
     build_operator_approval_packet_decision_response,
@@ -302,6 +310,50 @@ async def operator_approval_packet_decision(
     )
 
 
+@app.get(
+    "/internal/operator-action-readiness",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_action_readiness(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    plan_family: Annotated[str | None, Query()] = None,
+    readiness_status: Annotated[str | None, Query()] = None,
+    blocker_status: Annotated[str | None, Query()] = None,
+    decision_status: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_action_readiness_response(
+        db,
+        active_settings,
+        plan_family=plan_family,
+        readiness_status=readiness_status,
+        blocker_status=blocker_status,
+        decision_status=decision_status,
+    )
+
+
+@app.get(
+    "/internal/operator-action-readiness/{candidate_id}",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_action_readiness_item(
+    candidate_id: str,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_action_readiness_item_response(
+        db,
+        active_settings,
+        candidate_id=candidate_id,
+    )
+
+
 @app.post("/internal/optimizer/run", tags=["internal"])
 def run_growth_optimizer(
     db: DbSession,
@@ -416,6 +468,27 @@ def latest_approval_packets(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_approval_packet_response(db)
+
+
+@app.get("/internal/action-readiness", tags=["internal"])
+def action_readiness_queue(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    plan_family: Annotated[str | None, Query()] = None,
+    readiness_status: Annotated[str | None, Query()] = None,
+    blocker_status: Annotated[str | None, Query()] = None,
+    decision_status: Annotated[str | None, Query()] = None,
+) -> ActionReadinessQueueResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_action_readiness_response(
+        db,
+        active_settings,
+        plan_family=plan_family,
+        readiness_status=readiness_status,
+        blocker_status=blocker_status,
+        decision_status=decision_status,
+    )
 
 
 @app.get("/internal/review-queue", tags=["internal"])
