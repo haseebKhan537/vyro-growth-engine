@@ -166,8 +166,8 @@ def _packets_to_response(item: ApprovalPacketSummary) -> ApprovalPacketSummaryRe
         packets=item.packets,
         by_preflight_status=item.by_preflight_status,
         by_plan_family=item.by_plan_family,
-        owner_approved=0,
-        executed=0,
+        owner_approved=item.owner_approved,
+        executed=0,  # Phase 19 never reports execution even if a stored row is marked.
         latest_run_status=item.latest_run_status,
         latest_run_id=item.latest_run_id,
     )
