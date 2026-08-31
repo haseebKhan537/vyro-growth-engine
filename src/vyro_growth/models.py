@@ -20,6 +20,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from vyro_growth.database import Base
 from vyro_growth.domain import (
+    ApprovalPacketRunStatus,
     BookingPlanRunStatus,
     BookingPlanStatus,
     ChannelPlanRunStatus,
@@ -34,6 +35,7 @@ from vyro_growth.domain import (
     LeadStage,
     OptimizerRunStatus,
     OutreachPlanRunStatus,
+    PreflightStatus,
     RecommendationApprovalStatus,
     ReplyClassificationOutcome,
     ReplyIntent,
@@ -847,3 +849,102 @@ class ExecutionPlan(TimestampMixin, Base):
     required_owner_approvals_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     plan_run: Mapped[ExecutionPlanRun] = relationship(back_populates="plans")
+
+
+class ApprovalPacketRun(TimestampMixin, Base):
+    """Batch of owner approval packets plus local preflight results.
+
+    Phase 18 never performs the underlying live action.
+    """
+
+    __tablename__ = "approval_packet_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "snapshot_fingerprint",
+            name="uq_approval_packet_runs_snapshot_fingerprint",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    status: Mapped[str] = mapped_column(
+        String(32), default=ApprovalPacketRunStatus.PENDING.value, index=True
+    )
+    model_version: Mapped[str] = mapped_column(String(64), default="approval-packets-v1")
+    snapshot_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    packet_count: Mapped[int] = mapped_column(default=0)
+    reused_count: Mapped[int] = mapped_column(default=0)
+    missing_plan_count: Mapped[int] = mapped_column(default=0)
+    executed_count: Mapped[int] = mapped_column(default=0)
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    no_execution: Mapped[bool] = mapped_column(Boolean, default=True)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    campaign_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    pages_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    input_params: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    snapshot_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
+    packets: Mapped[list[OwnerApprovalPacket]] = relationship(back_populates="packet_run")
+
+
+class OwnerApprovalPacket(TimestampMixin, Base):
+    """Sanitized owner approval packet for one dry-run execution plan."""
+
+    __tablename__ = "owner_approval_packets"
+    __table_args__ = (
+        UniqueConstraint(
+            "approval_packet_run_id",
+            "source_execution_plan_id",
+            name="uq_owner_approval_packets_run_plan",
+        ),
+        UniqueConstraint(
+            "approval_packet_run_id",
+            "idempotency_key",
+            name="uq_owner_approval_packets_run_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    approval_packet_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("approval_packet_runs.id"), index=True
+    )
+    source_execution_plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey("execution_plans.id"), index=True
+    )
+    source_execution_plan_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("execution_plan_runs.id"), index=True
+    )
+    source_artifact_type: Mapped[str] = mapped_column(String(64), index=True)
+    source_artifact_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), index=True)
+    plan_family: Mapped[str] = mapped_column(String(64), index=True)
+    proposed_action: Mapped[str] = mapped_column(String(255))
+    preflight_status: Mapped[str] = mapped_column(
+        String(64),
+        default=PreflightStatus.BLOCKED.value,
+        index=True,
+    )
+    dry_run_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    no_execution: Mapped[bool] = mapped_column(Boolean, default=True)
+    executed: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    campaign_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    pages_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_approval_required: Mapped[bool] = mapped_column(Boolean, default=True)
+    owner_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    idempotency_key: Mapped[str] = mapped_column(String(64), index=True)
+    preflight_checklist_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    missing_prerequisites_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    findings_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    required_owner_decisions_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    packet_run: Mapped[ApprovalPacketRun] = relationship(back_populates="packets")

@@ -275,6 +275,27 @@ def test_execution_planning_does_not_call_live_providers() -> None:
     assert "OUTBOUND_ENABLED=false" in env_example
 
 
+def test_approval_packets_do_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/approval_packets.py"),
+        Path("src/vyro_growth/api/approval_packets.py"),
+        Path("src/vyro_growth/workers/approval_packet_handler.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "openai" not in source
+    assert "smartlead" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
 def test_growth_optimizer_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/growth_optimizer.py"),

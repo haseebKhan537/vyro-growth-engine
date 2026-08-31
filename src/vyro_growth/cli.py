@@ -26,6 +26,12 @@ from vyro_growth.providers.voice_qualification import (
 )
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
+from vyro_growth.services.approval_packets import (
+    ApprovalPacketError,
+    ApprovalPacketFilters,
+    ApprovalPacketRunResult,
+    ApprovalPacketService,
+)
 from vyro_growth.services.booking_plan import BookingPlanService
 from vyro_growth.services.channel_planning import (
     ChannelPlanningService,
@@ -351,6 +357,19 @@ def build_parser() -> argparse.ArgumentParser:
         "list-execution-plans",
         help="List the latest dry-run execution plans (no live action)",
     )
+    packets = subparsers.add_parser(
+        "generate-approval-packets",
+        help=(
+            "Generate live-readiness preflight and owner approval packets "
+            "(does not send, enroll, book, call, publish, spend, or apply changes)"
+        ),
+    )
+    packets.add_argument("--plan-type", help="Limit packets to one execution plan family")
+    packets.add_argument("--execution-plan-id", help="Limit packets to one execution plan UUID")
+    subparsers.add_parser(
+        "list-approval-packets",
+        help="List the latest owner approval packets (no live action)",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -461,6 +480,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "list-execution-plans":
         return _run_list_execution_plans()
+
+    if args.command == "generate-approval-packets":
+        return _run_generate_approval_packets(args)
+
+    if args.command == "list-approval-packets":
+        return _run_list_approval_packets()
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1307,6 +1332,65 @@ def _print_execution_plan_result(result: ExecutionPlanRunResult) -> None:
             f"artifact_type={item.source_artifact_type}",
             f"artifact_id={item.source_artifact_id}",
             f"readiness={item.readiness_status}",
+            f"executed={item.executed}",
+            f"owner_approval_required={item.owner_approval_required}",
+            f"action={item.proposed_action}",
+        )
+
+
+def _run_generate_approval_packets(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    execution_plan_id = None
+    if args.execution_plan_id:
+        try:
+            execution_plan_id = UUID(args.execution_plan_id)
+        except ValueError:
+            print("Approval packet error: execution plan id must be a UUID")
+            return 1
+    filters = ApprovalPacketFilters(
+        plan_type=args.plan_type,
+        execution_plan_id=execution_plan_id,
+    )
+    with SessionLocal() as db:
+        try:
+            result = ApprovalPacketService().generate(db, settings, filters=filters)
+        except ApprovalPacketError as exc:
+            print(f"Approval packet error: {exc.message}")
+            return 1
+    _print_approval_packet_result(result)
+    return 0
+
+
+def _run_list_approval_packets() -> int:
+    with SessionLocal() as db:
+        result = ApprovalPacketService().latest(db)
+    if result is None:
+        print("Approval packets: status=not_started packets=0 executed=0")
+        return 0
+    _print_approval_packet_result(result)
+    return 0
+
+
+def _print_approval_packet_result(result: ApprovalPacketRunResult) -> None:
+    print(
+        "Approval packet run:",
+        f"id={result.approval_packet_run_id}",
+        f"packets={result.packet_count}",
+        f"reused={result.reused_existing}",
+        f"executed={result.executed_count}",
+        f"dry_run_only={result.dry_run_only}",
+        f"no_execution={result.no_execution}",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"recommendation_applied={result.recommendation_applied}",
+        f"status={result.status.value}",
+    )
+    for item in result.packets:
+        print(
+            "Approval packet:",
+            f"family={item.plan_family}",
+            f"artifact_type={item.source_artifact_type}",
+            f"artifact_id={item.source_artifact_id}",
+            f"preflight={item.preflight_status}",
             f"executed={item.executed}",
             f"owner_approval_required={item.owner_approval_required}",
             f"action={item.proposed_action}",

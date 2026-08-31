@@ -37,6 +37,8 @@ PHASE_ONE_MODELS = (
     models.ContentBrief,
     models.ExecutionPlanRun,
     models.ExecutionPlan,
+    models.ApprovalPacketRun,
+    models.OwnerApprovalPacket,
 )
 
 

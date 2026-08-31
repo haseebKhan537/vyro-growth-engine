@@ -7,6 +7,7 @@ import pytest
 
 from vyro_growth.cli import build_parser, main
 from vyro_growth.domain import (
+    ApprovalPacketRunStatus,
     BookingPlanRunStatus,
     ChannelPlanRunStatus,
     ContentBriefRunStatus,
@@ -24,6 +25,7 @@ from vyro_growth.domain import (
     VoiceQualificationRunStatus,
     WebsiteMatchStatus,
 )
+from vyro_growth.services.approval_packets import ApprovalPacketRunResult, ApprovalPacketView
 from vyro_growth.services.booking_plan import BookingPlanJobResult
 from vyro_growth.services.channel_planning import ChannelPlanRunResult, ChannelPlanView
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
@@ -1365,6 +1367,127 @@ def test_cli_main_runs_plan_approved_execution(
     assert f"artifact_id={artifact_id}" in output
 
     list_code = main(["list-execution-plans"])
+    assert list_code == 0
+
+
+def test_parser_accepts_approval_packet_commands() -> None:
+    parser = build_parser()
+    generated = parser.parse_args(
+        [
+            "generate-approval-packets",
+            "--plan-type",
+            "outreach_enrollment",
+        ]
+    )
+    listed = parser.parse_args(["list-approval-packets"])
+
+    assert generated.command == "generate-approval-packets"
+    assert generated.plan_type == "outreach_enrollment"
+    assert listed.command == "list-approval-packets"
+
+
+def test_cli_main_runs_generate_approval_packets(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    artifact_id = uuid4()
+    packet = ApprovalPacketView(
+        id=uuid4(),
+        source_execution_plan_id=uuid4(),
+        source_execution_plan_run_id=uuid4(),
+        source_artifact_type="personalization_draft",
+        source_artifact_id=artifact_id,
+        plan_family="personalization_draft",
+        proposed_action="Prepare later owner-approved outreach from this dry-run draft",
+        preflight_status="blocked",
+        dry_run_only=True,
+        no_execution=True,
+        executed=False,
+        execution_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        ads_launched=False,
+        owner_approval_required=True,
+        owner_approved=False,
+        generated_at=datetime.now(tz=UTC),
+        idempotency_key="abc123",
+        preflight_checklist=(
+            {"code": "execution_plan_present", "label": "present", "met": True},
+        ),
+        missing_prerequisites=(
+            {"code": "owner_live_action_approval", "label": "owner", "met": False},
+        ),
+        findings=(
+            {
+                "severity": "blocked",
+                "code": "execution_disabled_in_this_phase",
+                "message": "dry-run only",
+            },
+        ),
+        required_owner_decisions=("Owner approval before any live outreach send",),
+    )
+    result = ApprovalPacketRunResult(
+        approval_packet_run_id=uuid4(),
+        status=ApprovalPacketRunStatus.COMPLETED,
+        model_version="approval-packets-v1",
+        snapshot_fingerprint="abc123",
+        packet_count=1,
+        reused_existing=False,
+        reused_count=0,
+        missing_plan_count=0,
+        executed_count=0,
+        dry_run_only=True,
+        no_execution=True,
+        execution_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        pages_published=False,
+        ads_launched=False,
+        generated_at=datetime.now(tz=UTC),
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        packets=(packet,),
+    )
+
+    class DummyService:
+        def generate(
+            self, _db: object, _settings: object, **_kwargs: object
+        ) -> ApprovalPacketRunResult:
+            return result
+
+        def latest(self, _db: object) -> ApprovalPacketRunResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ApprovalPacketService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["generate-approval-packets"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"id={result.approval_packet_run_id}" in output
+    assert "packets=1" in output
+    assert "executed=0" in output
+    assert "no_execution=True" in output
+    assert "outbound_attempted=False" in output
+    assert f"artifact_id={artifact_id}" in output
+
+    list_code = main(["list-approval-packets"])
     assert list_code == 0
 
 

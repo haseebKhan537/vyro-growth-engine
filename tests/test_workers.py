@@ -17,6 +17,7 @@ from vyro_growth.workers import (
     deployable_job_names,
     undeployed_outbound_job_names,
 )
+from vyro_growth.workers.approval_packet_handler import GENERATE_APPROVAL_PACKETS_JOB
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
@@ -330,6 +331,22 @@ def test_safety_checked_runner_allows_execution_planning_without_guard(
     assert handler.handled == [job]
 
 
+def test_safety_checked_runner_allows_approval_packets_without_guard(
+    db_session: Session,
+) -> None:
+    handler = EchoHandler()
+    job = Job(name=GENERATE_APPROVAL_PACKETS_JOB, payload={})
+    runner = SafetyCheckedWorkerRunner(
+        InlineWorkerRunner({GENERATE_APPROVAL_PACKETS_JOB: handler}),
+        OutboundGuard(Settings(outbound_enabled=False)),
+        db_session,
+    )
+
+    runner.run(job)
+
+    assert handler.handled == [job]
+
+
 def test_safety_checked_runner_allows_growth_optimizer_without_guard(
     db_session: Session,
 ) -> None:
@@ -353,6 +370,7 @@ def test_deployable_catalog_excludes_outbound_guard_jobs() -> None:
     assert GENERATE_CHANNEL_PLANS_JOB in names
     assert GENERATE_CONTENT_BRIEFS_JOB in names
     assert GENERATE_EXECUTION_PLANS_JOB in names
+    assert GENERATE_APPROVAL_PACKETS_JOB in names
     assert SCORE_DISCOVERED_LEADS_JOB in names
     assert set(undeployed_outbound_job_names()) == {
         SEND_EMAIL_JOB,

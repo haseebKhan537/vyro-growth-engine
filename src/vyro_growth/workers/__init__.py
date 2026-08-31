@@ -1,5 +1,9 @@
 """Background worker abstractions."""
 
+from vyro_growth.workers.approval_packet_handler import (
+    GENERATE_APPROVAL_PACKETS_JOB,
+    GenerateApprovalPacketsHandler,
+)
 from vyro_growth.workers.base import InlineJobQueue, Job, JobQueue
 from vyro_growth.workers.booking_plan_handler import (
     PLAN_BOOKING_SLOTS_JOB,
@@ -75,10 +79,12 @@ __all__ = [
     "UNDEPLOYED_OUTBOUND_JOBS",
     "WorkerJobSpec",
     "CLASSIFY_INBOUND_REPLIES_JOB",
+    "GENERATE_APPROVAL_PACKETS_JOB",
     "GENERATE_CHANNEL_PLANS_JOB",
     "GENERATE_CONTENT_BRIEFS_JOB",
     "GENERATE_EXECUTION_PLANS_JOB",
     "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
+    "GenerateApprovalPacketsHandler",
     "GenerateChannelPlansHandler",
     "GenerateContentBriefsHandler",
     "GenerateExecutionPlansHandler",

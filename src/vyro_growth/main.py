@@ -6,6 +6,13 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from vyro_growth.api.approval_packets import (
+    ApprovalPacketRunRequest,
+    ApprovalPacketRunResponse,
+    approval_packet_http_error,
+    build_approval_packet_run_response,
+    build_latest_approval_packet_response,
+)
 from vyro_growth.api.channel_plans import (
     ChannelPlanRunResponse,
     ChannelPlanSeedRequest,
@@ -56,6 +63,7 @@ from vyro_growth.api.review_queue import (
 from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
+from vyro_growth.services.approval_packets import ApprovalPacketError
 from vyro_growth.services.content_brief import ContentBriefError
 from vyro_growth.services.execution_planning import ExecutionPlanningError
 from vyro_growth.services.readiness import HealthPayload, assess_readiness, build_health_payload
@@ -215,6 +223,31 @@ def latest_execution_plans(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_execution_plan_response(db)
+
+
+@app.post("/internal/approval-packets/run", tags=["internal"])
+def run_approval_packets(
+    db: DbSession,
+    request: ApprovalPacketRunRequest | None = None,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ApprovalPacketRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_approval_packet_run_response(db, active_settings, request)
+    except ApprovalPacketError as exc:
+        status_code, detail = approval_packet_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.get("/internal/approval-packets", tags=["internal"])
+def latest_approval_packets(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ApprovalPacketRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_latest_approval_packet_response(db)
 
 
 @app.get("/internal/review-queue", tags=["internal"])

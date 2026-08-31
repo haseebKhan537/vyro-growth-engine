@@ -218,7 +218,7 @@ Future content work (not in this phase):
 - generate full page/article copy
 - contact prospects from a brief
 
-## Phase 17 — Approved-item execution plan foundation (current)
+## Phase 17 — Approved-item execution plan foundation
 Dry-run execution plans only. No live action.
 - deterministic plans from approved operator review decisions and sanitized artifact metadata
 - artifact types: personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, optimizer recommendations, acquisition channel plans, and content briefs
@@ -228,6 +228,24 @@ Dry-run execution plans only. No live action.
 - no email, enrollment, autonomous replies, calendar events, Meet links, calls, publish, ads, spend, deploy, or optimizer apply
 
 Future execution work (not in this phase):
+- execute an approved outreach enrollment
+- generate or send an approved reply
+- create an approved calendar event or Meet link
+- place an approved consent-based call
+- apply an approved optimizer recommendation
+- launch an approved acquisition channel plan
+- publish an approved content brief
+
+## Phase 18 — Live-readiness preflight and owner approval packets (current)
+Approval/readiness planning only. No live action.
+- deterministic preflight over dry-run execution plans and safe local/config metadata
+- plan families: outreach enrollment, reply follow-up, booking, consent-based voice, optimizer apply, channel launch, content publish, and personalization draft review
+- persisted idempotent owner approval packets with preflight checklist, missing prerequisites, blocked/warning/info findings, required owner decisions, and dry-run/no-execution flags
+- CLI `generate-approval-packets` / `list-approval-packets`, worker job `generate_approval_packets`, and internal HTTP run/list routes
+- secret presence is reported as boolean only; secret values are never printed
+- no email, enrollment, autonomous replies, calendar events, Meet links, calls, publish, ads, spend, deploy, or optimizer apply
+
+Future live-readiness work (not in this phase):
 - execute an approved outreach enrollment
 - generate or send an approved reply
 - create an approved calendar event or Meet link
