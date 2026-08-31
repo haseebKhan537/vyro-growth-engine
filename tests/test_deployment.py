@@ -64,9 +64,13 @@ def test_ci_validates_compose_without_live_calls() -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
 
     assert "docker compose config --quiet" in workflow
+    assert "vyro-growth smoke-dry-run --local-only --json" in workflow
+    assert "vyro-growth check-smoke-output --file" in workflow
+    assert 'OUTBOUND_ENABLED: "false"' in workflow
+    assert "unset DATABASE_URL" in workflow
     assert "npx" not in workflow
-    assert "smartlead" not in workflow.lower()
     assert "openai.com" not in workflow.lower()
+    assert "smartlead.com" not in workflow.lower()
 
 
 def test_deployment_runbook_covers_operator_topics() -> None:
@@ -81,6 +85,8 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "alembic downgrade" in runbook
     assert "OUTBOUND_ENABLED" in runbook
     assert "Do not ingest or expose PHI" in runbook
+    assert "check-smoke-output" in runbook
+    assert "smoke-dry-run --local-only --json" in runbook
 
 
 def test_readiness_and_catalog_do_not_call_providers() -> None:

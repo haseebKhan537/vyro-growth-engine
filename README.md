@@ -65,7 +65,10 @@ Expected `/health` includes `"outbound_enabled": false` and `"live_providers_ena
 ruff check .
 mypy src
 pytest -q
+vyro-growth smoke-dry-run --local-only --json
 ```
+
+CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
 
 ## Phase 2 — NPPES practice discovery
 
@@ -757,6 +760,21 @@ Outside `ENVIRONMENT=development`, `--local-only` or `--dev-demo` is required. T
 The command seeds a synthetic practice and lead plus safe public-business facts (no PHI), then exercises existing dry-run services: scoring, personalization, outreach planning, reply classification, booking, voice, optimizer, channel plans, content briefs, operator review decisions, execution plans, owner approval packets, packet decision records, and the action-readiness queue.
 
 Output is a sanitized console or JSON summary: counts, statuses, blocker codes, readiness statuses, timestamps, and flags including `executed=0`, `live_action=false`, and `outbound_attempted=false`. It does not include PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, unsafe raw error text, or invented real-world prospect facts. `OUTBOUND_ENABLED` remains false by default.
+
+## Phase 26 — CI dry-run smoke gate (no live providers)
+
+CI runs the Phase 25 local-only smoke harness on every pull request without live providers, real data, outbound, bookings, calls, publishing, ads, deployment, or spending.
+
+GitHub Actions job `smoke-dry-run`:
+
+```bash
+vyro-growth smoke-dry-run --local-only --json
+vyro-growth check-smoke-output --file "$RUNNER_TEMP/smoke-output.json"
+```
+
+The job sets `OUTBOUND_ENABLED=false` and every live-provider flag to false, unsets `DATABASE_URL` and provider credentials, and fails if the smoke command refuses unexpectedly or reports a live side effect. `check-smoke-output` requires sanitized JSON signals including `executed=0`, `live_action=false`, `outbound_attempted=false`, `owner_approved=false`, `dry_run_only=true`, `no_execution=true`, and `isolated_demo_database=true`. It also fails if the output includes PHI, real emails or phones, message bodies, outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw errors, or invented real-world prospect facts.
+
+This gate is not a production workflow and does not change operator halt, live settings, or runtime data.
 
 ## Phase 1
 

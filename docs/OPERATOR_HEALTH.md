@@ -63,6 +63,6 @@ Output is counts, statuses, timestamps, and sanitized messages only. It does not
 4. `vyro-growth operator-command-center`, open `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `GET /internal/operator-approval-packets`, `GET /internal/operator-action-readiness`, and `vyro-growth system-status`
 5. Review `blocked` and `warning` findings and next-action labels. Do not enable outbound to "clear" them.
 6. Review pending drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs on their existing dry-run surfaces. Approval does not publish pages or launch ads. `vyro-growth plan-approved-execution` records a dry-run plan only and does not execute. `vyro-growth generate-approval-packets` records a live-readiness packet only and does not execute.
-7. Optionally run `vyro-growth smoke-dry-run --local-only` on a developer machine. It uses an isolated in-memory demo database and is not a production workflow.
+7. Optionally run `vyro-growth smoke-dry-run --local-only` on a developer machine. It uses an isolated in-memory demo database and is not a production workflow. Pull-request CI already runs that command as job `smoke-dry-run` with live flags disabled and `vyro-growth check-smoke-output` as the sanitization gate.
 
 Do not invent prospect facts. Do not ingest or expose PHI. Do not lift the operator halt from this command.

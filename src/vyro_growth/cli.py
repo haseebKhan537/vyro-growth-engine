@@ -4,6 +4,7 @@ import argparse
 import sys
 from contextlib import redirect_stdout
 from io import StringIO
+from pathlib import Path
 from uuid import UUID
 
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
@@ -86,6 +87,11 @@ from vyro_growth.services.voice_qualification import (
     VoiceQualificationService,
 )
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentService
+from vyro_growth.smoke_ci_gate import (
+    SmokeCiGateError,
+    format_smoke_ci_gate_summary,
+    validate_smoke_ci_output,
+)
 from vyro_growth.workers.catalog import DEPLOYABLE_JOBS, UNDEPLOYED_OUTBOUND_JOBS
 
 
@@ -430,6 +436,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized summary as JSON",
     )
+    check_smoke = subparsers.add_parser(
+        "check-smoke-output",
+        help=(
+            "Validate sanitized smoke-dry-run JSON for the CI dry-run gate "
+            "(no providers, no execution)"
+        ),
+    )
+    check_smoke.add_argument(
+        "--file",
+        help="Path to sanitized JSON output. Reads stdin when omitted.",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -555,6 +572,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "smoke-dry-run":
         return _run_smoke_dry_run(args)
+
+    if args.command == "check-smoke-output":
+        return _run_check_smoke_output(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1593,6 +1613,20 @@ def _run_smoke_dry_run(args: argparse.Namespace) -> int:
         print(exc.message, file=sys.stderr)
         return 1
     print(format_smoke_summary(result, as_json=args.json))
+    return 0
+
+
+def _run_check_smoke_output(args: argparse.Namespace) -> int:
+    try:
+        raw = Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read()
+        payload = validate_smoke_ci_output(raw)
+    except OSError:
+        print("CI smoke gate: failed reason=unreadable_input", file=sys.stderr)
+        return 1
+    except SmokeCiGateError as exc:
+        print(exc.message, file=sys.stderr)
+        return 1
+    print(format_smoke_ci_gate_summary(payload, passed=True))
     return 0
 
 
