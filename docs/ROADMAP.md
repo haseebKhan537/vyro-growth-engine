@@ -476,7 +476,7 @@ Read-only owner/operator review export describing a future release candidate. No
 - Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 40 — Release artifact manifest UI shell (current)
+## Phase 40 — Release artifact manifest UI shell
 Internal operator HTML view of the Phase 39 release artifact manifest. Read-only, no build, publish, or deploy.
 - `GET /internal/operator-release-artifact-manifest`
 - Renders existing Phase 39 manifest as a sanitized HTML page
@@ -484,6 +484,17 @@ Internal operator HTML view of the Phase 39 release artifact manifest. Read-only
 - Shows all manifest sections: source and provenance expectations, artifact inventory, migration inventory, runtime command inventory, safety gate inventory, no-build/no-deploy evidence, reused read-only summaries, and remaining unresolved blockers/manual owner checklist items
 - Sanitized fields only: statuses, counts, codes, filenames, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text
 - Page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `build_allowed=false`, `artifact_publish_allowed=false`, `runbook_is_not_deployment=true`, and `manifest_is_not_a_build_or_deploy=true`
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 41 — Operator go-live readiness index UI (current)
+Internal operator HTML index of existing owner/operator readiness, evidence, runbook, manifest, and audit surfaces. Read-only, no execution.
+- `GET /internal/operator-go-live-readiness-index`
+- Reuses existing read-only builders/summaries and links to the existing JSON and HTML surfaces
+- Summary cards show statuses, counts, blocker codes, route names, and command names only
+- Live-blocking flags: `OUTBOUND_ENABLED=false`, operator halt status, closed live-provider flags, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `build_allowed=false`, `artifact_publish_allowed=false`, and existing not-go-live / not-deployment / not-build booleans
+- Manual owner checklist rollup uses codes, statuses, counts, route names, command names, and checklist labels only
+- Page states this is an index/review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 

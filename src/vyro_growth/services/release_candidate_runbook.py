@@ -92,6 +92,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-release-candidate-runbook",
     "/internal/release-artifact-manifest",
     "/internal/operator-release-artifact-manifest",
+    "/internal/operator-go-live-readiness-index",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,

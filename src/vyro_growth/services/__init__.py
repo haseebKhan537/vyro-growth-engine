@@ -62,6 +62,10 @@ from vyro_growth.services.execution_planning import (
     ExecutionPlanRunResult,
     ExecutionPlanView,
 )
+from vyro_growth.services.go_live_readiness_index import (
+    GoLiveReadinessIndex,
+    GoLiveReadinessIndexService,
+)
 from vyro_growth.services.growth_optimizer import (
     GrowthOptimizerService,
     OptimizerRecommendationView,
@@ -222,6 +226,8 @@ __all__ = [
     "ExecutionPlanRunResult",
     "ExecutionPlanView",
     "DashboardSummary",
+    "GoLiveReadinessIndex",
+    "GoLiveReadinessIndexService",
     "GrowthOptimizerService",
     "OptimizerRecommendationView",
     "OptimizerRunResult",

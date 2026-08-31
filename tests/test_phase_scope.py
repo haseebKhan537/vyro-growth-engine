@@ -484,6 +484,29 @@ def test_release_artifact_manifest_does_not_call_live_providers() -> None:
     assert "OUTBOUND_ENABLED=false" in env_example
 
 
+def test_go_live_readiness_index_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/go_live_readiness_index.py"),
+        Path("src/vyro_growth/api/operator_go_live_readiness_index.py"),
+        Path("tests/test_go_live_readiness_index_service.py"),
+        Path("tests/test_operator_go_live_readiness_index_api.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "api.github.com" not in source
+    assert "docker build" not in source
+    assert "docker push" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
 def test_operator_audit_timeline_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/operator_audit_timeline.py"),
@@ -563,6 +586,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_owner_handoff.py"),
         Path("src/vyro_growth/api/operator_audit_timeline.py"),
         Path("src/vyro_growth/api/operator_compliance_evidence_binder.py"),
+        Path("src/vyro_growth/api/operator_go_live_readiness_index.py"),
         Path("tests/test_operator_dashboard_api.py"),
         Path("tests/test_operator_review_queue_api.py"),
         Path("tests/test_operator_review_decision_api.py"),
@@ -575,6 +599,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("tests/test_operator_owner_handoff_api.py"),
         Path("tests/test_operator_audit_timeline_api.py"),
         Path("tests/test_operator_compliance_evidence_binder_api.py"),
+        Path("tests/test_operator_go_live_readiness_index_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -604,6 +629,7 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_compliance_evidence_binder.py"),
         Path("src/vyro_growth/api/operator_release_candidate_runbook.py"),
         Path("src/vyro_growth/api/operator_release_artifact_manifest.py"),
+        Path("src/vyro_growth/api/operator_go_live_readiness_index.py"),
         Path("tests/test_operator_review_decision_api.py"),
         Path("tests/test_operator_approval_packet_decision_api.py"),
         Path("tests/test_operator_action_readiness_api.py"),
@@ -613,6 +639,7 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("tests/test_operator_audit_timeline_api.py"),
         Path("tests/test_operator_compliance_evidence_binder_api.py"),
         Path("tests/test_operator_release_artifact_manifest_api.py"),
+        Path("tests/test_operator_go_live_readiness_index_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

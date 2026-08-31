@@ -197,6 +197,7 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
     assert "/internal/operator-compliance-evidence-binder" in html
     assert "/internal/operator-release-candidate-runbook" in html
     assert "/internal/operator-release-artifact-manifest" in html
+    assert "/internal/operator-go-live-readiness-index" in html
     for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 

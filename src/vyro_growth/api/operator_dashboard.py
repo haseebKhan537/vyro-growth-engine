@@ -39,6 +39,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_APPROVAL_PACKETS_PATH,
     OPERATOR_AUDIT_TIMELINE_PATH,
     OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
+    OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
@@ -266,7 +267,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH)}">'
         "Release runbook</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH)}">'
-        "Release manifest</a>\n"
+        "Release manifest</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)}">'
+        "Go-live index</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -334,7 +337,10 @@ def _render_safety(
         "No execution. Not a deploy. "
         f'<a class="nav-link" href="{escape(OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH)}">'
         "Open release artifact manifest</a> — read-only owner-review view. "
-        "No execution. Not a build or deploy.</p>\n"
+        "No execution. Not a build or deploy. "
+        f'<a class="nav-link" href="{escape(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)}">'
+        "Open go-live readiness index</a> — read-only index/review view. "
+        "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
         f"        {_metric('Settings halt', _flag(safety.outbound_halted_settings))}\n"
@@ -525,7 +531,10 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "No execute controls. Not a deploy. "
         f'<a class="nav-link" href="{escape(OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH)}">'
         "Open release artifact manifest</a> — read-only owner-review view. "
-        "No execute controls. Not a build or deploy.</p>\n"
+        "No execute controls. Not a build or deploy. "
+        f'<a class="nav-link" href="{escape(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)}">'
+        "Open go-live readiness index</a> — read-only index/review view. "
+        "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"
         f"        {_metric('Owner approved', packets.owner_approved)}\n"

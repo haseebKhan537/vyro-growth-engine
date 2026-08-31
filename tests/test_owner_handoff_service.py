@@ -155,6 +155,7 @@ def test_empty_handoff_is_read_only_without_side_effects(db_session: Session) ->
     assert "/internal/operator-compliance-evidence-binder" in markdown
     assert "/internal/operator-release-candidate-runbook" in markdown
     assert "/internal/operator-release-artifact-manifest" in markdown
+    assert "/internal/operator-go-live-readiness-index" in markdown
     assert "/internal/release-artifact-manifest" in markdown
     assert "## Launch readiness summary" in markdown
     assert "## Settings change request summary" in markdown

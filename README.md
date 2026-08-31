@@ -1054,6 +1054,21 @@ The Phase 20 dashboard, command-center next-action labels, launch-readiness next
 
 Rendered HTML is statuses, setting names, codes, timestamps, counts, filenames, command names, route names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 41 — Operator go-live readiness index UI (read-only)
+
+Open an internal HTML index of existing owner/operator readiness, evidence, runbook, manifest, and audit surfaces. The owner can review statuses, counts, blocker codes, and remaining checklist items in one browser page. This layer does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a read-only index/review view, not permission to go live and not an execution surface.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-go-live-readiness-index \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, release-candidate runbook UI, and release artifact manifest UI link to this page. The page shows summary cards for operator dashboard/command center, launch readiness, settings execution preflight, owner handoff packet, compliance evidence binder, release-candidate runbook, release artifact manifest, and operator audit timeline, plus a manual owner checklist rollup. Fields are statuses, counts, codes, route names, command names, flag names/states, missing credential variable names, sanitized timestamps, and checklist labels. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `build_allowed=false`, `artifact_publish_allowed=false`, `OUTBOUND_ENABLED=false`, and that this is an index/review view only. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, or spend controls.
+
+Rendered HTML is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:
