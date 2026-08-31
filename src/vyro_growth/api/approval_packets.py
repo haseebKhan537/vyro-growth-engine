@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings
 from vyro_growth.services.approval_packets import (
+    ApprovalPacketDecisionView,
     ApprovalPacketError,
     ApprovalPacketFilters,
     ApprovalPacketRunResult,
@@ -21,6 +22,17 @@ class ApprovalPacketRunRequest(BaseModel):
 
     plan_type: str | None = None
     execution_plan_id: UUID | None = None
+
+
+class ApprovalPacketDecisionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    decision_id: UUID
+    decision: str
+    reviewer: str
+    source: str
+    reviewer_notes: str | None = None
+    decided_at: datetime
 
 
 class ApprovalPacketResponse(BaseModel):
@@ -53,6 +65,7 @@ class ApprovalPacketResponse(BaseModel):
     missing_prerequisites: list[dict[str, object]] = Field(default_factory=list)
     findings: list[dict[str, object]] = Field(default_factory=list)
     required_owner_decisions: list[str] = Field(default_factory=list)
+    decision: ApprovalPacketDecisionResponse | None = None
 
 
 class ApprovalPacketRunResponse(BaseModel):
@@ -93,6 +106,19 @@ def filters_from_request(request: ApprovalPacketRunRequest | None) -> ApprovalPa
     )
 
 
+def decision_view_to_response(
+    item: ApprovalPacketDecisionView,
+) -> ApprovalPacketDecisionResponse:
+    return ApprovalPacketDecisionResponse(
+        decision_id=item.decision_id,
+        decision=item.decision,
+        reviewer=item.reviewer,
+        source=item.source,
+        reviewer_notes=item.reviewer_notes,
+        decided_at=item.decided_at,
+    )
+
+
 def packet_to_response(item: ApprovalPacketView) -> ApprovalPacketResponse:
     return ApprovalPacketResponse(
         id=item.id,
@@ -122,6 +148,7 @@ def packet_to_response(item: ApprovalPacketView) -> ApprovalPacketResponse:
         missing_prerequisites=list(item.missing_prerequisites),
         findings=list(item.findings),
         required_owner_decisions=list(item.required_owner_decisions),
+        decision=decision_view_to_response(item.decision) if item.decision is not None else None,
     )
 
 
@@ -184,6 +211,6 @@ def build_latest_approval_packet_response(
 
 
 def approval_packet_http_error(error: ApprovalPacketError) -> tuple[int, str]:
-    if error.code == "artifact_not_found":
+    if error.code in {"artifact_not_found", "packet_not_found"}:
         return (404, error.message)
     return (400, error.message)

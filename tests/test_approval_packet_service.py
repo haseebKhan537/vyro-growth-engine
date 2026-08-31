@@ -30,6 +30,7 @@ from vyro_growth.models import (
     Meeting,
     OutreachMessage,
     OwnerApprovalPacket,
+    OwnerApprovalPacketDecision,
     PersonalizationDraft,
     ReplyClassification,
     VoiceQualificationPlan,
@@ -319,3 +320,123 @@ def test_operator_halt_is_preserved(db_session: Session) -> None:
     set_operator_halt(db_session, halted=True, reason="keep-halted")
     ApprovalPacketService().generate(db_session, _settings())
     assert read_operator_halt(db_session) is HaltStatus.HALTED
+
+
+def test_record_decision_is_auditable_and_does_not_execute(db_session: Session) -> None:
+    _approve_all_families(db_session)
+    ExecutionPlanningService().generate(db_session, _settings())
+    generated = ApprovalPacketService().generate(db_session, _settings())
+    packet = generated.packets[0]
+    before_meetings = db_session.scalar(select(func.count()).select_from(Meeting)) or 0
+    before_enrollments = (
+        db_session.scalar(select(func.count()).select_from(CampaignEnrollment)) or 0
+    )
+    before_messages = db_session.scalar(select(func.count()).select_from(OutreachMessage)) or 0
+
+    recorded = ApprovalPacketService().record_decision(
+        db_session,
+        packet_id=packet.id,
+        decision=ReviewDecisionStatus.APPROVED.value,
+        reviewer="ops",
+        source="cli",
+        reviewer_notes="Record only",
+    )
+    stored_packet = db_session.get(OwnerApprovalPacket, packet.id)
+    viewed = ApprovalPacketService().get_packet(db_session, packet.id)
+
+    assert recorded.decision == ReviewDecisionStatus.APPROVED.value
+    assert recorded.executed is False
+    assert recorded.owner_approved is False
+    assert recorded.operator_halt_before == HaltStatus.HALTED.value
+    assert recorded.operator_halt_after == HaltStatus.HALTED.value
+    assert stored_packet is not None
+    assert stored_packet.owner_approved is False
+    assert stored_packet.executed is False
+    assert viewed is not None
+    assert viewed.decision is not None
+    assert viewed.decision.reviewer == "ops"
+    assert viewed.owner_approved is False
+    activities = db_session.scalars(
+        select(Activity).where(Activity.action == "owner_approval_packet_decision_recorded")
+    ).all()
+    assert len(activities) == 1
+    assert activities[0].details["executed"] is False
+    assert activities[0].details["owner_approved"] is False
+    assert db_session.scalar(select(func.count()).select_from(Meeting)) == before_meetings
+    assert (
+        db_session.scalar(select(func.count()).select_from(CampaignEnrollment))
+        == before_enrollments
+    )
+    assert db_session.scalar(select(func.count()).select_from(OutreachMessage)) == before_messages
+    assert read_operator_halt(db_session) is HaltStatus.HALTED
+
+
+def test_packet_decision_can_be_updated_without_execution(db_session: Session) -> None:
+    _approve_all_families(db_session)
+    ExecutionPlanningService().generate(db_session, _settings())
+    packet = ApprovalPacketService().generate(db_session, _settings()).packets[0]
+    service = ApprovalPacketService()
+    first = service.record_decision(
+        db_session,
+        packet_id=packet.id,
+        decision=ReviewDecisionStatus.APPROVED.value,
+        reviewer="ops",
+    )
+    second = service.record_decision(
+        db_session,
+        packet_id=packet.id,
+        decision=ReviewDecisionStatus.NEEDS_CHANGES.value,
+        reviewer="ops",
+    )
+    stored = db_session.scalar(select(OwnerApprovalPacketDecision))
+
+    assert first.decision_id == second.decision_id
+    assert second.decision == ReviewDecisionStatus.NEEDS_CHANGES.value
+    assert stored is not None
+    assert stored.previous_decision == ReviewDecisionStatus.APPROVED.value
+    assert stored.executed is False
+    assert stored.owner_approved is False
+    assert db_session.scalar(select(func.count()).select_from(OwnerApprovalPacketDecision)) == 1
+
+
+def test_packet_decision_rejects_invalid_and_missing(db_session: Session) -> None:
+    service = ApprovalPacketService()
+    with pytest.raises(ApprovalPacketError) as missing:
+        service.record_decision(
+            db_session,
+            packet_id=uuid4(),
+            decision=ReviewDecisionStatus.APPROVED.value,
+        )
+    assert missing.value.code == "packet_not_found"
+
+    _approve_all_families(db_session)
+    ExecutionPlanningService().generate(db_session, _settings())
+    packet = service.generate(db_session, _settings()).packets[0]
+    with pytest.raises(ApprovalPacketError) as bad_decision:
+        service.record_decision(
+            db_session,
+            packet_id=packet.id,
+            decision="ship_it",
+        )
+    assert bad_decision.value.code == "invalid_decision"
+    assert db_session.scalar(select(func.count()).select_from(OwnerApprovalPacketDecision)) == 0
+
+
+def test_packet_decision_notes_are_sanitized(db_session: Session) -> None:
+    _approve_all_families(db_session)
+    ExecutionPlanningService().generate(db_session, _settings())
+    packet = ApprovalPacketService().generate(db_session, _settings()).packets[0]
+    recorded = ApprovalPacketService().record_decision(
+        db_session,
+        packet_id=packet.id,
+        decision=ReviewDecisionStatus.REJECTED.value,
+        reviewer="ops",
+        reviewer_notes=f"Call {PROSPECT_EMAIL} about {PHI_SNIPPET} sk-testsecret12345",
+    )
+    payload = json.dumps(recorded.__dict__, default=str)
+    assert recorded.reviewer_notes == "[REDACTED_UNSAFE_TEXT]"
+    assert PROSPECT_EMAIL not in payload
+    assert PHI_SNIPPET not in payload
+    assert "sk-testsecret12345" not in payload
+    assert recorded.executed is False
+    assert recorded.owner_approved is False

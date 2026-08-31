@@ -948,3 +948,50 @@ class OwnerApprovalPacket(TimestampMixin, Base):
     required_owner_decisions_json: Mapped[list[object]] = mapped_column(JSONB, default=list)
     audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     packet_run: Mapped[ApprovalPacketRun] = relationship(back_populates="packets")
+    decision_record: Mapped[OwnerApprovalPacketDecision | None] = relationship(
+        back_populates="packet",
+        uselist=False,
+    )
+
+
+class OwnerApprovalPacketDecision(TimestampMixin, Base):
+    """Recorded owner/operator decision for one approval packet.
+
+    Phase 23 persists the decision only. It never executes the packet or the
+    underlying live action, and it never sets live owner-approved state.
+    """
+
+    __tablename__ = "owner_approval_packet_decisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "owner_approval_packet_id",
+            name="uq_owner_approval_packet_decisions_packet",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    owner_approval_packet_id: Mapped[UUID] = mapped_column(
+        ForeignKey("owner_approval_packets.id"),
+        index=True,
+    )
+    decision: Mapped[str] = mapped_column(
+        String(32),
+        default=ReviewDecisionStatus.APPROVED.value,
+        index=True,
+    )
+    previous_decision: Mapped[str | None] = mapped_column(String(32))
+    reviewer: Mapped[str] = mapped_column(String(120), default="operator")
+    source: Mapped[str] = mapped_column(String(64), default="operator_ui")
+    reviewer_notes: Mapped[str | None] = mapped_column(String(500))
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    executed: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    spend_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    campaign_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    pages_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    ads_launched: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    packet: Mapped[OwnerApprovalPacket] = relationship(back_populates="decision_record")
