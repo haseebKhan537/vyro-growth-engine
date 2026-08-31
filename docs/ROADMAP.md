@@ -171,9 +171,9 @@ Future observability work (not in this phase):
 - long-retention metrics backends
 - public status pages
 
-## Phase 14 — Operator review queue foundation (current)
+## Phase 14 — Operator review queue foundation
 Recorded operator decisions only. No outbound execution.
-- one review queue over pending dry-run artifacts: personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, and optimizer recommendations
+- one review queue over pending dry-run artifacts: personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, optimizer recommendations, and acquisition channel plans
 - normalized review items with artifact type/id, safe lead/organization references, title/summary, status, timestamp, risk labels, and executable-later (not executed)
 - persisted `approved` / `rejected` / `needs_changes` decisions with reviewer notes and timestamps
 - CLI `review-queue` / `record-review` and internal HTTP list/decision routes
@@ -185,10 +185,20 @@ Future review-queue work (not in this phase):
 - create an approved calendar event or Meet link
 - place an approved consent-based call
 - apply an approved optimizer recommendation
+- launch an approved acquisition channel plan
 
-## Phase 15 — Additional acquisition channels
-- Google Ads
-- SEO content/landing pages
-- referral/partner campaigns
+## Phase 15 — Acquisition channel planning foundation (current)
+Dry-run channel plans only. No campaign launch, page publish, or spend.
+- deterministic plans from stored specialty/geography aggregates and explicit operator seed inputs
+- channels: Google Search Ads keyword-group concepts, SEO/content/landing-page topics, referral/partner ideas, specialty/geography positioning
+- persisted idempotent channel-plan runs with `pending_operator_review`, dry-run/no-spend flags, and source metric or seed references
+- CLI `plan-acquisition-channels` / `list-channel-plans`, worker job `generate_channel_plans`, and internal HTTP run/list routes
+- review-queue enrollment as `acquisition_channel_plan`; approval remains record-only
+- no live ad, SEO, search, analytics, or paid-provider calls
+
+Future channel work (not in this phase):
+- live Google Ads campaign creation or spend
+- publishing landing pages or SEO content
 - inbound forms
-- retargeting where appropriate
+- retargeting
+- partner outreach

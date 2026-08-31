@@ -27,6 +27,11 @@ from vyro_growth.providers.voice_qualification import (
 from vyro_growth.providers.website import HeuristicWebsiteSearchProvider
 from vyro_growth.providers.website_client import build_public_page_fetcher
 from vyro_growth.services.booking_plan import BookingPlanService
+from vyro_growth.services.channel_planning import (
+    ChannelPlanningService,
+    ChannelPlanRunResult,
+    ChannelPlanSeeds,
+)
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
@@ -245,6 +250,26 @@ def build_parser() -> argparse.ArgumentParser:
             "(does not apply changes or send outreach)"
         ),
     )
+    channels = subparsers.add_parser(
+        "plan-acquisition-channels",
+        help=(
+            "Generate dry-run acquisition channel plans for operator review "
+            "(does not launch campaigns, publish pages, or spend)"
+        ),
+    )
+    channels.add_argument("--seed-specialty", help="Optional operator specialty seed")
+    channels.add_argument("--seed-state", help="Optional operator geography/state seed")
+    channels.add_argument(
+        "--seed-keyword",
+        action="append",
+        dest="seed_keywords",
+        help="Optional operator keyword seed (repeatable)",
+    )
+    channels.add_argument("--seed-partner-type", help="Optional operator partner-type seed")
+    subparsers.add_parser(
+        "list-channel-plans",
+        help="List the latest dry-run acquisition channel plans (no launch or spend)",
+    )
     review = subparsers.add_parser(
         "review-queue",
         help=(
@@ -364,6 +389,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "recommend-growth":
         return _run_recommend_growth()
+
+    if args.command == "plan-acquisition-channels":
+        return _run_plan_acquisition_channels(args)
+
+    if args.command == "list-channel-plans":
+        return _run_list_channel_plans()
 
     if args.command == "review-queue":
         return _run_review_queue(args)
@@ -846,6 +877,7 @@ def _print_system_status(snapshot: MonitoringSnapshot) -> None:
         f"bookings={pending.booking_plans}",
         f"voice={pending.voice_plans}",
         f"optimizer={pending.optimizer_recommendations}",
+        f"channel_plans={pending.channel_plans}",
         f"total={pending.total}",
     )
     for run in snapshot.latest_runs:
@@ -902,6 +934,58 @@ def _print_optimizer_result(result: OptimizerRunResult) -> None:
             f"confidence={item.confidence}",
             f"approval={item.approval_status}",
             f"applied={item.applied}",
+        )
+
+
+def _run_plan_acquisition_channels(args: argparse.Namespace) -> int:
+    seeds = ChannelPlanSeeds(
+        specialty=args.seed_specialty,
+        geography=args.seed_state,
+        keywords=tuple(args.seed_keywords or ()),
+        partner_type=args.seed_partner_type,
+    )
+    with SessionLocal() as db:
+        result = ChannelPlanningService().plan(db, seeds=seeds)
+    _print_channel_plan_result(result)
+    return 0
+
+
+def _run_list_channel_plans() -> int:
+    with SessionLocal() as db:
+        result = ChannelPlanningService().latest(db)
+    if result is None:
+        print("Channel plans: status=not_started plans=0")
+        return 0
+    _print_channel_plan_result(result)
+    return 0
+
+
+def _print_channel_plan_result(result: ChannelPlanRunResult) -> None:
+    print(
+        "Channel plan run:",
+        f"id={result.channel_plan_run_id}",
+        f"plans={result.plan_count}",
+        f"reused={result.reused_existing}",
+        "approval=pending_operator_review",
+        f"dry_run_only={result.dry_run_only}",
+        f"no_spend={result.no_spend}",
+        f"spend_attempted={result.spend_attempted}",
+        f"campaign_launched={result.campaign_launched}",
+        f"pages_published={result.pages_published}",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"status={result.status.value}",
+    )
+    for item in result.plans:
+        print(
+            "Channel plan:",
+            f"key={item.plan_key}",
+            f"channel={item.channel}",
+            f"type={item.plan_type}",
+            f"priority={item.priority}",
+            f"confidence={item.confidence}",
+            f"approval={item.approval_status}",
+            f"launched={item.launched}",
+            f"spend_attempted={item.spend_attempted}",
         )
 
 

@@ -20,6 +20,10 @@ from vyro_growth.workers.discovery_handler import (
     DISCOVER_NPPES_PRACTICES_JOB,
     DiscoverNppesPracticesHandler,
 )
+from vyro_growth.workers.channel_planning_handler import (
+    GENERATE_CHANNEL_PLANS_JOB,
+    GenerateChannelPlansHandler,
+)
 from vyro_growth.workers.growth_optimizer_handler import (
     GENERATE_GROWTH_RECOMMENDATIONS_JOB,
     GenerateGrowthRecommendationsHandler,
@@ -63,7 +67,9 @@ __all__ = [
     "UNDEPLOYED_OUTBOUND_JOBS",
     "WorkerJobSpec",
     "CLASSIFY_INBOUND_REPLIES_JOB",
+    "GENERATE_CHANNEL_PLANS_JOB",
     "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
+    "GenerateChannelPlansHandler",
     "GenerateGrowthRecommendationsHandler",
     "PLAN_BOOKING_SLOTS_JOB",
     "PlanBookingSlotsHandler",

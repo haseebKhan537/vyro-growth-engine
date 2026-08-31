@@ -35,6 +35,7 @@ from vyro_growth.models import (
     Activity,
     BookingPlan,
     CampaignEnrollment,
+    ChannelPlan,
     OperatorReviewDecision,
     OptimizerRecommendation,
     PersonalizationDraft,
@@ -408,6 +409,7 @@ def _collect_candidates(db: Session) -> list[_Candidate]:
         *_booking_candidates(db),
         *_voice_candidates(db),
         *_optimizer_candidates(db),
+        *_channel_plan_candidates(db),
     ]
 
 
@@ -548,6 +550,38 @@ def _optimizer_candidates(db: Session) -> list[_Candidate]:
                 extra_labels=("dry_run_recommendation", "not_applied"),
             )
         )
+        return items
+
+
+def _channel_plan_candidates(db: Session) -> list[_Candidate]:
+    rows = db.scalars(
+        select(ChannelPlan).where(
+            ChannelPlan.approval_status
+            == RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+            ChannelPlan.launched.is_(False),
+        )
+    ).all()
+    items: list[_Candidate] = []
+    for row in rows:
+        fallback = f"Acquisition channel plan ({row.channel})"
+        title = sanitize_operator_text(row.title) or fallback
+        if title == "[REDACTED_UNSAFE_TEXT]":
+            title = fallback
+        items.append(
+            _Candidate(
+                artifact_type=ReviewArtifactType.ACQUISITION_CHANNEL_PLAN,
+                artifact_id=row.id,
+                lead_id=None,
+                organization_id=None,
+                title=title,
+                summary=(
+                    "Dry-run acquisition channel plan. Approval does not launch, "
+                    "publish, spend, or contact anyone."
+                ),
+                created_at=_as_utc(row.generated_at),
+                extra_labels=("dry_run_plan", "no_spend", "not_launched", "pages_not_published"),
+            )
+        )
     return items
 
 
@@ -578,6 +612,7 @@ def _artifact_exists(db: Session, artifact_type: ReviewArtifactType, artifact_id
         ReviewArtifactType.BOOKING_PLAN: BookingPlan,
         ReviewArtifactType.VOICE_QUALIFICATION_PLAN: VoiceQualificationPlan,
         ReviewArtifactType.OPTIMIZER_RECOMMENDATION: OptimizerRecommendation,
+        ReviewArtifactType.ACQUISITION_CHANNEL_PLAN: ChannelPlan,
     }[artifact_type]
     return db.get(model, artifact_id) is not None
 

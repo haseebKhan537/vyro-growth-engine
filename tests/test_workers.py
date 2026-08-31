@@ -19,6 +19,7 @@ from vyro_growth.workers import (
 )
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
+from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outbound import (
     PLACE_CONSENT_CALLBACK_JOB,
@@ -270,6 +271,22 @@ def test_safety_checked_runner_allows_reply_classification_without_guard(
     job = Job(name=CLASSIFY_INBOUND_REPLIES_JOB, payload={"limit": 1})
     runner = SafetyCheckedWorkerRunner(
         InlineWorkerRunner({CLASSIFY_INBOUND_REPLIES_JOB: handler}),
+        OutboundGuard(Settings(outbound_enabled=False)),
+        db_session,
+    )
+
+    runner.run(job)
+
+    assert handler.handled == [job]
+
+
+def test_safety_checked_runner_allows_channel_planning_without_guard(
+    db_session: Session,
+) -> None:
+    handler = EchoHandler()
+    job = Job(name=GENERATE_CHANNEL_PLANS_JOB, payload={})
+    runner = SafetyCheckedWorkerRunner(
+        InlineWorkerRunner({GENERATE_CHANNEL_PLANS_JOB: handler}),
         OutboundGuard(Settings(outbound_enabled=False)),
         db_session,
     )

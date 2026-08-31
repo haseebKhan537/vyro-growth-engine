@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,12 @@ from vyro_growth.api.internal_auth import (
 from vyro_growth.api.monitoring import (
     MonitoringStatusResponse,
     build_monitoring_status_response,
+)
+from vyro_growth.api.channel_plans import (
+    ChannelPlanRunResponse,
+    ChannelPlanSeedRequest,
+    build_channel_plan_run_response,
+    build_latest_channel_plan_response,
 )
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
@@ -122,6 +128,27 @@ def latest_growth_recommendations(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_optimizer_response(db)
+
+
+@app.post("/internal/channel-plans/run", tags=["internal"])
+def run_channel_planning(
+    db: DbSession,
+    request: Annotated[ChannelPlanSeedRequest, Body()] = ChannelPlanSeedRequest(),
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ChannelPlanRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_channel_plan_run_response(db, request)
+
+
+@app.get("/internal/channel-plans", tags=["internal"])
+def latest_channel_plans(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ChannelPlanRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_latest_channel_plan_response(db)
 
 
 @app.get("/internal/review-queue", tags=["internal"])

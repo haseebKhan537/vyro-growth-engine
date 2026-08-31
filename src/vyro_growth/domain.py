@@ -359,6 +359,27 @@ class RecommendationApprovalStatus(StrEnum):
     PENDING_OPERATOR_REVIEW = "pending_operator_review"
 
 
+class ChannelPlanRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class AcquisitionChannel(StrEnum):
+    GOOGLE_SEARCH_ADS = "google_search_ads"
+    SEO_CONTENT = "seo_content"
+    REFERRAL_PARTNER = "referral_partner"
+    SPECIALTY_GEOGRAPHY = "specialty_geography"
+
+
+class ChannelPlanType(StrEnum):
+    KEYWORD_GROUP = "keyword_group"
+    LANDING_PAGE_TOPIC = "landing_page_topic"
+    PARTNER_CAMPAIGN = "partner_campaign"
+    POSITIONING = "positioning"
+
+
 class FindingSeverity(StrEnum):
     BLOCKED = "blocked"
     WARNING = "warning"
@@ -385,6 +406,7 @@ class ReviewArtifactType(StrEnum):
     BOOKING_PLAN = "booking_plan"
     VOICE_QUALIFICATION_PLAN = "voice_qualification_plan"
     OPTIMIZER_RECOMMENDATION = "optimizer_recommendation"
+    ACQUISITION_CHANNEL_PLAN = "acquisition_channel_plan"
 
 
 class ReviewDecisionStatus(StrEnum):

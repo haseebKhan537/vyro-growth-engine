@@ -160,6 +160,16 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not invent prospect facts to fill empty queue rows. Missing artifacts are an empty pending list.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by review listing or decision recording.
 
+## Acquisition channel planning integrity
+- Phase 15 channel plans are dry-run drafts for operator review. They never launch campaigns, publish pages, or spend money.
+- Do not call Google Ads, Search Console, Analytics, SEO APIs, search APIs, Apollo, Smartlead, OpenAI, Google Calendar, voice providers, or other paid/external providers from this layer.
+- Use only stored specialty/geography aggregates and explicitly supplied seed inputs. Do not invent prospect facts, partner names, search volume, CPC, or conversion outcomes.
+- Drop seed inputs that look like emails, phones, secrets, or PHI. Missing facts remain missing.
+- Do not return message bodies, personalization copy, emails, phones, evidence snippets, or PHI in API/CLI output.
+- Do not send email, generate sendable autonomous replies, place calls, book meetings, create Google Meet links, create calendar events, or enroll campaigns.
+- Review-queue approval of a channel plan is a recorded decision only. It must not launch, publish, or spend.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by channel planning.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.
