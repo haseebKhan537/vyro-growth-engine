@@ -249,6 +249,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Fail CI if logs or JSON expose PHI, real emails, real phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw errors, or invented real-world prospect facts.
 - Do not call live providers, use real prospect data, execute approved items or packets, or change operator halt / live settings from CI.
 
+## Launch readiness checklist integrity
+- Phase 27 launch readiness is a sanitized read-only checklist over local config, operator halt, stored packets, the action-readiness queue, and the documented CI smoke gate. It never performs a live workflow.
+- Do not call GitHub Actions, OpenAI, NPPES/search, Apollo, Smartlead, Google, calendar, voice, ads, SEO, analytics, deployment, or other live providers.
+- Do not send email, enroll live campaigns, generate sendable autonomous replies, create calendar events, create Google Meet links, place calls, publish pages or content, launch ads, spend money, deploy, apply optimizer recommendations, execute approved review items or approval packets, or set live owner-approved state.
+- Do not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign live settings, scoring thresholds, or operator halt.
+- Print overall status, blocker codes, next-action labels, required configuration names, secret names with present/missing/redacted status, flag booleans, CI smoke-gate presence, pending packet counts, and action-readiness blocker counts only.
+- Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
+- `ready_for_owner_review` is not permission to enable outbound or lift halt.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

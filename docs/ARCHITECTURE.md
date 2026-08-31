@@ -273,6 +273,15 @@ CI proves the Phase 25 local-only smoke harness stays safe, deterministic, and u
 4. The checker fails closed if output includes PHI, emails, phones, message bodies, draft copy, evidence snippets, secrets, live-provider enablement, or unsafe error text.
 5. Operator halt and live/runtime settings are not changed. No live provider is called.
 
+### Phase 27: launch readiness checklist
+The launch readiness checklist is a read-only owner-facing preflight over local config, operator halt, stored approval packets, the action-readiness queue, and the documented CI smoke gate. It does not send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish content, launch ads, spend money, deploy, apply optimizer recommendations, execute approved items or packets, or set live owner-approved state.
+
+1. Operator runs `vyro-growth launch-readiness` or `GET /internal/launch-readiness`. HTTP uses the same `INTERNAL_API_KEY` gate as other internal operator routes. CLI does not.
+2. `LaunchReadinessService` reuses existing readiness, halt, credential-presence, action-readiness, and local CI workflow inspection. It does not write pipeline rows, call GitHub Actions, or change operator halt state.
+3. Output is overall status (`blocked` / `warning` / `ready_for_owner_review`), blocker codes, next-action labels, required configuration names, secret names with present/missing/redacted status, outbound/live-provider booleans, CI smoke-gate presence, pending packet counts, and action-readiness blocker counts.
+4. Secret values, PHI, emails, phones, message bodies, draft copy, evidence snippets, and unsafe error text are never included. `ready_for_owner_review` is not permission to enable outbound.
+5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called.
+
 ### Event flow
 1. Practice discovered.
 2. Practice normalized/deduplicated.

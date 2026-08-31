@@ -16,7 +16,12 @@ from vyro_growth.config import (
     validate_runtime_settings,
 )
 from vyro_growth.database import SessionLocal
-from vyro_growth.domain import ContentBriefType, VoiceConsentChannel, VoiceConsentSource
+from vyro_growth.domain import (
+    ContentBriefType,
+    LaunchReadinessStatus,
+    VoiceConsentChannel,
+    VoiceConsentSource,
+)
 from vyro_growth.providers.calendar_booking import build_booking_calendar_provider
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
@@ -65,6 +70,10 @@ from vyro_growth.services.execution_planning import (
     ExecutionPlanRunResult,
 )
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
+from vyro_growth.services.launch_readiness import (
+    LaunchReadinessService,
+    format_launch_readiness,
+)
 from vyro_growth.services.lead_scoring import LeadScoringService
 from vyro_growth.services.monitoring import MonitoringSnapshot, OperatorMonitoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
@@ -447,6 +456,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--file",
         help="Path to sanitized JSON output. Reads stdin when omitted.",
     )
+    launch_readiness = subparsers.add_parser(
+        "launch-readiness",
+        help=(
+            "Print a sanitized launch readiness checklist and secret inventory "
+            "(read-only; does not execute, call providers, or print secret values)"
+        ),
+    )
+    launch_readiness.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized checklist as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -575,6 +596,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "check-smoke-output":
         return _run_check_smoke_output(args)
+
+    if args.command == "launch-readiness":
+        return _run_launch_readiness(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1627,6 +1651,16 @@ def _run_check_smoke_output(args: argparse.Namespace) -> int:
         print(exc.message, file=sys.stderr)
         return 1
     print(format_smoke_ci_gate_summary(payload, passed=True))
+    return 0
+
+
+def _run_launch_readiness(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        checklist = LaunchReadinessService().assess(db, settings)
+    print(format_launch_readiness(checklist, as_json=args.json))
+    if checklist.overall_status == LaunchReadinessStatus.BLOCKED.value:
+        return 1
     return 0
 
 

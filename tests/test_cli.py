@@ -1777,6 +1777,14 @@ def test_cli_main_runs_action_readiness(
     assert "readiness=missing_owner_packet_decision" in output
 
 
+def test_parser_accepts_launch_readiness() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["launch-readiness", "--json"])
+
+    assert args.command == "launch-readiness"
+    assert args.json is True
+
+
 def test_parser_accepts_check_config_and_worker() -> None:
     parser = build_parser()
     check_args = parser.parse_args(["check-config"])

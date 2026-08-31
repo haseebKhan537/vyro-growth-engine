@@ -333,7 +333,7 @@ Local-only dry-run smoke/demo command over deterministic synthetic fixture data.
 - refuses production/live runs unless `--local-only`/`--dev-demo` is present; still refuses when `OUTBOUND_ENABLED` or a live-provider flag is true
 - no NPPES/search/Apollo/campaign/AI/calendar/voice/ad/SEO provider calls, email, enrollment, calls, bookings, publish, ads, spend, or deploy
 
-## Phase 26 — CI dry-run smoke gate (current)
+## Phase 26 — CI dry-run smoke gate
 CI coverage for the Phase 25 local-only smoke harness. No live workflow.
 - GitHub Actions job `smoke-dry-run` runs `vyro-growth smoke-dry-run --local-only --json` after dependency install
 - CI sets `OUTBOUND_ENABLED=false` and every live-provider flag false; unsets `DATABASE_URL` and provider credentials
@@ -342,7 +342,19 @@ CI coverage for the Phase 25 local-only smoke harness. No live workflow.
 - fails closed on PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, unsafe raw errors, or invented real-world prospect facts
 - does not call live providers, use real prospect data, execute approved items, or change operator halt / live settings
 
-Future smoke work (not in this phase):
+## Phase 27 — Launch readiness checklist and sanitized secret inventory (current)
+Read-only owner-facing preflight. No live action.
+- CLI `vyro-growth launch-readiness` (`--json` optional) and internal `GET /internal/launch-readiness`
+- overall status: `blocked` / `warning` / `ready_for_owner_review`
+- blocker codes and next-action labels
+- required configuration names only; secret inventory is variable names plus present/missing/redacted status
+- operator halt, outbound/live-provider flags, documented CI smoke gate, pending owner approval packet counts, and action-readiness blocker counts
+- unsafe outbound/live flags, missing required credentials, unavailable halt, and a missing smoke gate are blocked; halt-active, pending packets, and remaining readiness blockers are warnings
+- no GitHub Actions, OpenAI, NPPES/search, Apollo, Smartlead, Google, calendar, voice, ads, SEO, analytics, or other live-provider calls
+- no email, enrollment, autonomous replies, calls, bookings, Meet links, publish, ads, spend, deploy, packet/item execution, live `owner_approved`, or halt/live setting changes
+
+Future launch work (not in this phase):
 - execute an approved item or packet
-- run against the configured application database
 - enable outbound or live providers
+- lift operator halt
+- call GitHub Actions or live providers

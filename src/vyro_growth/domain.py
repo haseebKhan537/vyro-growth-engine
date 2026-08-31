@@ -399,6 +399,10 @@ class FindingCode(StrEnum):
     SAFE_DEFAULTS = "safe_defaults"
     EXECUTION_PLANS_DRY_RUN = "execution_plans_dry_run"
     APPROVAL_PACKETS_DRY_RUN = "approval_packets_dry_run"
+    SMOKE_GATE_MISSING = "smoke_gate_missing"
+    MISSING_REQUIRED_CREDENTIAL = "missing_required_credential"
+    PENDING_OWNER_APPROVAL_PACKETS = "pending_owner_approval_packets"
+    ACTION_READINESS_BLOCKED = "action_readiness_blocked"
 
 
 class NextActionCode(StrEnum):
@@ -415,6 +419,10 @@ class NextActionCode(StrEnum):
     INSPECT_ACTION_READINESS = "inspect_action_readiness"
     RUN_DISCOVERY_WHEN_READY = "run_discovery_when_ready"
     KEEP_OUTBOUND_DISABLED = "keep_outbound_disabled"
+    KEEP_LIVE_PROVIDERS_DISABLED = "keep_live_providers_disabled"
+    KEEP_OPERATOR_HALT = "keep_operator_halt_until_owner_approves"
+    RESTORE_CI_SMOKE_GATE = "restore_ci_smoke_gate"
+    CONFIGURE_REQUIRED_CREDENTIALS = "configure_required_credentials"
 
 
 class ReviewArtifactType(StrEnum):
@@ -518,6 +526,26 @@ class ActionDecisionStatus(StrEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
     NEEDS_CHANGES = "needs_changes"
+
+
+class LaunchReadinessStatus(StrEnum):
+    BLOCKED = "blocked"
+    WARNING = "warning"
+    READY_FOR_OWNER_REVIEW = "ready_for_owner_review"
+
+
+class SecretPresenceStatus(StrEnum):
+    REDACTED = "redacted"
+    MISSING = "missing"
+
+
+class SecretName(StrEnum):
+    DATABASE_URL = "DATABASE_URL"
+    INTERNAL_API_KEY = "INTERNAL_API_KEY"
+    OPENAI_API_KEY = "OPENAI_API_KEY"
+    SMARTLEAD_API_KEY = "SMARTLEAD_API_KEY"
+    GOOGLE_CALENDAR_API_KEY = "GOOGLE_CALENDAR_API_KEY"
+    VOICE_API_KEY = "VOICE_API_KEY"
 
 
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(
