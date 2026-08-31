@@ -109,7 +109,7 @@ def test_renderer_empty_state_is_read_only_and_escaped() -> None:
 
     assert 'id="operator-review-queue"' in html
     assert "No pending review items" in html
-    assert "No approve, reject, or execute controls" in html
+    assert "There are no approve, reject, or execute controls" in html
     for marker in ACTION_MARKERS:
         assert marker not in html.lower()
 
