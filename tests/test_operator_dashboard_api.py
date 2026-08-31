@@ -238,6 +238,7 @@ def test_renderer_populated_section_filter_hides_other_panels() -> None:
     assert "/internal/operator-approval-packets" in html
     assert "/internal/operator-action-readiness" in html
     assert "/internal/operator-settings-change-requests" in html
+    assert "/internal/operator-settings-execution-preflight" in html
     for marker in ACTION_MARKERS:
         assert marker not in html.lower()
 
@@ -269,6 +270,7 @@ def test_operator_dashboard_open_in_development(
     assert "Open approval packets" in body
     assert "Open action readiness" in body
     assert "Open settings change requests" in body
+    assert "Open settings execution preflight" in body
     assert "read-only" in body.lower()
     assert "Outbound" in body
     assert "disabled" in body

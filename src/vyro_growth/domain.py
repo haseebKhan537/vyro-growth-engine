@@ -425,6 +425,7 @@ class NextActionCode(StrEnum):
     RESTORE_CI_SMOKE_GATE = "restore_ci_smoke_gate"
     CONFIGURE_REQUIRED_CREDENTIALS = "configure_required_credentials"
     REVIEW_SETTINGS_CHANGE_REQUESTS = "review_settings_change_requests"
+    INSPECT_SETTINGS_EXECUTION_PREFLIGHT = "inspect_settings_execution_preflight"
 
 
 class ReviewArtifactType(StrEnum):

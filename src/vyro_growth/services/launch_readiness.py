@@ -102,7 +102,14 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS: (
         "Review pending live settings change requests at "
         "/internal/operator-settings-change-requests. "
+        "Inspect remaining execution blockers at "
+        "/internal/operator-settings-execution-preflight. "
         "Recording a decision does not apply them."
+    ),
+    NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT: (
+        "Inspect remaining settings-execution blockers at "
+        "/internal/operator-settings-execution-preflight. "
+        "Read-only dry-run view; do not execute."
     ),
 }
 
@@ -664,6 +671,8 @@ def _findings(
                 label=(
                     f"Review {pending_settings_requests} pending live settings "
                     "change request(s) at /internal/operator-settings-change-requests. "
+                    "Inspect remaining execution blockers at "
+                    "/internal/operator-settings-execution-preflight. "
                     "Recording a decision does not apply them."
                 ),
             )
@@ -703,6 +712,13 @@ def _next_actions(
                 NextActionCode.KEEP_LIVE_PROVIDERS_DISABLED,
             )
         )
+    add(
+        _finding(
+            FindingSeverity.INFO,
+            FindingCode.SAFE_DEFAULTS,
+            NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT,
+        )
+    )
     return tuple(
         sorted(
             selected.values(),

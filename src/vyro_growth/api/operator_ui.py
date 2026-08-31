@@ -18,11 +18,13 @@ OPERATOR_REVIEW_QUEUE_PATH = "/internal/operator-review-queue"
 OPERATOR_APPROVAL_PACKETS_PATH = "/internal/operator-approval-packets"
 OPERATOR_ACTION_READINESS_PATH = "/internal/operator-action-readiness"
 OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH = "/internal/operator-settings-change-requests"
+OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH = "/internal/operator-settings-execution-preflight"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
 ACTION_READINESS_JSON_PATH = "/internal/action-readiness"
 SETTINGS_CHANGE_JSON_PATH = "/internal/settings-change-requests"
+SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH = "/internal/settings-execution-preflight"
 LAUNCH_READINESS_JSON_PATH = "/internal/launch-readiness"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
@@ -32,6 +34,7 @@ OperatorSurface = Literal[
     "approval-packets",
     "action-readiness",
     "settings-change-requests",
+    "settings-execution-preflight",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -40,6 +43,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "approval-packets": "Approval packets",
     "action-readiness": "Action readiness",
     "settings-change-requests": "Settings requests",
+    "settings-execution-preflight": "Settings preflight",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -47,6 +51,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "approval-packets": OPERATOR_APPROVAL_PACKETS_PATH,
     "action-readiness": OPERATOR_ACTION_READINESS_PATH,
     "settings-change-requests": OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
+    "settings-execution-preflight": OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
 }
 
 
@@ -104,6 +109,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "approval-packets",
         "action-readiness",
         "settings-change-requests",
+        "settings-execution-preflight",
     )
     links = []
     for name in surfaces:

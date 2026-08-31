@@ -356,6 +356,7 @@ def test_settings_change_requests_do_not_call_live_providers() -> None:
         Path("tests/test_settings_change_request_migration.py"),
         Path("tests/test_operator_settings_change_requests_api.py"),
         Path("tests/test_operator_settings_change_decision_api.py"),
+        Path("tests/test_operator_settings_execution_preflight_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -374,8 +375,10 @@ def test_settings_execution_preflight_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/settings_execution_preflight.py"),
         Path("src/vyro_growth/api/settings_execution_preflight.py"),
+        Path("src/vyro_growth/api/operator_settings_execution_preflight.py"),
         Path("tests/test_settings_execution_preflight_service.py"),
         Path("tests/test_settings_execution_preflight_api.py"),
+        Path("tests/test_operator_settings_execution_preflight_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -443,6 +446,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_approval_packets.py"),
         Path("src/vyro_growth/api/operator_action_readiness.py"),
         Path("src/vyro_growth/api/operator_settings_change_requests.py"),
+        Path("src/vyro_growth/api/operator_settings_execution_preflight.py"),
         Path("tests/test_operator_dashboard_api.py"),
         Path("tests/test_operator_review_queue_api.py"),
         Path("tests/test_operator_review_decision_api.py"),
@@ -451,6 +455,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("tests/test_operator_action_readiness_api.py"),
         Path("tests/test_operator_settings_change_requests_api.py"),
         Path("tests/test_operator_settings_change_decision_api.py"),
+        Path("tests/test_operator_settings_execution_preflight_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -474,10 +479,12 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_ui.py"),
         Path("src/vyro_growth/api/operator_action_readiness.py"),
         Path("src/vyro_growth/api/operator_settings_change_requests.py"),
+        Path("src/vyro_growth/api/operator_settings_execution_preflight.py"),
         Path("tests/test_operator_review_decision_api.py"),
         Path("tests/test_operator_approval_packet_decision_api.py"),
         Path("tests/test_operator_action_readiness_api.py"),
         Path("tests/test_operator_settings_change_decision_api.py"),
+        Path("tests/test_operator_settings_execution_preflight_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

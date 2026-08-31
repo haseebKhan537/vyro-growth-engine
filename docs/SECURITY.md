@@ -28,7 +28,7 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `/ready` reports config issues and database availability. It must not call live providers or return secrets.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/operator-command-center`, `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`, `GET /internal/operator-approval-packets`, `POST /internal/operator-approval-packets/{packet_id}/decision`, `GET /internal/operator-action-readiness`, `GET /internal/operator-settings-change-requests`, `POST /internal/operator-settings-change-requests/{request_id}/decision`, `GET /internal/action-readiness`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/operator-command-center`, `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `POST /internal/operator-review-queue/{artifact_type}/{artifact_id}/decision`, `GET /internal/operator-approval-packets`, `POST /internal/operator-approval-packets/{packet_id}/decision`, `GET /internal/operator-action-readiness`, `GET /internal/operator-settings-change-requests`, `POST /internal/operator-settings-change-requests/{request_id}/decision`, `GET /internal/operator-settings-execution-preflight`, `GET /internal/action-readiness`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
 - Dashboard, monitoring, command-center, operator-dashboard, operator review-queue UI, operator approval-packet UI, operator action-readiness UI, and operator settings-change request list routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`, `vyro-growth operator-command-center`, `vyro-growth action-readiness`) does not use the HTTP key and does not write pipeline state. The HTML dashboard and drilldowns are HTTP-only and do not change operator halt state.
 - Review-queue list is read-only over stored artifacts. `record-review` writes a decision and audit row only; it does not execute the artifact.
@@ -282,6 +282,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Print request IDs, request types, decision status, setting names, desired booleans/statuses, blocker/gate codes, missing credential names, timestamps, counts, and no-execution flags only.
 - Do not print PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented real-world prospect facts.
 - `execution_allowed=false` is not permission or machinery for going live. A future explicitly approved execution phase does not exist in this phase.
+
+## Settings execution preflight UI integrity
+- Phase 31 settings-execution preflight HTML is a sanitized read-only shell over the Phase 30 simulator. It never performs a live workflow.
+- Do not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign live settings, scoring thresholds, or operator halt.
+- Do not apply settings, execute settings requests, set live `owner_approved`, execute review items/approval packets, send email, enroll campaigns, generate sendable autonomous replies, place calls, book meetings, create Google Meet links, publish content, launch ads, spend money, or deploy.
+- Do not add apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls. Filters are read-only query parameters only.
+- Render overall status, request/decision counts, blocker/gate/approval codes, missing credential variable names, closed provider flag names, request IDs/types, decision status, desired booleans/statuses, timestamps, and no-execution flags only.
+- Do not render secret values, environment values, API keys, tokens, provider secrets, message bodies, full outreach draft copy, real emails, real phones, evidence snippets, PHI, or unsafe raw error text.
+- This page is a read-only blocker view, not permission or machinery for going live.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

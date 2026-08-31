@@ -372,7 +372,7 @@ Internal operator HTML list/detail for Phase 28 live settings change requests. R
 - decision forms never apply settings, lift halt, enable outbound, execute requests, or set live `owner_approved`
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 30 — Approved settings execution preflight simulator (current)
+## Phase 30 — Approved settings execution preflight simulator
 Dry-run-only simulator over recorded settings change requests and owner decisions. No execution.
 - Service plus CLI `vyro-growth settings-execution-preflight` and internal JSON `GET /internal/settings-execution-preflight`
 - Scans settings change requests and recorded decisions
@@ -380,6 +380,16 @@ Dry-run-only simulator over recorded settings change requests and owner decision
 - Reports blockers such as operator halt, outbound disabled, provider live flags false, missing credentials by variable name only, pending/rejected/needs_changes decisions, missing approval-packet decision, or absent explicit owner approval
 - All live execution gates remain closed; `execution_allowed` is false unless a future explicitly approved execution phase exists
 - Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 31 — Settings execution preflight UI shell (current)
+Internal operator HTML view of the Phase 30 dry-run simulator. Read-only, no execution.
+- `GET /internal/operator-settings-execution-preflight`
+- Renders existing Phase 30 preflight output as a sanitized HTML page
+- Optional read-only filters: request type, decision status, execution status
+- Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, and settings change request UI
+- Sanitized fields only: overall status, request/decision counts, blocker/gate/approval codes, missing credential variable names, closed provider flag names, request IDs/types, decision status, desired booleans/statuses, timestamps, and no-execution flags
+- No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
