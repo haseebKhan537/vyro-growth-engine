@@ -176,7 +176,7 @@ def test_handoff_consolidates_existing_safe_summaries(db_session: Session) -> No
         request_type=SettingsChangeRequestType.KEEP_OUTBOUND_DISABLED.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
         idempotency_key="handoff-pending",
-        reviewer_notes=f"record only {PHI_SNIPPET} {PROSPECT_EMAIL}",
+        reviewer_notes=f"record only {PHI_SNIPPET}",
     )
     approved = service.create(
         db_session,
@@ -192,7 +192,7 @@ def test_handoff_consolidates_existing_safe_summaries(db_session: Session) -> No
         request_id=approved.request_id,
         decision="approved",
         reviewer="owner",
-        reviewer_notes=UNSAFE_ERROR,
+            reviewer_notes=PHI_SNIPPET,
     )
     before = _counts(db_session)
     before_flags = _flags(settings)

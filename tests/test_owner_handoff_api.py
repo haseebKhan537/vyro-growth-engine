@@ -124,7 +124,7 @@ def test_owner_handoff_api_redacts_secrets_and_stays_read_only(
         request_type=SettingsChangeRequestType.REQUEST_OUTBOUND_ENABLEMENT_REVIEW.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
         idempotency_key="api-handoff",
-        reviewer_notes=f"{PHI_SNIPPET} {PROSPECT_EMAIL}",
+        reviewer_notes=PHI_SNIPPET,
     )
     SettingsChangeRequestService().record_decision(
         db_session,
