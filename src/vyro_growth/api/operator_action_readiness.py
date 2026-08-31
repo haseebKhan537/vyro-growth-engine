@@ -481,7 +481,7 @@ def _render_candidates(
         '    <section class="panel">\n'
         "      <h2>Candidates</h2>\n"
         '      <table class="dense"><thead><tr>'
-        "<th>Family</th><th>Candidate</th><th>Artifact</th><th>Review</th>"
+        "<th>Family</th><th>Candidate</th><th>Label</th><th>Artifact</th><th>Review</th>"
         "<th>Packet</th><th>Preflight</th><th>Readiness</th><th>Flags</th>"
         f"</tr></thead><tbody>{rows}</tbody></table>\n"
         "    </section>"
@@ -501,6 +501,7 @@ def _candidate_row(item: ActionReadinessCandidateResponse) -> str:
         f"<td>{titleize(item.plan_family)}</td>"
         f'<td class="mono"><a class="row-link" href="{href}">'
         f"{html_escape(short_id(item.candidate_id))}</a></td>"
+        f"<td>{html_escape(item.sanitized_label)}</td>"
         f"<td>{titleize(item.artifact_type)}</td>"
         f"<td>{html_escape(item.review_decision_status)}</td>"
         f"<td>{html_escape(item.packet_decision_status)}</td>"
