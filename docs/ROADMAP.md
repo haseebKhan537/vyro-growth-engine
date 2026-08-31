@@ -363,13 +363,23 @@ Record-only owner-reviewable live settings change requests. No execution.
 - launch readiness points at proposed requests and can optionally create them without applying anything
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 29 — Settings change request UI drilldowns (current)
+## Phase 29 — Settings change request UI drilldowns
 Internal operator HTML list/detail for Phase 28 live settings change requests. Record-only, no execution.
 - `GET /internal/operator-settings-change-requests` and `GET /internal/operator-settings-change-requests/{request_id}`
 - optional `POST /internal/operator-settings-change-requests/{request_id}/decision` records the existing audit-only owner decision
 - sanitized fields only: request type, status, owner decision status, setting names, desired boolean/status, finding/next-action codes, timestamps, source, record-only/no-execution flags, and safe counts
 - linked from the operator dashboard, command-center next-action labels, and launch-readiness next-action labels
 - decision forms never apply settings, lift halt, enable outbound, execute requests, or set live `owner_approved`
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 30 — Approved settings execution preflight simulator (current)
+Dry-run-only simulator over recorded settings change requests and owner decisions. No execution.
+- Service plus CLI `vyro-growth settings-execution-preflight` and internal JSON `GET /internal/settings-execution-preflight`
+- Scans settings change requests and recorded decisions
+- Sanitized output only: request IDs, request types, decision status, setting names, desired booleans/statuses, blocker/gate codes, timestamps, counts, and no-execution flags
+- Reports blockers such as operator halt, outbound disabled, provider live flags false, missing credentials by variable name only, pending/rejected/needs_changes decisions, missing approval-packet decision, or absent explicit owner approval
+- All live execution gates remain closed; `execution_allowed` is false unless a future explicitly approved execution phase exists
+- Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

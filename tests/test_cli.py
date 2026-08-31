@@ -1823,6 +1823,16 @@ def test_parser_accepts_settings_change_request_commands() -> None:
         ]
     )
     proposed = parser.parse_args(["propose-settings-changes", "--json"])
+    preflight = parser.parse_args(
+        [
+            "settings-execution-preflight",
+            "--json",
+            "--request-type",
+            "keep_outbound_disabled",
+            "--decision-status",
+            "approved",
+        ]
+    )
 
     assert listed.command == "settings-change-requests"
     assert listed.json is True
@@ -1832,6 +1842,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     assert detail.command == "settings-change-request"
     assert decided.decision == "approved"
     assert proposed.command == "propose-settings-changes"
+    assert preflight.command == "settings-execution-preflight"
+    assert preflight.json is True
+    assert preflight.request_type == "keep_outbound_disabled"
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

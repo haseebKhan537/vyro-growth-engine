@@ -92,6 +92,11 @@ from vyro_growth.services.settings_change_requests import (
     format_settings_change_propose,
     format_settings_change_request,
 )
+from vyro_growth.services.settings_execution_preflight import (
+    SettingsExecutionPreflightFilters,
+    SettingsExecutionPreflightService,
+    format_settings_execution_preflight,
+)
 from vyro_growth.services.smoke_dry_run import (
     SmokeDryRunRefused,
     format_smoke_summary,
@@ -552,6 +557,23 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     propose_settings.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    settings_preflight = subparsers.add_parser(
+        "settings-execution-preflight",
+        help=(
+            "Dry-run preflight for approved settings change requests "
+            "(does not apply settings, lift halt, or execute; not permission to go live)"
+        ),
+    )
+    settings_preflight.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    settings_preflight.add_argument("--request-type", help="Filter by request type")
+    settings_preflight.add_argument(
+        "--decision-status",
+        help="Filter by owner decision status",
+    )
+    settings_preflight.add_argument(
+        "--execution-status",
+        help="Filter by simulated execution status",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -698,6 +720,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "propose-settings-changes":
         return _run_propose_settings_changes(args)
+
+    if args.command == "settings-execution-preflight":
+        return _run_settings_execution_preflight(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1867,6 +1892,19 @@ def _run_propose_settings_changes(args: argparse.Namespace) -> int:
             print(f"Settings change request error: {exc.message}")
             return 1
     print(format_settings_change_propose(result, as_json=args.json))
+    return 0
+
+
+def _run_settings_execution_preflight(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    filters = SettingsExecutionPreflightFilters(
+        request_type=args.request_type,
+        decision_status=args.decision_status,
+        execution_status=args.execution_status,
+    )
+    with SessionLocal() as db:
+        result = SettingsExecutionPreflightService().simulate(db, settings, filters=filters)
+    print(format_settings_execution_preflight(result, as_json=args.json))
     return 0
 
 

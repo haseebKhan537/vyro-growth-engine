@@ -579,6 +579,42 @@ class SettingsChangeDesiredStatus(StrEnum):
     CONFIGURED = "configured"
 
 
+class SettingsExecutionPreflightStatus(StrEnum):
+    BLOCKED = "blocked"
+    PENDING_DECISION = "pending_decision"
+    DECISION_NOT_APPROVED = "decision_not_approved"
+    MISSING_OWNER_PACKET_DECISION = "missing_owner_packet_decision"
+    MISSING_EXPLICIT_OWNER_APPROVAL = "missing_explicit_owner_approval"
+    EXECUTION_GATES_CLOSED = "execution_gates_closed"
+    DRY_RUN_BLOCKED = "dry_run_blocked"
+
+
+class SettingsExecutionBlockerCode(StrEnum):
+    OPERATOR_HALT_ACTIVE = "operator_halt_active"
+    OPERATOR_HALT_UNAVAILABLE = "operator_halt_unavailable"
+    OUTBOUND_DISABLED = "outbound_disabled"
+    PROVIDER_LIVE_FLAG_FALSE = "provider_live_flag_false"
+    MISSING_CREDENTIAL = "missing_credential"
+    PENDING_DECISION = "pending_decision"
+    REJECTED_DECISION = "rejected_decision"
+    NEEDS_CHANGES_DECISION = "needs_changes_decision"
+    MISSING_OWNER_APPROVAL_PACKET_DECISION = "missing_owner_approval_packet_decision"
+    MISSING_EXPLICIT_OWNER_APPROVAL = "missing_explicit_owner_approval"
+    EXECUTION_DISABLED_IN_THIS_PHASE = "execution_disabled_in_this_phase"
+    FUTURE_EXECUTION_PHASE_ABSENT = "future_execution_phase_absent"
+
+
+class SettingsExecutionGateCode(StrEnum):
+    OPERATOR_HALT_GATE = "operator_halt_gate"
+    OUTBOUND_ENABLED_GATE = "outbound_enabled_gate"
+    PROVIDER_LIVE_FLAG_GATE = "provider_live_flag_gate"
+    CREDENTIAL_GATE = "credential_gate"
+    OWNER_DECISION_GATE = "owner_decision_gate"
+    APPROVAL_PACKET_DECISION_GATE = "approval_packet_decision_gate"
+    EXPLICIT_OWNER_APPROVAL_GATE = "explicit_owner_approval_gate"
+    EXECUTION_PHASE_GATE = "execution_phase_gate"
+
+
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(
     {
         LeadStage.MEETING_BOOKED,
