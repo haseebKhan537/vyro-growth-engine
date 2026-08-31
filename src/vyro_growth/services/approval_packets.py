@@ -298,6 +298,17 @@ class ApprovalPacketService:
         halt = read_operator_halt(db)
         return self._view(db, run, halt_before=halt, halt_after=halt, reused=True)
 
+    def get_packet(self, db: Session, packet_id: UUID) -> ApprovalPacketView | None:
+        """Return one stored owner approval packet without generating a new run.
+
+        Read-only. Does not execute the underlying plan or change halt state.
+        """
+
+        row = db.get(OwnerApprovalPacket, packet_id)
+        if row is None:
+            return None
+        return _packet_view(row)
+
     def _view(
         self,
         db: Session,

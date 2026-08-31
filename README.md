@@ -664,6 +664,27 @@ The page is a quiet, dense operator view: overall status and readiness, outbound
 
 Rendered HTML is counts, statuses, timestamps, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. Empty databases show empty states. Render failures return a sanitized error page. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 21 — Read-only review queue and approval packet UI drilldowns
+
+Open internal HTML list/detail views of the existing review queue and owner approval packets. These pages do not record new decisions, execute artifacts, send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish pages, launch ads, spend money, deploy, apply optimizer recommendations, or change live/scoring/campaign/provider/deployment settings.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-review-queue \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/operator-review-queue?include_decided=true&status=approved" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/operator-approval-packets \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/operator-approval-packets?plan_family=outreach_enrollment&preflight_status=blocked" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard links to both drilldowns. Review-queue filters include artifact type, status, and include-decided. Approval-packet filters include plan family and preflight status. Detail pages show sanitized titles/labels/categories, blocked/warning/info counts and codes, required owner decision labels, timestamps, and dry-run/no-execution flags. There are no approve, reject, or execute controls.
+
+Rendered HTML is IDs, statuses, counts, timestamps, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. Empty and unmatched filters show empty states. Missing items and render failures return sanitized pages. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

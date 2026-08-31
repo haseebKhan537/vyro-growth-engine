@@ -51,7 +51,15 @@ from vyro_growth.api.monitoring import (
     MonitoringStatusResponse,
     build_monitoring_status_response,
 )
+from vyro_growth.api.operator_approval_packets import (
+    build_operator_approval_packet_response,
+    build_operator_approval_packets_response,
+)
 from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
+from vyro_growth.api.operator_review_queue import (
+    build_operator_review_item_response,
+    build_operator_review_queue_response,
+)
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
     build_latest_optimizer_response,
@@ -158,6 +166,86 @@ def operator_dashboard(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_dashboard_response(db, active_settings, section=section)
+
+
+@app.get("/internal/operator-review-queue", tags=["internal"], response_class=HTMLResponse)
+def operator_review_queue(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    artifact_type: Annotated[str | None, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
+    include_decided: Annotated[bool, Query()] = False,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_review_queue_response(
+        db,
+        active_settings,
+        artifact_type=artifact_type,
+        status=status,
+        include_decided=include_decided,
+    )
+
+
+@app.get(
+    "/internal/operator-review-queue/{artifact_type}/{artifact_id}",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_review_queue_item(
+    artifact_type: str,
+    artifact_id: str,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_review_item_response(
+        db,
+        active_settings,
+        artifact_type=artifact_type,
+        artifact_id=artifact_id,
+    )
+
+
+@app.get(
+    "/internal/operator-approval-packets",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_approval_packets(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    plan_family: Annotated[str | None, Query()] = None,
+    preflight_status: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_approval_packets_response(
+        db,
+        active_settings,
+        plan_family=plan_family,
+        preflight_status=preflight_status,
+    )
+
+
+@app.get(
+    "/internal/operator-approval-packets/{packet_id}",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_approval_packet_item(
+    packet_id: str,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_approval_packet_response(
+        db,
+        active_settings,
+        packet_id=packet_id,
+    )
 
 
 @app.post("/internal/optimizer/run", tags=["internal"])

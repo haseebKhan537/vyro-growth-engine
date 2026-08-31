@@ -266,7 +266,7 @@ Future command-center work (not in this phase):
 - execute an approved live action from the summary
 - change operator halt, outbound, or live-provider flags
 
-## Phase 20 — Read-only operator dashboard UI shell (current)
+## Phase 20 — Read-only operator dashboard UI shell
 Internal HTML view over the sanitized command-center summary. No live action.
 - one internal `GET /internal/operator-dashboard` route that server-renders the Phase 19 summary
 - overall status/readiness, outbound-disabled and operator-halt safety, pipeline counts, latest run statuses, outstanding review counts, approval packet/preflight counts, blocked/warning/info summary, and safe next-action labels
@@ -278,4 +278,18 @@ Internal HTML view over the sanitized command-center summary. No live action.
 Future dashboard-UI work (not in this phase):
 - richer visualization or additional operator surfaces
 - execute an approved live action from the UI
+- change operator halt, outbound, or live-provider flags
+
+## Phase 21 — Read-only review queue and approval packet UI drilldowns (current)
+Internal HTML list/detail views over the existing review queue and owner approval packets. No live action.
+- `GET /internal/operator-review-queue` and artifact detail pages for pending and decided dry-run review items
+- `GET /internal/operator-approval-packets` and packet detail pages for owner approval/preflight rows
+- dashboard links to the drilldowns; no approve, reject, or execute controls
+- read-only filters: artifact type, status, include-decided, plan family, and preflight status
+- empty states and sanitized failure/not-found pages
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- IDs, statuses, timestamps, safe titles/labels/categories, blocked/warning/info counts and codes, required owner decision labels, and dry-run/no-execution flags only
+
+Future review/approval-UI work (not in this phase):
+- approve, reject, or execute from the HTML pages
 - change operator halt, outbound, or live-provider flags

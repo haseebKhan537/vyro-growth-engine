@@ -20,11 +20,15 @@ curl http://localhost:8000/internal/operator-command-center \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/operator-dashboard \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/operator-review-queue \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/operator-approval-packets \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/monitoring/status \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 ```
 
-CLI does not use the HTTP key. These paths are read-only. `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `system-status` remains the detailed monitoring snapshot.
+CLI does not use the HTTP key. These paths are read-only. `operator-command-center` is the cross-pipeline JSON summary; `GET /internal/operator-dashboard` is the same summary as an HTML shell; `GET /internal/operator-review-queue` and `GET /internal/operator-approval-packets` are read-only drilldowns; `system-status` remains the detailed monitoring snapshot.
 
 ## What the snapshot includes
 
@@ -53,7 +57,7 @@ Output is counts, statuses, timestamps, and sanitized messages only. It does not
 1. Confirm `.env` / runtime env still has `OUTBOUND_ENABLED=false` and every live-provider flag false. See `docs/DEPLOYMENT.md`.
 2. `vyro-growth check-config`
 3. Probe `/health` and `/ready`
-4. `vyro-growth operator-command-center`, open `GET /internal/operator-dashboard`, and `vyro-growth system-status`
+4. `vyro-growth operator-command-center`, open `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `GET /internal/operator-approval-packets`, and `vyro-growth system-status`
 5. Review `blocked` and `warning` findings and next-action labels. Do not enable outbound to "clear" them.
 6. Review pending drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs on their existing dry-run surfaces. Approval does not publish pages or launch ads. `vyro-growth plan-approved-execution` records a dry-run plan only and does not execute. `vyro-growth generate-approval-packets` records a live-readiness packet only and does not execute.
 
