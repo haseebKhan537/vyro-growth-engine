@@ -1007,6 +1007,9 @@ def _format_markdown(packet: OwnerHandoffPacket, payload: dict[str, Any]) -> str
         "machinery for going live.",
         "Inspect recent operator activity at /internal/operator-audit-timeline "
         "(read-only, no execution).",
+        "Inspect the compliance evidence binder at "
+        "/internal/operator-compliance-evidence-binder "
+        "(read-only owner-review view, not permission to go live).",
         "",
         f"- overall: {payload['overall_status']}",
         f"- packet_kind: {payload['packet_kind']}",

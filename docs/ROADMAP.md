@@ -423,7 +423,7 @@ Internal operator HTML timeline over existing activity, audit, and decision reco
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 35 — Compliance evidence binder export (current)
+## Phase 35 — Compliance evidence binder export
 Read-only owner-review binder consolidating existing safety evidence. No execution.
 - Service plus CLI `vyro-growth compliance-evidence-binder` and internal JSON `GET /internal/compliance-evidence-binder`
 - Reuses launch readiness, settings execution preflight, owner handoff packet, operator audit timeline, smoke gate expectations, deployment safe defaults, and documented compliance guardrails
@@ -431,6 +431,17 @@ Read-only owner-review binder consolidating existing safety evidence. No executi
 - Safe evidence only: status/counts/codes, no-execution flags, operator halt status, outbound/live-provider flag states, CI gate names, route/command names, sanitized timestamps, and missing credential variable names
 - `execution_allowed=false`, `go_live_permitted=false`, and `binder_is_not_go_live=true`; this binder is not permission or machinery for going live
 - Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 36 — Compliance evidence binder UI shell (current)
+Internal operator HTML view of the Phase 35 compliance evidence binder. Read-only, no execution.
+- `GET /internal/operator-compliance-evidence-binder`
+- Renders existing Phase 35 binder output as a sanitized HTML page
+- Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, and operator audit timeline UI
+- Shows all binder sections: outbound disabled/operator halt, no-live-provider defaults, no-execution side-effect evidence, PHI/secrets/redaction evidence, consent-based phone-only boundary, CI dry-run smoke/deploy-config gates, documented compliance guardrails, operator audit timeline summary, reused read-only summaries, and remaining manual owner checklist
+- Sanitized fields only: statuses, counts, codes, no-execution flags, halt/outbound/live-provider states, CI gate names, route/command names, sanitized timestamps, and missing credential variable names
+- Page states `go_live_permitted=false`, `execution_allowed=false`, and `binder_is_not_go_live=true`
+- No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

@@ -76,6 +76,9 @@ from vyro_growth.api.operator_approval_packets import (
 from vyro_growth.api.operator_audit_timeline import (
     build_operator_audit_timeline_response,
 )
+from vyro_growth.api.operator_compliance_evidence_binder import (
+    build_operator_compliance_evidence_binder_response,
+)
 from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.operator_owner_handoff import (
     build_operator_owner_handoff_response,
@@ -437,6 +440,20 @@ def operator_owner_handoff_packet(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_owner_handoff_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-compliance-evidence-binder",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_compliance_evidence_binder(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_compliance_evidence_binder_response(db, active_settings)
 
 
 @app.get(

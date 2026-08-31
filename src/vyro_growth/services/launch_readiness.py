@@ -122,8 +122,10 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "for going live."
     ),
     NextActionCode.BINDER_IS_NOT_GO_LIVE: (
-        "This compliance evidence binder is for manual owner review only. "
-        "It is not permission or machinery for going live."
+        "Inspect the compliance evidence binder at "
+        "/internal/operator-compliance-evidence-binder. "
+        "Read-only owner-review view; it is not permission or machinery "
+        "for going live."
     ),
 }
 

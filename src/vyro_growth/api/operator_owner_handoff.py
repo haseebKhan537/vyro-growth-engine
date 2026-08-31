@@ -22,6 +22,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_ACTION_READINESS_PATH,
     OPERATOR_APPROVAL_PACKETS_PATH,
     OPERATOR_AUDIT_TIMELINE_PATH,
+    OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
     OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_UI_STYLES,
@@ -151,6 +152,7 @@ def _render_related_links() -> str:
     readiness_href = escape(OPERATOR_ACTION_READINESS_PATH)
     readiness_json_href = escape(ACTION_READINESS_JSON_PATH)
     timeline_href = escape(OPERATOR_AUDIT_TIMELINE_PATH)
+    binder_href = escape(OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON packet</a>\n'
@@ -162,6 +164,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{readiness_href}">Action readiness</a>\n'
         f'      <a class="nav-link" href="{readiness_json_href}">JSON readiness</a>\n'
         f'      <a class="nav-link" href="{timeline_href}">Audit timeline</a>\n'
+        f'      <a class="nav-link" href="{binder_href}">Compliance binder</a>\n'
         "    </nav>"
     )
 

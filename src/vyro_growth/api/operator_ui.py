@@ -21,6 +21,7 @@ OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH = "/internal/operator-settings-change-req
 OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH = "/internal/operator-settings-execution-preflight"
 OPERATOR_OWNER_HANDOFF_PACKET_PATH = "/internal/operator-owner-handoff-packet"
 OPERATOR_AUDIT_TIMELINE_PATH = "/internal/operator-audit-timeline"
+OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH = "/internal/operator-compliance-evidence-binder"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -29,6 +30,7 @@ SETTINGS_CHANGE_JSON_PATH = "/internal/settings-change-requests"
 SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH = "/internal/settings-execution-preflight"
 LAUNCH_READINESS_JSON_PATH = "/internal/launch-readiness"
 OWNER_HANDOFF_JSON_PATH = "/internal/owner-handoff-packet"
+COMPLIANCE_EVIDENCE_BINDER_JSON_PATH = "/internal/compliance-evidence-binder"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -40,6 +42,7 @@ OperatorSurface = Literal[
     "settings-execution-preflight",
     "owner-handoff-packet",
     "audit-timeline",
+    "compliance-evidence-binder",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -51,6 +54,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "settings-execution-preflight": "Settings preflight",
     "owner-handoff-packet": "Owner handoff",
     "audit-timeline": "Audit timeline",
+    "compliance-evidence-binder": "Compliance binder",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -61,6 +65,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "settings-execution-preflight": OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     "owner-handoff-packet": OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     "audit-timeline": OPERATOR_AUDIT_TIMELINE_PATH,
+    "compliance-evidence-binder": OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
 }
 
 
@@ -121,6 +126,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "settings-execution-preflight",
         "owner-handoff-packet",
         "audit-timeline",
+        "compliance-evidence-binder",
     )
     links = []
     for name in surfaces:

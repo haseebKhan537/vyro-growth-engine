@@ -965,6 +965,21 @@ Output is a sanitized Markdown or JSON packet with the evidence sections above p
 
 JSON is statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 36 — Compliance evidence binder UI shell (read-only)
+
+Open an internal HTML view of the Phase 35 compliance evidence binder. Operators can inspect the sanitized safety binder in the browser. This layer does not apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, deploy, or call live providers. It is a read-only owner-review view, not permission or machinery for going live.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-compliance-evidence-binder \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, and operator audit timeline UI link to this page. The page shows all binder sections: outbound disabled/operator halt, no-live-provider defaults, no-execution side-effect evidence, PHI/secrets/redaction evidence, consent-based phone-only boundary, CI dry-run smoke/deploy-config gates, documented compliance guardrails, operator audit timeline summary, reused read-only summaries, and remaining manual owner checklist. Fields are statuses, counts, codes, no-execution flags, halt/outbound/live-provider states, CI gate names, route/command names, sanitized timestamps, and missing credential variable names. The page states `go_live_permitted=false`, `execution_allowed=false`, and `binder_is_not_go_live=true`. There are no apply, execute, lift-halt, enable-outbound, provider, deploy, campaign, booking, call, publish, or spend controls.
+
+Rendered HTML is statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

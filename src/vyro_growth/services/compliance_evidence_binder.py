@@ -76,6 +76,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-owner-handoff-packet",
     "/internal/operator-audit-timeline",
     HTTP_ROUTE,
+    "/internal/operator-compliance-evidence-binder",
 )
 GUARDRAIL_DOC_CHECKS: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
     (
