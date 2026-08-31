@@ -23,6 +23,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_AUDIT_TIMELINE_PATH,
     OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
+    OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_UI_STYLES,
     RELEASE_CANDIDATE_RUNBOOK_JSON_PATH,
@@ -176,6 +177,7 @@ def _render_related_links() -> str:
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
     handoff_href = escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)
     timeline_href = escape(OPERATOR_AUDIT_TIMELINE_PATH)
+    manifest_href = escape(OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON runbook</a>\n'
@@ -185,6 +187,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
         f'      <a class="nav-link" href="{handoff_href}">Owner handoff</a>\n'
         f'      <a class="nav-link" href="{timeline_href}">Audit timeline</a>\n'
+        f'      <a class="nav-link" href="{manifest_href}">Release manifest</a>\n'
         "    </nav>"
     )
 

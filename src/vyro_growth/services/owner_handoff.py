@@ -1013,10 +1013,10 @@ def _format_markdown(packet: OwnerHandoffPacket, payload: dict[str, Any]) -> str
         "Inspect the release-candidate deployment runbook at "
         "/internal/operator-release-candidate-runbook "
         "(read-only owner-review view, not a deployment mechanism).",
-        "Inspect the release artifact manifest via "
-        "vyro-growth release-artifact-manifest or "
-        "/internal/release-artifact-manifest "
-        "(read-only owner-review export, not a build or deploy).",
+        "Inspect the release artifact manifest at "
+        "/internal/operator-release-artifact-manifest "
+        "or /internal/release-artifact-manifest "
+        "(read-only owner-review view, not a build or deploy).",
         "",
         f"- overall: {payload['overall_status']}",
         f"- packet_kind: {payload['packet_kind']}",
