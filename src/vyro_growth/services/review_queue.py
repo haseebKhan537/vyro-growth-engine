@@ -544,7 +544,7 @@ def _optimizer_candidates(db: Session) -> list[_Candidate]:
                 organization_id=None,
                 title=title,
                 summary="Dry-run growth recommendation. Approval does not apply the change.",
-                created_at=row.generated_at,
+                created_at=_as_utc(row.generated_at),
                 extra_labels=("dry_run_recommendation", "not_applied"),
             )
         )
@@ -641,13 +641,17 @@ def _safety_labels(halt: HaltStatus, *, outbound_enabled: bool) -> tuple[str, ..
     return tuple(labels)
 
 
+def _as_utc(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.now(tz=UTC)
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value
+
+
 def _created_at(row: Any) -> datetime:
     created = getattr(row, "created_at", None)
-    if isinstance(created, datetime):
-        if created.tzinfo is None:
-            return created.replace(tzinfo=UTC)
-        return created
-    return datetime.now(tz=UTC)
+    return _as_utc(created if isinstance(created, datetime) else None)
 
 
 def _item_sort_key(item: ReviewItem) -> tuple[datetime, str, str]:
