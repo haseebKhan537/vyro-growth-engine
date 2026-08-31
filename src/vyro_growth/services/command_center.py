@@ -133,6 +133,13 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "Read-only owner-review view; it is not a deployment mechanism or "
         "permission to go live."
     ),
+    NextActionCode.MANIFEST_IS_NOT_BUILD_OR_DEPLOY: (
+        "Inspect the release artifact manifest via "
+        "vyro-growth release-artifact-manifest or "
+        "GET /internal/release-artifact-manifest. "
+        "Read-only owner-review export; it is not a build, artifact "
+        "publishing, or deployment mechanism."
+    ),
 }
 
 
@@ -500,6 +507,11 @@ def _next_actions(
         NextActionCode.RUNBOOK_IS_NOT_DEPLOYMENT,
         FindingSeverity.INFO,
         phase="release_candidate_runbook",
+    )
+    add(
+        NextActionCode.MANIFEST_IS_NOT_BUILD_OR_DEPLOY,
+        FindingSeverity.INFO,
+        phase="release_artifact_manifest",
     )
 
     return tuple(

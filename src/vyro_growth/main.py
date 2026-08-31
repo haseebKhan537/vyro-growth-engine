@@ -108,6 +108,10 @@ from vyro_growth.api.owner_handoff import (
     OwnerHandoffPacketResponse,
     build_owner_handoff_response,
 )
+from vyro_growth.api.release_artifact_manifest import (
+    ReleaseArtifactManifestResponse,
+    build_release_artifact_manifest_response,
+)
 from vyro_growth.api.release_candidate_runbook import (
     ReleaseCandidateRunbookResponse,
     build_release_candidate_runbook_response,
@@ -721,6 +725,16 @@ def release_candidate_runbook(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_release_candidate_runbook_response(db, active_settings)
+
+
+@app.get("/internal/release-artifact-manifest", tags=["internal"])
+def release_artifact_manifest(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ReleaseArtifactManifestResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_release_artifact_manifest_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

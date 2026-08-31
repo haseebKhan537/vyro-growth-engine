@@ -86,6 +86,10 @@ from vyro_growth.services.owner_handoff import (
     format_owner_handoff,
 )
 from vyro_growth.services.personalization import PersonalizationService
+from vyro_growth.services.release_artifact_manifest import (
+    ReleaseArtifactManifestService,
+    format_release_artifact_manifest,
+)
 from vyro_growth.services.release_candidate_runbook import (
     ReleaseCandidateRunbookService,
     format_release_candidate_runbook,
@@ -622,6 +626,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized release-candidate runbook as JSON",
     )
+    manifest = subparsers.add_parser(
+        "release-artifact-manifest",
+        help=(
+            "Export a sanitized release artifact manifest "
+            "(read-only; does not build, publish, deploy, or go live)"
+        ),
+    )
+    manifest.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized release artifact manifest as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -780,6 +796,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "release-candidate-runbook":
         return _run_release_candidate_runbook(args)
+
+    if args.command == "release-artifact-manifest":
+        return _run_release_artifact_manifest(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1986,6 +2005,14 @@ def _run_release_candidate_runbook(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         runbook = ReleaseCandidateRunbookService().build(db, settings)
     print(format_release_candidate_runbook(runbook, as_json=args.json))
+    return 0
+
+
+def _run_release_artifact_manifest(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        manifest = ReleaseArtifactManifestService().build(db, settings)
+    print(format_release_artifact_manifest(manifest, as_json=args.json))
     return 0
 
 
