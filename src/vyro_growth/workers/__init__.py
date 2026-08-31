@@ -12,6 +12,10 @@ from vyro_growth.workers.catalog import (
     deployable_job_names,
     undeployed_outbound_job_names,
 )
+from vyro_growth.workers.channel_planning_handler import (
+    GENERATE_CHANNEL_PLANS_JOB,
+    GenerateChannelPlansHandler,
+)
 from vyro_growth.workers.contact_enrichment_handler import (
     ENRICH_DECISION_MAKERS_JOB,
     EnrichDecisionMakersHandler,
@@ -19,10 +23,6 @@ from vyro_growth.workers.contact_enrichment_handler import (
 from vyro_growth.workers.discovery_handler import (
     DISCOVER_NPPES_PRACTICES_JOB,
     DiscoverNppesPracticesHandler,
-)
-from vyro_growth.workers.channel_planning_handler import (
-    GENERATE_CHANNEL_PLANS_JOB,
-    GenerateChannelPlansHandler,
 )
 from vyro_growth.workers.growth_optimizer_handler import (
     GENERATE_GROWTH_RECOMMENDATIONS_JOB,

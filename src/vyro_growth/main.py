@@ -2,10 +2,16 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from vyro_growth.api.channel_plans import (
+    ChannelPlanRunResponse,
+    ChannelPlanSeedRequest,
+    build_channel_plan_run_response,
+    build_latest_channel_plan_response,
+)
 from vyro_growth.api.dashboard import (
     DashboardSummaryResponse,
     SafetyCardResponse,
@@ -19,12 +25,6 @@ from vyro_growth.api.internal_auth import (
 from vyro_growth.api.monitoring import (
     MonitoringStatusResponse,
     build_monitoring_status_response,
-)
-from vyro_growth.api.channel_plans import (
-    ChannelPlanRunResponse,
-    ChannelPlanSeedRequest,
-    build_channel_plan_run_response,
-    build_latest_channel_plan_response,
 )
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
@@ -133,7 +133,7 @@ def latest_growth_recommendations(
 @app.post("/internal/channel-plans/run", tags=["internal"])
 def run_channel_planning(
     db: DbSession,
-    request: Annotated[ChannelPlanSeedRequest, Body()] = ChannelPlanSeedRequest(),
+    request: ChannelPlanSeedRequest | None = None,
     x_internal_api_key: Annotated[str | None, Header()] = None,
 ) -> ChannelPlanRunResponse:
     active_settings = get_settings()

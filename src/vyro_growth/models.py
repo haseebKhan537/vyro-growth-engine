@@ -602,7 +602,9 @@ class ChannelPlan(TimestampMixin, Base):
         ),
     )
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
-    channel_plan_run_id: Mapped[UUID] = mapped_column(ForeignKey("channel_plan_runs.id"), index=True)
+    channel_plan_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("channel_plan_runs.id"), index=True
+    )
     plan_key: Mapped[str] = mapped_column(String(255), index=True)
     channel: Mapped[str] = mapped_column(String(64), index=True)
     plan_type: Mapped[str] = mapped_column(String(64), index=True)

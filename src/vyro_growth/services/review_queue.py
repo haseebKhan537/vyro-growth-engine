@@ -550,7 +550,7 @@ def _optimizer_candidates(db: Session) -> list[_Candidate]:
                 extra_labels=("dry_run_recommendation", "not_applied"),
             )
         )
-        return items
+    return items
 
 
 def _channel_plan_candidates(db: Session) -> list[_Candidate]:

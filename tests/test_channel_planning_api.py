@@ -40,7 +40,7 @@ def test_channel_plan_run_open_in_development(
 ) -> None:
     _patch_settings(monkeypatch, Settings(environment="development", internal_api_key=""))
 
-    response = api_client.post("/internal/channel-plans/run")
+    response = api_client.post("/internal/channel-plans/run", json={})
 
     assert response.status_code == 200
     body = response.json()
@@ -61,7 +61,7 @@ def test_channel_plan_run_rejects_non_development_without_key(
 ) -> None:
     _patch_settings(monkeypatch, Settings(environment="production", internal_api_key=""))
 
-    response = api_client.post("/internal/channel-plans/run")
+    response = api_client.post("/internal/channel-plans/run", json={})
 
     assert response.status_code == 403
     assert response.json()["detail"] == "Internal operator route requires INTERNAL_API_KEY"
@@ -79,6 +79,7 @@ def test_channel_plan_run_rejects_invalid_key(
     response = api_client.post(
         "/internal/channel-plans/run",
         headers={"X-Internal-Api-Key": "wrong-secret"},
+        json={},
     )
     assert response.status_code == 401
 

@@ -73,7 +73,12 @@ def upgrade() -> None:
             name="uq_channel_plan_runs_snapshot_fingerprint",
         ),
     )
-    op.create_index(op.f("ix_channel_plan_runs_status"), "channel_plan_runs", ["status"], unique=False)
+    op.create_index(
+        op.f("ix_channel_plan_runs_status"),
+        "channel_plan_runs",
+        ["status"],
+        unique=False,
+    )
     op.create_index(
         op.f("ix_channel_plan_runs_snapshot_fingerprint"),
         "channel_plan_runs",
@@ -144,7 +149,12 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_channel_plans_plan_key"), "channel_plans", ["plan_key"], unique=False)
     op.create_index(op.f("ix_channel_plans_channel"), "channel_plans", ["channel"], unique=False)
-    op.create_index(op.f("ix_channel_plans_plan_type"), "channel_plans", ["plan_type"], unique=False)
+    op.create_index(
+        op.f("ix_channel_plans_plan_type"),
+        "channel_plans",
+        ["plan_type"],
+        unique=False,
+    )
     op.create_index(op.f("ix_channel_plans_priority"), "channel_plans", ["priority"], unique=False)
     op.create_index(
         op.f("ix_channel_plans_approval_status"),
