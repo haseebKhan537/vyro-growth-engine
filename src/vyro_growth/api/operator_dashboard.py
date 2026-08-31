@@ -34,6 +34,10 @@ from vyro_growth.api.monitoring import (
     OperationalFindingResponse,
     SanitizedFailureResponse,
 )
+from vyro_growth.api.operator_ui import (
+    OPERATOR_APPROVAL_PACKETS_PATH,
+    OPERATOR_REVIEW_QUEUE_PATH,
+)
 from vyro_growth.config import Settings
 from vyro_growth.observability import sanitize_operator_text
 from vyro_growth.services.command_center import OperatorCommandCenterService
@@ -232,6 +236,14 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         "      </div>\n"
         f'      <p class="meta">Generated {_safe(_format_dt(summary.generated_at))}</p>\n'
         "    </header>\n"
+        '    <nav class="section-nav" aria-label="Operator surfaces">'
+        f'<a class="nav-link is-current" href="{escape(OPERATOR_DASHBOARD_PATH)}" '
+        'aria-current="page">Dashboard</a> '
+        f'<a class="nav-link" href="{escape(OPERATOR_REVIEW_QUEUE_PATH)}">'
+        "Review queue</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_APPROVAL_PACKETS_PATH)}">'
+        "Approval packets</a>\n"
+        "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
         "    </nav>"
@@ -400,6 +412,8 @@ def _render_review(review: OutstandingReviewResponse) -> str:
     return (
         '    <section id="review" class="panel">\n'
         "      <h2>Outstanding review</h2>\n"
+        f'      <p class="hint"><a class="nav-link" href="{escape(OPERATOR_REVIEW_QUEUE_PATH)}">'
+        "Open review queue</a> — read-only list and detail. No approve or execute controls.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Pending', review.pending_count)}\n"
         f"        {_metric('Decided', review.decided_count)}\n"
@@ -439,6 +453,10 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
     return (
         '    <section id="packets" class="panel">\n'
         "      <h2>Approval packets and preflight</h2>\n"
+        f'      <p class="hint"><a class="nav-link" '
+        f'href="{escape(OPERATOR_APPROVAL_PACKETS_PATH)}">'
+        "Open approval packets</a> — read-only list and detail. "
+        "No approve or execute controls.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"
         f"        {_metric('Owner approved', packets.owner_approved)}\n"

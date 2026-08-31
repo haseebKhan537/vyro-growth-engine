@@ -231,6 +231,33 @@ class ReviewQueueService:
         )
         return result
 
+    def get_item(
+        self,
+        db: Session,
+        settings: Settings,
+        *,
+        artifact_type: str,
+        artifact_id: UUID,
+    ) -> ReviewItem | None:
+        """Return one sanitized review item, including decided artifacts.
+
+        Read-only. Does not record a decision or execute the artifact.
+        """
+
+        try:
+            result = self.list_queue(
+                db,
+                settings,
+                include_decided=True,
+                artifact_type=artifact_type,
+            )
+        except ReviewQueueError:
+            return None
+        for item in result.items:
+            if item.artifact_id == artifact_id:
+                return item
+        return None
+
     def record_decision(
         self,
         db: Session,

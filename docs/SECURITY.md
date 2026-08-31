@@ -28,9 +28,9 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `/ready` reports config issues and database availability. It must not call live providers or return secrets.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/operator-command-center`, `GET /internal/operator-dashboard`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/operator-command-center`, `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `GET /internal/operator-approval-packets`, `GET /internal/review-queue`, `POST /internal/review-queue/decisions`, `POST /internal/execution-plans/run`, and `GET /internal/execution-plans` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
-- Dashboard, monitoring, command-center, and operator-dashboard routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`, `vyro-growth operator-command-center`) does not use the HTTP key and does not write pipeline state. The HTML dashboard is HTTP-only and does not change operator halt state.
+- Dashboard, monitoring, command-center, operator-dashboard, operator review-queue UI, and operator approval-packet UI routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`, `vyro-growth operator-command-center`) does not use the HTTP key and does not write pipeline state. The HTML dashboard and drilldowns are HTTP-only and do not change operator halt state.
 - Review-queue list is read-only over stored artifacts. `record-review` writes a decision and audit row only; it does not execute the artifact.
 - These routes require explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
 - Outside development, a missing or blank `INTERNAL_API_KEY` fails closed. A missing or invalid request key is rejected.
@@ -208,6 +208,16 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Do not add execute/send/enroll/book/call/publish/spend/deploy controls. Navigation and `section` filters are read-only.
 - Keep executed, outbound, call, spend, launch, publish, and apply flags false.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by the dashboard UI.
+
+## Operator review queue and approval packet UI integrity
+- Phase 21 review-queue and approval-packet HTML pages are sanitized read-only drilldowns. They never perform the underlying live action.
+- Do not send email, enroll live campaigns, generate sendable autonomous replies, create calendar events, create Google Meet links, place calls, publish pages or content, launch ads, spend money, deploy, apply optimizer recommendations, or change scoring/campaign/provider/live/deployment settings or operator halt state.
+- Do not call OpenAI, Smartlead, Apollo, Google Calendar, Google Ads, Search Console, Analytics, SEO/search, voice providers, or other paid/external providers from this layer.
+- Render artifact type/id, status, decision or preflight status, timestamps, safe titles/labels/categories, blocked/warning/info counts and codes, required owner decision labels, and dry-run/no-execution flags only.
+- Do not render PHI, emails, phones, message bodies, full outreach draft copy, evidence snippets, API keys, tokens, provider secrets, environment secret values, unsafe raw error text, or invented prospect facts.
+- Do not add approve/reject/execute/send/enroll/book/call/publish/spend/deploy controls. Filters are read-only.
+- Keep executed, outbound, call, spend, launch, publish, and apply flags false.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by these UI pages.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
