@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -25,10 +25,19 @@ from vyro_growth.api.optimizer import (
     build_latest_optimizer_response,
     build_optimizer_run_response,
 )
+from vyro_growth.api.review_queue import (
+    RecordReviewDecisionRequest,
+    RecordReviewDecisionResponse,
+    ReviewQueueResponse,
+    build_review_decision_response,
+    build_review_queue_response,
+    review_queue_http_error,
+)
 from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
 from vyro_growth.services.readiness import HealthPayload, assess_readiness, build_health_payload
+from vyro_growth.services.review_queue import ReviewQueueError
 
 settings = get_settings()
 
@@ -113,6 +122,42 @@ def latest_growth_recommendations(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_optimizer_response(db)
+
+
+@app.get("/internal/review-queue", tags=["internal"])
+def review_queue(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    include_decided: Annotated[bool, Query()] = False,
+    artifact_type: Annotated[str | None, Query()] = None,
+) -> ReviewQueueResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_review_queue_response(
+            db,
+            active_settings,
+            include_decided=include_decided,
+            artifact_type=artifact_type,
+        )
+    except ReviewQueueError as exc:
+        status_code, detail = review_queue_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.post("/internal/review-queue/decisions", tags=["internal"])
+def record_review_decision(
+    request: RecordReviewDecisionRequest,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> RecordReviewDecisionResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_review_decision_response(db, request)
+    except ReviewQueueError as exc:
+        status_code, detail = review_queue_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
 
 
 @app.post("/internal/discovery/nppes", tags=["internal"])

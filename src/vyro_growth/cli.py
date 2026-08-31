@@ -35,6 +35,12 @@ from vyro_growth.services.monitoring import MonitoringSnapshot, OperatorMonitori
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.personalization import PersonalizationService
 from vyro_growth.services.reply_classification import ReplyClassificationService
+from vyro_growth.services.review_queue import (
+    ReviewDecisionResult,
+    ReviewQueueError,
+    ReviewQueueResult,
+    ReviewQueueService,
+)
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
     VoiceQualificationService,
@@ -239,6 +245,39 @@ def build_parser() -> argparse.ArgumentParser:
             "(does not apply changes or send outreach)"
         ),
     )
+    review = subparsers.add_parser(
+        "review-queue",
+        help=(
+            "List pending dry-run artifacts for operator review "
+            "(records no execution and sends no outreach)"
+        ),
+    )
+    review.add_argument(
+        "--include-decided",
+        action="store_true",
+        help="Include artifacts that already have an operator decision",
+    )
+    review.add_argument(
+        "--artifact-type",
+        help="Limit the queue to one artifact type",
+    )
+    decide = subparsers.add_parser(
+        "record-review",
+        help=(
+            "Record an approval, rejection, or needs-changes decision "
+            "without executing the artifact"
+        ),
+    )
+    decide.add_argument("--artifact-type", required=True, help="Review artifact type")
+    decide.add_argument("--artifact-id", required=True, help="Review artifact UUID")
+    decide.add_argument(
+        "--decision",
+        required=True,
+        choices=("approved", "rejected", "needs_changes"),
+        help="Operator decision to record",
+    )
+    decide.add_argument("--notes", help="Optional sanitized reviewer notes")
+    decide.add_argument("--reviewer", help="Reviewer label (default: operator)")
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -325,6 +364,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "recommend-growth":
         return _run_recommend_growth()
+
+    if args.command == "review-queue":
+        return _run_review_queue(args)
+
+    if args.command == "record-review":
+        return _run_record_review(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -898,6 +943,83 @@ def _run_worker(args: argparse.Namespace) -> int:
     print(f"jobs={len(DEPLOYABLE_JOBS)}")
     print("scheduler=operator_or_external_cron")
     return 0
+
+
+def _run_review_queue(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            result = ReviewQueueService().list_queue(
+                db,
+                settings,
+                include_decided=args.include_decided,
+                artifact_type=args.artifact_type,
+            )
+        except ReviewQueueError as exc:
+            print(f"Review queue error: {exc.message}")
+            return 1
+    _print_review_queue(result)
+    return 0
+
+
+def _print_review_queue(result: ReviewQueueResult) -> None:
+    print(
+        "Review queue:",
+        f"pending={result.pending_count}",
+        f"decided={result.decided_count}",
+        f"shown={len(result.items)}",
+        f"executed={result.executed_count}",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"recommendation_applied={result.recommendation_applied}",
+        f"operator_halt={result.operator_halt_status}",
+    )
+    for item in result.items:
+        print(
+            "Review item:",
+            f"type={item.artifact_type}",
+            f"id={item.artifact_id}",
+            f"status={item.status}",
+            f"executable_later={item.executable_later}",
+            f"executed={item.executed}",
+            f"title={item.title}",
+        )
+
+
+def _run_record_review(args: argparse.Namespace) -> int:
+    with SessionLocal() as db:
+        try:
+            result = ReviewQueueService().record_decision(
+                db,
+                artifact_type=args.artifact_type,
+                artifact_id=UUID(args.artifact_id),
+                decision=args.decision,
+                reviewer=args.reviewer,
+                source="cli",
+                reviewer_notes=args.notes,
+            )
+        except ReviewQueueError as exc:
+            print(f"Review decision error: {exc.message}")
+            return 1
+        except ValueError:
+            print("Review decision error: artifact id must be a UUID")
+            return 1
+    _print_review_decision(result)
+    return 0
+
+
+def _print_review_decision(result: ReviewDecisionResult) -> None:
+    print(
+        "Review decision:",
+        f"id={result.decision_id}",
+        f"type={result.artifact_type}",
+        f"artifact_id={result.artifact_id}",
+        f"decision={result.decision}",
+        f"reviewer={result.reviewer}",
+        f"source={result.source}",
+        f"executed={result.executed}",
+        f"outbound_attempted={result.outbound_attempted}",
+        f"recommendation_applied={result.recommendation_applied}",
+    )
 
 
 if __name__ == "__main__":

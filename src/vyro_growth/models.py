@@ -32,6 +32,8 @@ from vyro_growth.domain import (
     RecommendationApprovalStatus,
     ReplyClassificationOutcome,
     ReplyIntent,
+    ReviewDecisionStatus,
+    ReviewItemStatus,
     VoicePlanStatus,
     VoiceQualificationRunStatus,
 )
@@ -552,3 +554,44 @@ class OptimizerRecommendation(TimestampMixin, Base):
     applied: Mapped[bool] = mapped_column(Boolean, default=False)
     applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     optimizer_run: Mapped[OptimizerRun] = relationship(back_populates="recommendations")
+
+
+class OperatorReviewDecision(TimestampMixin, Base):
+    """Recorded operator decision for a pending dry-run artifact.
+
+    Phase 14 persists the decision only. It never executes outbound, enrollment,
+    booking, voice, autonomous-reply, or optimizer-apply side effects.
+    """
+
+    __tablename__ = "operator_review_decisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "artifact_type",
+            "artifact_id",
+            name="uq_operator_review_decisions_artifact",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    artifact_type: Mapped[str] = mapped_column(String(64), index=True)
+    artifact_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), index=True)
+    decision: Mapped[str] = mapped_column(
+        String(32),
+        default=ReviewDecisionStatus.APPROVED.value,
+        index=True,
+    )
+    previous_decision: Mapped[str | None] = mapped_column(String(32))
+    reviewer: Mapped[str] = mapped_column(String(120), default="operator")
+    source: Mapped[str] = mapped_column(String(64), default="cli")
+    reviewer_notes: Mapped[str | None] = mapped_column(String(500))
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    item_status: Mapped[str] = mapped_column(
+        String(64),
+        default=ReviewItemStatus.PENDING_OPERATOR_REVIEW.value,
+        index=True,
+    )
+    executed: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_applied: Mapped[bool] = mapped_column(Boolean, default=False)
+    audit_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
