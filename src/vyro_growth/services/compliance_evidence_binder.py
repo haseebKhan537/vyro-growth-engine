@@ -68,6 +68,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "check-smoke-output",
     "check-config",
     CLI_COMMAND,
+    "release-candidate-runbook",
 )
 RELATED_ROUTES: tuple[str, ...] = (
     "/internal/launch-readiness",
@@ -77,6 +78,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-audit-timeline",
     HTTP_ROUTE,
     "/internal/operator-compliance-evidence-binder",
+    "/internal/release-candidate-runbook",
 )
 GUARDRAIL_DOC_CHECKS: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
     (

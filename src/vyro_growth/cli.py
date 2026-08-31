@@ -86,6 +86,10 @@ from vyro_growth.services.owner_handoff import (
     format_owner_handoff,
 )
 from vyro_growth.services.personalization import PersonalizationService
+from vyro_growth.services.release_candidate_runbook import (
+    ReleaseCandidateRunbookService,
+    format_release_candidate_runbook,
+)
 from vyro_growth.services.reply_classification import ReplyClassificationService
 from vyro_growth.services.review_queue import (
     ReviewDecisionResult,
@@ -606,6 +610,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized compliance evidence binder as JSON",
     )
+    runbook = subparsers.add_parser(
+        "release-candidate-runbook",
+        help=(
+            "Export a sanitized release-candidate deployment runbook "
+            "(read-only; does not deploy, apply settings, or go live)"
+        ),
+    )
+    runbook.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized release-candidate runbook as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -761,6 +777,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "compliance-evidence-binder":
         return _run_compliance_evidence_binder(args)
+
+    if args.command == "release-candidate-runbook":
+        return _run_release_candidate_runbook(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1959,6 +1978,14 @@ def _run_compliance_evidence_binder(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         binder = ComplianceEvidenceBinderService().build(db, settings)
     print(format_compliance_evidence_binder(binder, as_json=args.json))
+    return 0
+
+
+def _run_release_candidate_runbook(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        runbook = ReleaseCandidateRunbookService().build(db, settings)
+    print(format_release_candidate_runbook(runbook, as_json=args.json))
     return 0
 
 

@@ -127,6 +127,13 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "Read-only owner-review view; it is not permission or machinery "
         "for going live."
     ),
+    NextActionCode.RUNBOOK_IS_NOT_DEPLOYMENT: (
+        "Inspect the release-candidate deployment runbook via "
+        "vyro-growth release-candidate-runbook or "
+        "GET /internal/release-candidate-runbook. "
+        "Read-only planning export; it is not a deployment mechanism or "
+        "permission to go live."
+    ),
 }
 
 
@@ -747,6 +754,13 @@ def _next_actions(
             FindingSeverity.INFO,
             FindingCode.SAFE_DEFAULTS,
             NextActionCode.HANDOFF_IS_NOT_GO_LIVE,
+        )
+    )
+    add(
+        _finding(
+            FindingSeverity.INFO,
+            FindingCode.SAFE_DEFAULTS,
+            NextActionCode.RUNBOOK_IS_NOT_DEPLOYMENT,
         )
     )
     return tuple(
