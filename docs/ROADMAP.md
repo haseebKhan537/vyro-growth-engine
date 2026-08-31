@@ -342,7 +342,7 @@ CI coverage for the Phase 25 local-only smoke harness. No live workflow.
 - fails closed on PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, unsafe raw errors, or invented real-world prospect facts
 - does not call live providers, use real prospect data, execute approved items, or change operator halt / live settings
 
-## Phase 27 — Launch readiness checklist and sanitized secret inventory (current)
+## Phase 27 — Launch readiness checklist and sanitized secret inventory
 Read-only owner-facing preflight. No live action.
 - CLI `vyro-growth launch-readiness` (`--json` optional) and internal `GET /internal/launch-readiness`
 - overall status: `blocked` / `warning` / `ready_for_owner_review`
@@ -353,8 +353,18 @@ Read-only owner-facing preflight. No live action.
 - no GitHub Actions, OpenAI, NPPES/search, Apollo, Smartlead, Google, calendar, voice, ads, SEO, analytics, or other live-provider calls
 - no email, enrollment, autonomous replies, calls, bookings, Meet links, publish, ads, spend, deploy, packet/item execution, live `owner_approved`, or halt/live setting changes
 
+## Phase 28 — Live settings change request queue (current)
+Record-only owner-reviewable live settings change requests. No execution.
+- Database-backed request records with timestamps, statuses, idempotency keys, requested setting names, desired booleans/statuses, and optional launch-readiness finding/next-action codes
+- CLI list/create/detail/decision plus `vyro-growth propose-settings-changes`; internal JSON under `/internal/settings-change-requests`
+- request types: keep outbound disabled, outbound enablement review, one live-provider flag review, operator halt review, required credential configuration review by name only, and keep-safe-default notes
+- never stores or prints secret values; credential requests name env/config variables only
+- owner decision records are audit-only and do not apply settings, lift halt, execute packets/items, or trigger live actions
+- launch readiness points at proposed requests and can optionally create them without applying anything
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
 Future launch work (not in this phase):
-- execute an approved item or packet
+- execute an approved item, packet, or settings request
 - enable outbound or live providers
 - lift operator halt
 - call GitHub Actions or live providers

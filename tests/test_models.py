@@ -39,6 +39,9 @@ PHASE_ONE_MODELS = (
     models.ExecutionPlan,
     models.ApprovalPacketRun,
     models.OwnerApprovalPacket,
+    models.OwnerApprovalPacketDecision,
+    models.LiveSettingsChangeRequest,
+    models.LiveSettingsChangeRequestDecision,
 )
 
 

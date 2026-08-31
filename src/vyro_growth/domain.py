@@ -403,6 +403,7 @@ class FindingCode(StrEnum):
     MISSING_REQUIRED_CREDENTIAL = "missing_required_credential"
     PENDING_OWNER_APPROVAL_PACKETS = "pending_owner_approval_packets"
     ACTION_READINESS_BLOCKED = "action_readiness_blocked"
+    PENDING_SETTINGS_CHANGE_REQUESTS = "pending_settings_change_requests"
 
 
 class NextActionCode(StrEnum):
@@ -423,6 +424,7 @@ class NextActionCode(StrEnum):
     KEEP_OPERATOR_HALT = "keep_operator_halt_until_owner_approves"
     RESTORE_CI_SMOKE_GATE = "restore_ci_smoke_gate"
     CONFIGURE_REQUIRED_CREDENTIALS = "configure_required_credentials"
+    REVIEW_SETTINGS_CHANGE_REQUESTS = "review_settings_change_requests"
 
 
 class ReviewArtifactType(StrEnum):
@@ -546,6 +548,35 @@ class SecretName(StrEnum):
     SMARTLEAD_API_KEY = "SMARTLEAD_API_KEY"
     GOOGLE_CALENDAR_API_KEY = "GOOGLE_CALENDAR_API_KEY"
     VOICE_API_KEY = "VOICE_API_KEY"
+
+
+class SettingsChangeRequestType(StrEnum):
+    KEEP_OUTBOUND_DISABLED = "keep_outbound_disabled"
+    REQUEST_OUTBOUND_ENABLEMENT_REVIEW = "request_outbound_enablement_review"
+    REQUEST_PROVIDER_LIVE_FLAG_REVIEW = "request_provider_live_flag_review"
+    REQUEST_OPERATOR_HALT_REVIEW = "request_operator_halt_review"
+    REQUEST_CREDENTIAL_CONFIGURATION_REVIEW = "request_credential_configuration_review"
+    KEEP_SAFE_DEFAULT = "keep_safe_default"
+
+
+class SettingsChangeRequestStatus(StrEnum):
+    PENDING = "pending"
+    DECISION_RECORDED = "decision_recorded"
+
+
+class SettingsChangeDecisionStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    NEEDS_CHANGES = "needs_changes"
+
+
+class SettingsChangeDesiredStatus(StrEnum):
+    ENABLED = "enabled"
+    DISABLED = "disabled"
+    HALTED = "halted"
+    CLEARED = "cleared"
+    CONFIGURED = "configured"
 
 
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(

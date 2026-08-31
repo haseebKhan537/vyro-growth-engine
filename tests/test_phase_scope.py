@@ -73,6 +73,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "monitoring.py",
         "domain.py",
         "launch_readiness.py",
+        "settings_change_requests.py",
     }
     calendar_boundary = {
         "config.py",
@@ -91,6 +92,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "optimizer.py",
         "monitoring.py",
         "launch_readiness.py",
+        "settings_change_requests.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -109,6 +111,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "optimizer.py",
         "monitoring.py",
         "launch_readiness.py",
+        "settings_change_requests.py",
     }
     forbidden = (
         "apollo",
@@ -326,6 +329,27 @@ def test_launch_readiness_does_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/launch_readiness.py"),
         Path("tests/test_launch_readiness_service.py"),
         Path("tests/test_launch_readiness_api.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
+def test_settings_change_requests_do_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/settings_change_requests.py"),
+        Path("src/vyro_growth/api/settings_change_requests.py"),
+        Path("tests/test_settings_change_request_service.py"),
+        Path("tests/test_settings_change_request_api.py"),
+        Path("tests/test_settings_change_request_migration.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

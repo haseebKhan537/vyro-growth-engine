@@ -796,6 +796,36 @@ curl http://localhost:8000/internal/launch-readiness \
 
 Output is a sanitized console or JSON checklist: overall status (`blocked`, `warning`, or `ready_for_owner_review`), blocker codes, next-action labels, required configuration names, secret inventory as variable names plus present/missing/redacted status, operator halt, outbound and live-provider flag booleans, whether the CI smoke gate is documented, pending owner approval packet counts, and action-readiness blocker counts. The command exits nonzero only when overall status is `blocked`. `ready_for_owner_review` is not permission to enable outbound or lift halt.
 
+## Phase 28 — Live settings change request queue (record only)
+
+Record proposed live-settings changes for owner review without applying them. This layer does not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign settings, scoring thresholds, or operator halt. It does not set live `owner_approved`, call providers, send email, enroll campaigns, generate sendable replies, place calls, book meetings, publish content, launch ads, spend money, deploy, or execute approved packets, items, or settings requests. Secret values are never stored or printed.
+
+CLI:
+```bash
+vyro-growth settings-change-requests
+vyro-growth settings-change-requests --json --status pending
+vyro-growth create-settings-change-request --request-type keep_outbound_disabled --setting-name OUTBOUND_ENABLED
+vyro-growth create-settings-change-request --request-type request_provider_live_flag_review --setting-name SMARTLEAD_LIVE_ENABLED
+vyro-growth settings-change-request --id <uuid> --json
+vyro-growth record-settings-change-decision --id <uuid> --decision approved
+vyro-growth propose-settings-changes --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/settings-change-requests \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl -X POST http://localhost:8000/internal/settings-change-requests \
+  -H "Content-Type: application/json" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -d '{"request_type":"keep_outbound_disabled","requested_setting_names":["OUTBOUND_ENABLED"]}'
+curl -X POST http://localhost:8000/internal/settings-change-requests/propose-from-launch-readiness \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Request types: `keep_outbound_disabled`, `request_outbound_enablement_review`, `request_provider_live_flag_review`, `request_operator_halt_review`, `request_credential_configuration_review`, and `keep_safe_default`. Credential reviews name env/config variables only. Duplicate creates with the same idempotency key reuse the existing row. Recording `approved` is an audit record and does not apply the setting or lift halt. `vyro-growth launch-readiness` points at proposed requests without creating them unless `propose-settings-changes` is run.
+
 ## Phase 1
 
 Production foundation:

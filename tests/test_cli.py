@@ -1785,6 +1785,55 @@ def test_parser_accepts_launch_readiness() -> None:
     assert args.json is True
 
 
+def test_parser_accepts_settings_change_request_commands() -> None:
+    parser = build_parser()
+    listed = parser.parse_args(
+        [
+            "settings-change-requests",
+            "--json",
+            "--status",
+            "pending",
+            "--request-type",
+            "keep_outbound_disabled",
+        ]
+    )
+    created = parser.parse_args(
+        [
+            "create-settings-change-request",
+            "--request-type",
+            "request_provider_live_flag_review",
+            "--setting-name",
+            "VOICE_LIVE_ENABLED",
+            "--desired-boolean",
+            "true",
+            "--idempotency-key",
+            "voice-flag-review",
+        ]
+    )
+    detail = parser.parse_args(
+        ["settings-change-request", "--id", "00000000-0000-0000-0000-000000000001"]
+    )
+    decided = parser.parse_args(
+        [
+            "record-settings-change-decision",
+            "--id",
+            "00000000-0000-0000-0000-000000000001",
+            "--decision",
+            "approved",
+        ]
+    )
+    proposed = parser.parse_args(["propose-settings-changes", "--json"])
+
+    assert listed.command == "settings-change-requests"
+    assert listed.json is True
+    assert created.command == "create-settings-change-request"
+    assert created.setting_names == ["VOICE_LIVE_ENABLED"]
+    assert created.desired_boolean == "true"
+    assert detail.command == "settings-change-request"
+    assert decided.decision == "approved"
+    assert proposed.command == "propose-settings-changes"
+
+
 def test_parser_accepts_check_config_and_worker() -> None:
     parser = build_parser()
     check_args = parser.parse_args(["check-config"])

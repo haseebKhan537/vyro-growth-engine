@@ -99,6 +99,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     NextActionCode.CONFIGURE_REQUIRED_CREDENTIALS: (
         "Configure the named required credential in local env. Do not paste values here."
     ),
+    NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS: (
+        "Review pending live settings change requests. Recording a decision does not apply them."
+    ),
 }
 
 

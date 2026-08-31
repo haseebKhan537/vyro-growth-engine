@@ -282,6 +282,15 @@ The launch readiness checklist is a read-only owner-facing preflight over local 
 4. Secret values, PHI, emails, phones, message bodies, draft copy, evidence snippets, and unsafe error text are never included. `ready_for_owner_review` is not permission to enable outbound.
 5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called.
 
+### Phase 28: live settings change request queue
+The live settings change request queue is a record-only owner review surface over proposed setting names and desired booleans/statuses. It does not send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish content, launch ads, spend money, deploy, apply optimizer recommendations, execute approved items or packets, or set live owner-approved state.
+
+1. Operator runs `vyro-growth settings-change-requests`, `vyro-growth create-settings-change-request`, `vyro-growth settings-change-request --id`, `vyro-growth record-settings-change-decision`, `vyro-growth propose-settings-changes`, or the matching `/internal/settings-change-requests` routes. HTTP uses the same `INTERNAL_API_KEY` gate as other internal operator routes. CLI does not.
+2. `SettingsChangeRequestService` stores setting names, desired booleans/statuses, statuses, timestamps, idempotency keys, and optional launch-readiness finding/next-action codes. Duplicate creates with the same idempotency key reuse the existing row.
+3. Request types cover keep-outbound-disabled, outbound enablement review, one live-provider flag review, operator halt review, required credential configuration review by name only, and keep-safe-default notes. Secret values are never stored.
+4. Recording `approved` is an audit record only. It does not apply the setting, lift halt, execute packets/items, or set live `owner_approved`.
+5. Launch readiness points at proposed requests and can optionally create them. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called.
+
 ### Event flow
 1. Practice discovered.
 2. Practice normalized/deduplicated.

@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -87,14 +88,29 @@ from vyro_growth.api.review_queue import (
     build_review_queue_response,
     review_queue_http_error,
 )
+from vyro_growth.api.settings_change_requests import (
+    CreateSettingsChangeRequestBody,
+    RecordSettingsChangeDecisionBody,
+    SettingsChangeProposeResponse,
+    SettingsChangeRequestListResponse,
+    SettingsChangeRequestResponse,
+    build_settings_change_create_response,
+    build_settings_change_decision_response,
+    build_settings_change_detail_response,
+    build_settings_change_list_response,
+    build_settings_change_propose_response,
+    settings_change_http_error,
+)
 from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
 from vyro_growth.services.approval_packets import ApprovalPacketError
 from vyro_growth.services.content_brief import ContentBriefError
 from vyro_growth.services.execution_planning import ExecutionPlanningError
+from vyro_growth.services.launch_readiness import LaunchReadinessService
 from vyro_growth.services.readiness import HealthPayload, assess_readiness, build_health_payload
 from vyro_growth.services.review_queue import ReviewQueueError
+from vyro_growth.services.settings_change_requests import SettingsChangeRequestError
 
 settings = get_settings()
 
@@ -482,6 +498,98 @@ def launch_readiness_checklist(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_launch_readiness_response(db, active_settings)
+
+
+@app.get("/internal/settings-change-requests", tags=["internal"])
+def list_settings_change_requests(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    status: Annotated[str | None, Query()] = None,
+    request_type: Annotated[str | None, Query()] = None,
+    owner_decision_status: Annotated[str | None, Query()] = None,
+) -> SettingsChangeRequestListResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_settings_change_list_response(
+            db,
+            active_settings,
+            status=status,
+            request_type=request_type,
+            owner_decision_status=owner_decision_status,
+        )
+    except SettingsChangeRequestError as exc:
+        status_code, detail = settings_change_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.post("/internal/settings-change-requests", tags=["internal"])
+def create_settings_change_request(
+    request: CreateSettingsChangeRequestBody,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SettingsChangeRequestResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_settings_change_create_response(db, active_settings, request)
+    except SettingsChangeRequestError as exc:
+        status_code, detail = settings_change_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.post("/internal/settings-change-requests/propose-from-launch-readiness", tags=["internal"])
+def propose_settings_change_requests(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SettingsChangeProposeResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    checklist = LaunchReadinessService().assess(db, active_settings)
+    try:
+        return build_settings_change_propose_response(
+            db,
+            active_settings,
+            checklist.proposed_settings_change_requests,
+        )
+    except SettingsChangeRequestError as exc:
+        status_code, detail = settings_change_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.get("/internal/settings-change-requests/{request_id}", tags=["internal"])
+def settings_change_request_detail(
+    request_id: UUID,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SettingsChangeRequestResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    item = build_settings_change_detail_response(db, active_settings, request_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Settings change request was not found")
+    return item
+
+
+@app.post("/internal/settings-change-requests/{request_id}/decision", tags=["internal"])
+def record_settings_change_decision(
+    request_id: UUID,
+    request: RecordSettingsChangeDecisionBody,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SettingsChangeRequestResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_settings_change_decision_response(
+            db,
+            active_settings,
+            request_id,
+            request,
+        )
+    except SettingsChangeRequestError as exc:
+        status_code, detail = settings_change_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
 
 
 @app.get("/internal/action-readiness", tags=["internal"])
