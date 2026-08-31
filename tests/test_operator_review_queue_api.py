@@ -13,8 +13,10 @@ from tests.test_dashboard_service import PHI_SNIPPET, PROSPECT_EMAIL, _seed_pipe
 from tests.test_review_queue_service import _seed_optimizer_recommendation
 from vyro_growth.api.operator_review_queue import (
     OPERATOR_REVIEW_QUEUE_PATH,
+    parse_form_decision,
     parse_review_artifact_type,
     parse_review_status_filter,
+    parse_urlencoded_form,
     render_review_item_detail,
     render_review_item_missing,
     render_review_queue_error,
@@ -35,7 +37,8 @@ from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, s
 from vyro_growth.services.review_queue import ReviewQueueService
 
 XSS_LABEL = "<script>alert(1)</script>"
-ACTION_MARKERS = ("<button", "<form", "javascript:", "onclick=", "<input")
+ACTION_MARKERS = ("javascript:", "onclick=", "onerror=")
+FORM_MARKERS = ("<form", "<button", "<input", "<select", "<textarea")
 
 
 @pytest.fixture
@@ -96,6 +99,15 @@ def test_parse_review_filters_ignore_unknown_values() -> None:
     assert parse_review_artifact_type("personalization_draft") == "personalization_draft"
     assert parse_review_artifact_type("../secrets") is None
     assert REVIEW_PATH == OPERATOR_REVIEW_QUEUE_PATH
+    assert parse_form_decision("approved") == "approved"
+    assert parse_form_decision("rejected") == "rejected"
+    assert parse_form_decision("needs_changes") == "needs_changes"
+    assert parse_form_decision("execute") is None
+    assert parse_form_decision(None) is None
+    assert parse_urlencoded_form(b"decision=approved&reviewer=ops") == {
+        "decision": "approved",
+        "reviewer": "ops",
+    }
 
 
 def test_renderer_empty_state_is_read_only_and_escaped() -> None:
@@ -110,7 +122,7 @@ def test_renderer_empty_state_is_read_only_and_escaped() -> None:
     assert 'id="operator-review-queue"' in html
     assert "No pending review items" in html
     assert "There are no approve, reject, or execute controls" in html
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 
 
@@ -142,7 +154,7 @@ def test_renderer_populated_status_filter_and_xss_escape() -> None:
     assert str(pending.artifact_id) in html
     assert str(decided.artifact_id) not in html
     assert "include_decided=true" in html
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 
 
@@ -164,15 +176,22 @@ def test_detail_renderer_and_missing_pages_are_safe() -> None:
     error = render_review_queue_error()
 
     assert 'id="operator-review-item"' in html
+    assert 'data-decision-record-only="true"' in html
     assert XSS_LABEL not in html
     assert escape_marker() in html
-    assert "There are no approve, reject, or execute controls" in html
+    assert "Record decision" in html
+    assert 'id="operator-review-decision-form"' in html
+    assert "There is no execute control" in html
     assert 'id="operator-review-queue-missing"' in missing
     assert 'id="operator-review-queue-error"' in error
     assert "sk-testsecret12345" not in error
-    for page in (html, missing, error):
-        for marker in ACTION_MARKERS:
-            assert marker not in page.lower()
+    for marker in ACTION_MARKERS:
+        assert marker not in html.lower()
+        assert marker not in missing.lower()
+        assert marker not in error.lower()
+    for marker in FORM_MARKERS:
+        assert marker not in missing.lower()
+        assert marker not in error.lower()
 
 
 def test_review_queue_ui_open_in_development(
@@ -192,7 +211,7 @@ def test_review_queue_ui_open_in_development(
     assert "read-only" in body.lower()
     assert PHI_SNIPPET not in body
     assert db_session.scalar(select(func.count()).select_from(Activity)) == 0
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in body.lower()
 
 
@@ -264,7 +283,7 @@ def test_review_queue_ui_accepts_valid_key_and_stays_read_only(
     assert PROSPECT_EMAIL not in body
     assert "diabetes" not in body.lower()
     assert "sk-testsecret12345" not in body
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in body.lower()
     assert db_session.scalar(select(func.count()).select_from(Activity)) == before_activities
     assert db_session.scalar(select(func.count()).select_from(Meeting)) == before_meetings
@@ -316,16 +335,21 @@ def test_review_queue_ui_filters_and_detail_are_read_only(
     assert detail.status_code == 200
     assert "Review item" in detail.text
     assert "approved" in detail.text
-    assert "There are no approve, reject, or execute controls" in detail.text
+    assert "Record decision" in detail.text
+    assert "There is no execute control" in detail.text
+    assert "There are no approve, reject, or execute controls" in pending.text
     assert missing.status_code == 404
     assert "Review item not found" in missing.text
     assert invalid.status_code == 404
     assert db_session.scalar(select(func.count()).select_from(Activity)) == before_activities
     assert read_operator_halt(db_session) is HaltStatus.UNAVAILABLE
-    for body in (pending.text, decided.text, typed.text, detail.text, missing.text):
+    for body in (pending.text, decided.text, typed.text, missing.text):
         assert PHI_SNIPPET not in body
-        for marker in ACTION_MARKERS:
+        for marker in ACTION_MARKERS + FORM_MARKERS:
             assert marker not in body.lower()
+    assert PHI_SNIPPET not in detail.text
+    for marker in ACTION_MARKERS:
+        assert marker not in detail.text.lower()
 
 
 def test_review_queue_ui_failure_state_redacts_errors(
@@ -350,5 +374,5 @@ def test_review_queue_ui_failure_state_redacts_errors(
     assert "sk-testsecret12345" not in body
     assert "diabetes" not in body.lower()
     assert "No pipeline rows were written" in body
-    for marker in ACTION_MARKERS:
+    for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in response.text.lower()

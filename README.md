@@ -681,9 +681,26 @@ curl "http://localhost:8000/internal/operator-approval-packets?plan_family=outre
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 ```
 
-The Phase 20 dashboard links to both drilldowns. Review-queue filters include artifact type, status, and include-decided. Approval-packet filters include plan family and preflight status. Detail pages show sanitized titles/labels/categories, blocked/warning/info counts and codes, required owner decision labels, timestamps, and dry-run/no-execution flags. There are no approve, reject, or execute controls.
+The Phase 20 dashboard links to both drilldowns. Review-queue filters include artifact type, status, and include-decided. Approval-packet filters include plan family and preflight status. Detail pages show sanitized titles/labels/categories, blocked/warning/info counts and codes, required owner decision labels, timestamps, and dry-run/no-execution flags. Review-item detail pages include a decision-record form; they do not execute. Approval-packet pages have no approve, reject, or execute controls.
 
 Rendered HTML is IDs, statuses, counts, timestamps, and redacted labels only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. Empty and unmatched filters show empty states. Missing items and render failures return sanitized pages. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 22 — Operator review decision UI forms
+
+Record `approved`, `rejected`, or `needs_changes` from a review-item detail page. This writes a decision/audit record through the existing review-queue service. It does not execute the artifact, send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish pages, launch ads, spend money, deploy, apply optimizer recommendations, approve owner approval packets for live readiness, or change live/scoring/campaign/provider/deployment settings or operator halt state.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl -X POST http://localhost:8000/internal/operator-review-queue/optimizer_recommendation/<uuid>/decision \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "decision=approved&reviewer=ops&reviewer_notes=record+only"
+```
+
+The form accepts a decision value, an optional short reviewer label, and optional notes. Notes are sanitized/redacted before they are stored and again before they are rendered. A successful submit redirects to the detail page and shows the saved high-level decision metadata. Submitting the same decision twice, or refreshing after redirect, does not create a second decision row or execute anything. Invalid decisions and missing items return generic sanitized HTML. There is no execute control.
+
+Rendered HTML is IDs, statuses, timestamps, redacted labels, and sanitized reviewer notes only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 
