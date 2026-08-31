@@ -70,6 +70,7 @@ vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
 vyro-growth owner-handoff-packet --json
 vyro-growth compliance-evidence-binder --json
+vyro-growth release-candidate-runbook --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -979,6 +980,27 @@ curl http://localhost:8000/internal/operator-compliance-evidence-binder \
 The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, and operator audit timeline UI link to this page. The page shows all binder sections: outbound disabled/operator halt, no-live-provider defaults, no-execution side-effect evidence, PHI/secrets/redaction evidence, consent-based phone-only boundary, CI dry-run smoke/deploy-config gates, documented compliance guardrails, operator audit timeline summary, reused read-only summaries, and remaining manual owner checklist. Fields are statuses, counts, codes, no-execution flags, halt/outbound/live-provider states, CI gate names, route/command names, sanitized timestamps, and missing credential variable names. The page states `go_live_permitted=false`, `execution_allowed=false`, and `binder_is_not_go_live=true`. There are no apply, execute, lift-halt, enable-outbound, provider, deploy, campaign, booking, call, publish, or spend controls.
 
 Rendered HTML is statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 37 — Release-candidate deployment runbook export (read-only)
+
+Export a sanitized release-candidate deployment runbook that consolidates existing safety evidence into future-manual deployment steps, CI/local dry-run verification commands, safe environment defaults, operator halt and outbound-disabled checks, rollback instructions, post-deploy read-only verification, and remaining owner blockers. This layer does not deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a runbook for future manual owner review only and is not a deployment mechanism or permission to go live.
+
+CLI:
+```bash
+vyro-growth release-candidate-runbook
+vyro-growth release-candidate-runbook --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/release-candidate-runbook \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet with sections for release candidate identity and repo branch expectations, required CI gates and local dry-run verification commands, safe environment defaults and missing credential variable names only, operator halt and outbound-disabled verification, a manual deployment sequence as instructions only, a rollback checklist as instructions only, post-deploy read-only verification endpoints/commands, and unresolved blockers/manual owner checklist items. Fields are statuses, counts, codes, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, and `runbook_is_not_deployment` remain false/true respectively because a future explicitly approved execution/deployment phase does not exist. There is no apply/execute/deploy endpoint or button.
+
+JSON is statuses, setting names, codes, timestamps, counts, command names, route names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 

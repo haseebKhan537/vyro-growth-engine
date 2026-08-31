@@ -129,6 +129,11 @@ from vyro_growth.services.readiness import (
     build_health_payload,
     database_is_ready,
 )
+from vyro_growth.services.release_candidate_runbook import (
+    ReleaseCandidateRunbook,
+    ReleaseCandidateRunbookService,
+    format_release_candidate_runbook,
+)
 from vyro_growth.services.reply_classification import (
     InboundReplySpec,
     ReplyClassificationError,
@@ -194,6 +199,8 @@ __all__ = [
     "CommandCenterSummary",
     "ComplianceEvidenceBinder",
     "ComplianceEvidenceBinderService",
+    "ReleaseCandidateRunbook",
+    "ReleaseCandidateRunbookService",
     "ContactEnrichmentError",
     "ContactEnrichmentResult",
     "ContactEnrichmentService",
@@ -278,6 +285,7 @@ __all__ = [
     "domain_from_email",
     "format_compliance_evidence_binder",
     "format_launch_readiness",
+    "format_release_candidate_runbook",
     "format_owner_handoff",
     "format_settings_change_list",
     "format_settings_change_propose",

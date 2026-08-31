@@ -429,6 +429,7 @@ class NextActionCode(StrEnum):
     INSPECT_OPERATOR_AUDIT_TIMELINE = "inspect_operator_audit_timeline"
     HANDOFF_IS_NOT_GO_LIVE = "handoff_is_not_permission_to_go_live"
     BINDER_IS_NOT_GO_LIVE = "binder_is_not_permission_to_go_live"
+    RUNBOOK_IS_NOT_DEPLOYMENT = "runbook_is_not_a_deployment_mechanism"
 
 
 class ReviewArtifactType(StrEnum):

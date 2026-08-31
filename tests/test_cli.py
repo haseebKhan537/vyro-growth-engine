@@ -1851,6 +1851,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     binder = parser.parse_args(["compliance-evidence-binder", "--json"])
     assert binder.command == "compliance-evidence-binder"
     assert binder.json is True
+    runbook = parser.parse_args(["release-candidate-runbook", "--json"])
+    assert runbook.command == "release-candidate-runbook"
+    assert runbook.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

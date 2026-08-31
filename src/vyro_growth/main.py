@@ -105,6 +105,10 @@ from vyro_growth.api.owner_handoff import (
     OwnerHandoffPacketResponse,
     build_owner_handoff_response,
 )
+from vyro_growth.api.release_candidate_runbook import (
+    ReleaseCandidateRunbookResponse,
+    build_release_candidate_runbook_response,
+)
 from vyro_growth.api.review_queue import (
     RecordReviewDecisionRequest,
     RecordReviewDecisionResponse,
@@ -690,6 +694,16 @@ def compliance_evidence_binder(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_compliance_evidence_binder_response(db, active_settings)
+
+
+@app.get("/internal/release-candidate-runbook", tags=["internal"])
+def release_candidate_runbook(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ReleaseCandidateRunbookResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_release_candidate_runbook_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])
