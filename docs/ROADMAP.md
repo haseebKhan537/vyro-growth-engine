@@ -402,7 +402,7 @@ Read-only owner-review packet consolidating existing safe summaries. No executio
 - Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 33 — Owner go-live handoff packet UI shell (current)
+## Phase 33 — Owner go-live handoff packet UI shell
 Internal operator HTML view of the Phase 32 owner go-live handoff packet. Read-only, no execution.
 - `GET /internal/operator-owner-handoff-packet`
 - Renders existing Phase 32 handoff packet as a sanitized HTML page
@@ -410,6 +410,16 @@ Internal operator HTML view of the Phase 32 owner go-live handoff packet. Read-o
 - Shows all six handoff sections: launch readiness, settings change requests, settings execution preflight, owner approval packets, approved action readiness, and remaining manual owner checklist
 - Sanitized fields only: overall status, blocker/gate/approval codes, pending/approved/rejected counts, request IDs, packet IDs, candidate IDs, setting names, desired booleans/statuses, missing credential variable names, closed provider flag names, timestamps, and no-execution flags
 - Page states `go_live_permitted=false`, `execution_allowed=false`, and manual-review-only/no-execution semantics
+- No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 34 — Operator activity audit timeline UI (current)
+Internal operator HTML timeline over existing activity, audit, and decision records. Read-only, no execution.
+- `GET /internal/operator-audit-timeline`
+- Chronological sanitized entries from stored `activities` plus review, approval-packet, and settings-change decision records
+- Safe metadata only: event type, source surface, actor/source labels, timestamps, status/decision, artifact/packet/request/candidate/run IDs, reason/code labels, and no-execution/read-only flags
+- Read-only filters: event type, source, status/decision, and date window (`all`, `24h`, `7d`, `30d`)
+- Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, and owner handoff packet UI
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 

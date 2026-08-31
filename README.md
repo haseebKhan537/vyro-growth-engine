@@ -926,6 +926,23 @@ The Phase 20 dashboard, command-center next-action labels, launch-readiness next
 
 Rendered HTML is IDs, statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 34 — Operator activity audit timeline UI (read-only)
+
+Open an internal HTML timeline of existing activity, audit, and decision records. Operators can inspect recent system and decision history in the browser. This layer does not create, mutate, approve, reject, apply, execute, publish, deploy, spend, enroll, call, book, or contact anyone. It does not set live `owner_approved`, lift operator halt, enable outbound, or call live providers.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-audit-timeline \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/operator-audit-timeline?event_type=operator_review_decision&status=approved&window=7d" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, and owner handoff packet UI link to this page. Filters include event type, source, status/decision, and date window. The page shows event type, sanitized actor/source labels, timestamps, status/decision, artifact/packet/request/candidate/run IDs, reason/code labels, and no-execution/read-only flags. There are no apply, execute, lift-halt, enable-outbound, provider, deploy, campaign, booking, call, publish, or spend controls.
+
+Rendered HTML is IDs, statuses, codes, timestamps, labels, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

@@ -111,6 +111,10 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "/internal/operator-settings-execution-preflight. "
         "Read-only dry-run view; do not execute."
     ),
+    NextActionCode.INSPECT_OPERATOR_AUDIT_TIMELINE: (
+        "Inspect the operator activity audit timeline at "
+        "/internal/operator-audit-timeline. Read-only; do not execute."
+    ),
     NextActionCode.HANDOFF_IS_NOT_GO_LIVE: (
         "Inspect the owner go-live handoff packet at "
         "/internal/operator-owner-handoff-packet. "
@@ -469,6 +473,11 @@ def _next_actions(
         NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT,
         FindingSeverity.INFO,
         phase="settings_execution_preflight",
+    )
+    add(
+        NextActionCode.INSPECT_OPERATOR_AUDIT_TIMELINE,
+        FindingSeverity.INFO,
+        phase="operator_audit_timeline",
     )
     add(
         NextActionCode.HANDOFF_IS_NOT_GO_LIVE,
