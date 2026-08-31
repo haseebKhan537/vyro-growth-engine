@@ -479,6 +479,40 @@ Responses are counts, statuses, and sanitized messages only. They do not include
 
 See `docs/OPERATOR_HEALTH.md` for the pre-rollout checklist.
 
+## Phase 14 — Operator review queue (decision recording only)
+
+List pending dry-run artifacts in one queue and record `approved`, `rejected`, or `needs_changes`. Recording a decision does not execute the artifact: no email, live enrollment, calendar event, Meet link, phone call, autonomous reply, or optimizer apply.
+
+CLI:
+```bash
+vyro-growth review-queue
+vyro-growth review-queue --include-decided
+vyro-growth record-review --artifact-type personalization_draft --artifact-id <uuid> --decision approved
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/review-queue \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl -X POST http://localhost:8000/internal/review-queue/decisions \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"artifact_type":"optimizer_recommendation","artifact_id":"<uuid>","decision":"approved"}'
+```
+
+Each review item includes:
+
+- artifact type and id
+- lead/organization UUIDs when present
+- sanitized title/summary
+- current status and created timestamp
+- risk/safety labels
+- `executable_later` (a later phase may execute an approved item; this phase never does)
+- `executed=false`
+
+Output is IDs, statuses, and sanitized labels only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

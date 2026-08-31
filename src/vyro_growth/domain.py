@@ -378,6 +378,28 @@ class FindingCode(StrEnum):
     SAFE_DEFAULTS = "safe_defaults"
 
 
+class ReviewArtifactType(StrEnum):
+    PERSONALIZATION_DRAFT = "personalization_draft"
+    OUTREACH_ENROLLMENT_PLAN = "outreach_enrollment_plan"
+    REPLY_FOLLOW_UP_PLAN = "reply_follow_up_plan"
+    BOOKING_PLAN = "booking_plan"
+    VOICE_QUALIFICATION_PLAN = "voice_qualification_plan"
+    OPTIMIZER_RECOMMENDATION = "optimizer_recommendation"
+
+
+class ReviewDecisionStatus(StrEnum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    NEEDS_CHANGES = "needs_changes"
+
+
+class ReviewItemStatus(StrEnum):
+    PENDING_OPERATOR_REVIEW = "pending_operator_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    NEEDS_CHANGES = "needs_changes"
+
+
 FORBIDDEN_BOOKING_STAGES: frozenset[LeadStage] = frozenset(
     {
         LeadStage.MEETING_BOOKED,

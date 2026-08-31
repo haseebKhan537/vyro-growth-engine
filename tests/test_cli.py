@@ -61,6 +61,11 @@ from vyro_growth.services.monitoring import (
 from vyro_growth.services.outreach_enrollment import OutreachPlanResult
 from vyro_growth.services.personalization import PersonalizationJobResult
 from vyro_growth.services.reply_classification import ReplyClassificationJobResult
+from vyro_growth.services.review_queue import (
+    ReviewDecisionResult,
+    ReviewItem,
+    ReviewQueueResult,
+)
 from vyro_growth.services.voice_qualification import VoiceQualificationJobResult
 from vyro_growth.services.website_enrichment import WebsiteEnrichmentResult
 
@@ -1114,3 +1119,151 @@ def test_cli_worker_check_validates_config(
     assert "queue=inline" in output
     assert "scheduler=operator_or_external_cron" in output
     assert "outbound_enabled=False" in output
+
+
+def test_parser_accepts_review_queue_and_record_review() -> None:
+    parser = build_parser()
+    listed = parser.parse_args(["review-queue", "--include-decided"])
+    recorded = parser.parse_args(
+        [
+            "record-review",
+            "--artifact-type",
+            "personalization_draft",
+            "--artifact-id",
+            "00000000-0000-0000-0000-000000000001",
+            "--decision",
+            "approved",
+            "--notes",
+            "ok",
+            "--reviewer",
+            "ops",
+        ]
+    )
+
+    assert listed.command == "review-queue"
+    assert listed.include_decided is True
+    assert recorded.command == "record-review"
+    assert recorded.decision == "approved"
+    assert recorded.reviewer == "ops"
+
+
+def test_cli_main_runs_review_queue(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    artifact_id = uuid4()
+    result = ReviewQueueResult(
+        generated_at=datetime.now(tz=UTC),
+        pending_count=1,
+        decided_count=0,
+        by_artifact_type={"personalization_draft": 1},
+        by_decision={},
+        executed_count=0,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        operator_halt_status="halted",
+        items=(
+            ReviewItem(
+                artifact_type="personalization_draft",
+                artifact_id=artifact_id,
+                lead_id=None,
+                organization_id=None,
+                title="Personalization draft ready for operator review",
+                summary="Evidence-grounded dry-run draft. Full copy is withheld from this queue.",
+                status="pending_operator_review",
+                created_at=datetime.now(tz=UTC),
+                risk_labels=("decision_record_only", "not_executed"),
+                executable_later=True,
+                executed=False,
+                decision=None,
+            ),
+        ),
+    )
+
+    class DummyService:
+        def list_queue(
+            self, _db: object, _settings: object, **_kwargs: object
+        ) -> ReviewQueueResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ReviewQueueService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["review-queue"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "pending=1" in output
+    assert "executed=0" in output
+    assert "outbound_attempted=False" in output
+    assert f"id={artifact_id}" in output
+    assert "type=personalization_draft" in output
+
+
+def test_cli_main_runs_record_review(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    artifact_id = uuid4()
+    result = ReviewDecisionResult(
+        decision_id=uuid4(),
+        artifact_type="booking_plan",
+        artifact_id=artifact_id,
+        decision="approved",
+        reviewer="ops",
+        source="cli",
+        reviewer_notes=None,
+        decided_at=datetime.now(tz=UTC),
+        executed=False,
+        execution_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        recommendation_applied=False,
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+    )
+
+    class DummyService:
+        def record_decision(self, _db: object, **_kwargs: object) -> ReviewDecisionResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ReviewQueueService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+
+    exit_code = main(
+        [
+            "record-review",
+            "--artifact-type",
+            "booking_plan",
+            "--artifact-id",
+            str(artifact_id),
+            "--decision",
+            "approved",
+            "--reviewer",
+            "ops",
+        ]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"id={result.decision_id}" in output
+    assert "decision=approved" in output
+    assert "executed=False" in output
+    assert "outbound_attempted=False" in output
+    assert "recommendation_applied=False" in output

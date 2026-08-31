@@ -28,9 +28,10 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - `/ready` reports config issues and database availability. It must not call live providers or return secrets.
 
 ## Internal HTTP triggers
-- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, and `GET /internal/monitoring/status` are internal operator routes, not a public API.
+- `POST /internal/discovery/nppes`, `GET /internal/dashboard/summary`, `GET /internal/dashboard/safety`, `GET /internal/monitoring/status`, `GET /internal/review-queue`, and `POST /internal/review-queue/decisions` are internal operator routes, not a public API.
 - NPPES discovery itself remains a non-outbound ingestion job. CLI (`vyro-growth discover-nppes`) and worker job `discover_nppes_practices` do not use the HTTP key.
 - Dashboard and monitoring routes are read-only. CLI (`vyro-growth dashboard-summary`, `vyro-growth system-status`) does not use the HTTP key and does not write pipeline state.
+- Review-queue list is read-only over stored artifacts. `record-review` writes a decision and audit row only; it does not execute the artifact.
 - These routes require explicit authorization via `INTERNAL_API_KEY` and the `X-Internal-Api-Key` header.
 - Outside development, a missing or blank `INTERNAL_API_KEY` fails closed. A missing or invalid request key is rejected.
 - In development, an empty configured key is allowed for local use. If a key is configured, the request must match it.
@@ -149,6 +150,15 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Stored error messages must be redacted before they appear in CLI or HTTP output. If PHI-like tokens remain, replace the message with a safe placeholder.
 - Do not invent prospect facts to fill empty metrics. Missing pipeline state is reported as zero or `not_started`.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt is displayed and must not be lifted by monitoring reads.
+
+## Operator review queue integrity
+- Phase 14 records operator decisions only. Approval is not execution.
+- Do not send email, generate sendable autonomous replies, enroll live campaigns, create calendar events, create Google Meet links, place calls, or apply optimizer recommendations from this layer.
+- Do not change scoring thresholds, campaign settings, provider settings, or live flags.
+- Report sanitized titles, statuses, labels, and IDs only. Do not return message bodies, personalization copy, emails, phones, evidence snippets, voice facts, API keys, or other prospect/PHI fields.
+- Sanitize reviewer notes on write. Do not persist or expose suspected PHI, emails, phones, or secrets from notes.
+- Do not invent prospect facts to fill empty queue rows. Missing artifacts are an empty pending list.
+- `OUTBOUND_ENABLED` remains false by default. Operator halt is read and must not be lifted by review listing or decision recording.
 
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.

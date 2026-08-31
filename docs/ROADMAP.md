@@ -156,7 +156,7 @@ Future deployment work (not in this phase):
 - automated off-site backups
 - staged outbound rollout after explicit owner approval
 
-## Phase 13 — Observability and audit monitoring foundation (current)
+## Phase 13 — Observability and audit monitoring foundation
 Operator-visible health over existing runs and activities. No live outbound.
 - structured operational summaries of latest job/run status by phase
 - sanitized recent failures and activity action counts
@@ -171,7 +171,22 @@ Future observability work (not in this phase):
 - long-retention metrics backends
 - public status pages
 
-## Phase 14 — Additional acquisition channels
+## Phase 14 — Operator review queue foundation (current)
+Recorded operator decisions only. No outbound execution.
+- one review queue over pending dry-run artifacts: personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, and optimizer recommendations
+- normalized review items with artifact type/id, safe lead/organization references, title/summary, status, timestamp, risk labels, and executable-later (not executed)
+- persisted `approved` / `rejected` / `needs_changes` decisions with reviewer notes and timestamps
+- CLI `review-queue` / `record-review` and internal HTTP list/decision routes
+- sanitized output; approval is a recorded decision, not execution
+
+Future review-queue work (not in this phase):
+- execute an approved outreach enrollment
+- generate or send an approved reply
+- create an approved calendar event or Meet link
+- place an approved consent-based call
+- apply an approved optimizer recommendation
+
+## Phase 15 — Additional acquisition channels
 - Google Ads
 - SEO content/landing pages
 - referral/partner campaigns

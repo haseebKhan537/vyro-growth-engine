@@ -30,6 +30,7 @@ PHASE_ONE_MODELS = (
     models.VoiceQualificationPlan,
     models.OptimizerRun,
     models.OptimizerRecommendation,
+    models.OperatorReviewDecision,
 )
 
 
