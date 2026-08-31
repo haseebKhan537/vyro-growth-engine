@@ -8,6 +8,8 @@ changes operator halt or live settings.
 
 from __future__ import annotations
 
+from html import escape
+
 import structlog
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
@@ -15,6 +17,8 @@ from sqlalchemy.orm import Session
 from vyro_growth.api.operator_ui import (
     NO_STORE_HEADERS,
     OPERATOR_AUDIT_TIMELINE_PATH,
+    OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
+    OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_UI_STYLES,
     filter_link,
     format_dt,
@@ -80,6 +84,7 @@ def render_operator_audit_timeline(result: OperatorAuditTimeline) -> str:
         'data-dry-run-only="true" data-no-execution="true">\n'
         f"{_render_header(result, generated)}\n"
         f"{render_operator_nav('audit-timeline')}\n"
+        f"{_render_related_links()}\n"
         f"{_render_filters(result)}\n"
         f"{_render_summary(result)}\n"
         f"{_render_entries(result)}\n"
@@ -135,6 +140,17 @@ def _render_header(result: OperatorAuditTimeline, generated: str) -> str:
         f"{html_escape(result.shown_count)} of "
         f"{html_escape(result.matching_count)}</p>\n"
         "    </header>"
+    )
+
+
+def _render_related_links() -> str:
+    handoff_href = escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)
+    binder_href = escape(OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH)
+    return (
+        '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
+        f'      <a class="nav-link" href="{handoff_href}">Owner handoff</a>\n'
+        f'      <a class="nav-link" href="{binder_href}">Compliance binder</a>\n'
+        "    </nav>"
     )
 
 
