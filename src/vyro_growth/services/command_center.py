@@ -102,7 +102,14 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     NextActionCode.REVIEW_SETTINGS_CHANGE_REQUESTS: (
         "Review pending live settings change requests at "
         "/internal/operator-settings-change-requests. "
+        "Inspect remaining execution blockers at "
+        "/internal/operator-settings-execution-preflight. "
         "Recording a decision does not apply them."
+    ),
+    NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT: (
+        "Inspect remaining settings-execution blockers at "
+        "/internal/operator-settings-execution-preflight. "
+        "Read-only dry-run view; do not execute."
     ),
 }
 
@@ -452,6 +459,11 @@ def _next_actions(
         add(NextActionCode.RUN_DISCOVERY_WHEN_READY, FindingSeverity.INFO, phase="discovery")
     if not safety.outbound_enabled:
         add(NextActionCode.KEEP_OUTBOUND_DISABLED, FindingSeverity.INFO)
+    add(
+        NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT,
+        FindingSeverity.INFO,
+        phase="settings_execution_preflight",
+    )
 
     return tuple(
         sorted(

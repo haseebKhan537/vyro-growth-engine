@@ -80,6 +80,9 @@ from vyro_growth.api.operator_settings_change_requests import (
     build_operator_settings_change_detail_response,
     build_operator_settings_change_list_response,
 )
+from vyro_growth.api.operator_settings_execution_preflight import (
+    build_operator_settings_execution_preflight_response,
+)
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
     build_latest_optimizer_response,
@@ -380,6 +383,29 @@ def operator_action_readiness_item(
         db,
         active_settings,
         candidate_id=candidate_id,
+    )
+
+
+@app.get(
+    "/internal/operator-settings-execution-preflight",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_settings_execution_preflight(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    request_type: Annotated[str | None, Query()] = None,
+    decision_status: Annotated[str | None, Query()] = None,
+    execution_status: Annotated[str | None, Query()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_settings_execution_preflight_response(
+        db,
+        active_settings,
+        request_type=request_type,
+        decision_status=decision_status,
+        execution_status=execution_status,
     )
 
 

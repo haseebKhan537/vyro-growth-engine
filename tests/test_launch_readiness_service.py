@@ -276,6 +276,9 @@ def test_documented_smoke_gate_and_cleared_halt_is_ready_for_owner_review(
     assert NextActionCode.KEEP_OUTBOUND_DISABLED.value in {
         item.next_action_code for item in checklist.next_actions
     }
+    assert NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT.value in {
+        item.next_action_code for item in checklist.next_actions
+    }
     assert checklist.pending_settings_change_request_count == 0
     assert any(
         item.request_type == "keep_outbound_disabled"

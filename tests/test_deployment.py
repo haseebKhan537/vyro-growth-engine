@@ -90,6 +90,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "launch-readiness" in runbook
     assert "settings-change-requests" in runbook
     assert "settings-execution-preflight" in runbook
+    assert "operator-settings-execution-preflight" in runbook
     assert "018_live_settings_change_requests" in runbook
 
 

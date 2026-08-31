@@ -32,6 +32,7 @@ from vyro_growth.api.operator_ui import (
     LAUNCH_READINESS_JSON_PATH,
     NO_STORE_HEADERS,
     OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
+    OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_UI_STYLES,
     SETTINGS_CHANGE_JSON_PATH,
     filter_link,
@@ -249,7 +250,9 @@ def render_settings_change_detail(
         f"{_render_decision_form(item, form_error=form_error, form_values=form_values)}\n"
         '    <p><a class="nav-link" href="'
         f'{escape(OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH)}">'
-        "Back to settings requests</a></p>\n"
+        "Back to settings requests</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)}">'
+        "Open settings execution preflight</a></p>\n"
         "  </main>\n"
         "</body>\n"
         "</html>\n"
@@ -589,7 +592,8 @@ def _render_list_header(queue: SettingsChangeRequestListResponse, generated: str
         "      <div>\n"
         "        <h1>Live settings change requests</h1>\n"
         '        <p class="lede">Record-only owner review queue. No settings are '
-        "applied and no live action is executed.</p>\n"
+        "applied and no live action is executed. Inspect remaining execution "
+        "blockers on the settings execution preflight page.</p>\n"
         "      </div>\n"
         f'      <p class="meta">Generated {generated} · halt '
         f"{html_escape(queue.operator_halt_status)}</p>\n"
@@ -649,6 +653,7 @@ def _render_filters(
         )
     json_href = escape(SETTINGS_CHANGE_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
+    preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Request type filters">'
         f"{' '.join(type_links)}</nav>\n"
@@ -658,6 +663,7 @@ def _render_filters(
         f"{' '.join(decision_links)}\n"
         f'      <a class="nav-link nav-json" href="{json_href}">JSON queue</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
+        f'      <a class="nav-link" href="{preflight_href}">Settings execution preflight</a>\n'
         "    </nav>"
     )
 
