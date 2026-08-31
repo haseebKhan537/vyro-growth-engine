@@ -300,6 +300,27 @@ def test_command_center_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/command_center.py"),
         Path("src/vyro_growth/api/command_center.py"),
+        Path("src/vyro_growth/api/operator_dashboard.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "openai" not in source
+    assert "smartlead" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
+def test_operator_dashboard_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/api/operator_dashboard.py"),
+        Path("tests/test_operator_dashboard_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
