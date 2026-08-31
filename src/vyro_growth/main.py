@@ -215,6 +215,7 @@ def operator_review_queue_item(
     "/internal/operator-review-queue/{artifact_type}/{artifact_id}/decision",
     tags=["internal"],
     response_class=HTMLResponse,
+    response_model=None,
 )
 async def operator_review_queue_decision(
     artifact_type: str,
