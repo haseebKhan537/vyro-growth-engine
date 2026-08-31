@@ -382,7 +382,7 @@ Dry-run-only simulator over recorded settings change requests and owner decision
 - Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 31 — Settings execution preflight UI shell (current)
+## Phase 31 — Settings execution preflight UI shell
 Internal operator HTML view of the Phase 30 dry-run simulator. Read-only, no execution.
 - `GET /internal/operator-settings-execution-preflight`
 - Renders existing Phase 30 preflight output as a sanitized HTML page
@@ -390,6 +390,16 @@ Internal operator HTML view of the Phase 30 dry-run simulator. Read-only, no exe
 - Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, and settings change request UI
 - Sanitized fields only: overall status, request/decision counts, blocker/gate/approval codes, missing credential variable names, closed provider flag names, request IDs/types, decision status, desired booleans/statuses, timestamps, and no-execution flags
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 32 — Owner go-live handoff packet export (current)
+Read-only owner-review packet consolidating existing safe summaries. No execution.
+- Service plus CLI `vyro-growth owner-handoff-packet` and internal JSON `GET /internal/owner-handoff-packet`
+- Reuses launch readiness, settings change requests, settings execution preflight, owner approval packets, and approved action readiness
+- Sections: launch readiness, settings change request summary, settings execution preflight summary, owner approval packet summary, approved action readiness summary, remaining manual owner checklist
+- Sanitized metadata only: overall status, blocker/gate/approval codes, pending/approved/rejected counts, request IDs, packet IDs, candidate IDs, setting names, desired booleans/statuses, missing credential variable names, closed provider flag names, timestamps, and no-execution flags
+- `execution_allowed=false` and `go_live_permitted=false`; this packet is not permission or machinery for going live
+- Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

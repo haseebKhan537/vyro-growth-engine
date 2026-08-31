@@ -148,6 +148,8 @@ vyro-growth recommend-growth
 
 `vyro-growth settings-execution-preflight` is a dry-run simulator over recorded settings change requests. It does not apply settings, lift halt, enable outbound, or execute anything. `execution_allowed=false` is not permission or machinery for going live.
 
+`vyro-growth owner-handoff-packet` is a read-only owner-review export of launch readiness, settings change requests, settings execution preflight, owner approval packets, and approved action readiness. It does not apply settings, lift halt, enable outbound, or execute anything. `go_live_permitted=false` is not permission or machinery for going live.
+
 Do not schedule `send_email`, `schedule_meeting`, or `place_consent_callback`. Those names exist only as fail-closed outbound guards and are not deployable jobs.
 
 ## Scheduler and queue assumptions
@@ -195,7 +197,7 @@ Do not roll forward by enabling live providers.
 4. `alembic upgrade head`
 5. Start the API (`uvicorn vyro_growth.main:app --host 0.0.0.0 --port 8000` or `docker compose up --build api`).
 6. Probe `/health` and `/ready`.
-7. Run `vyro-growth operator-command-center`, open `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `GET /internal/operator-approval-packets`, `GET /internal/operator-action-readiness`, `GET /internal/operator-settings-change-requests`, and `GET /internal/operator-settings-execution-preflight`, and `vyro-growth launch-readiness`, `vyro-growth settings-change-requests`, `vyro-growth settings-execution-preflight`, and `vyro-growth system-status` and review findings before any manual rollout. Recording a review, approval-packet, or settings-change decision from these surfaces does not execute the artifact, packet, or setting. The readiness queue and settings-execution preflight are dry-run only. See `docs/OPERATOR_HEALTH.md`.
+7. Run `vyro-growth operator-command-center`, open `GET /internal/operator-dashboard`, `GET /internal/operator-review-queue`, `GET /internal/operator-approval-packets`, `GET /internal/operator-action-readiness`, `GET /internal/operator-settings-change-requests`, and `GET /internal/operator-settings-execution-preflight`, and `vyro-growth launch-readiness`, `vyro-growth settings-change-requests`, `vyro-growth settings-execution-preflight`, `vyro-growth owner-handoff-packet`, and `vyro-growth system-status` and review findings before any manual rollout. Recording a review, approval-packet, or settings-change decision from these surfaces does not execute the artifact, packet, or setting. The readiness queue, settings-execution preflight, and owner handoff packet are dry-run/read-only only. See `docs/OPERATOR_HEALTH.md`.
 8. Start worker checks or cron-invoked CLI jobs as needed.
 
 Production start fails closed when `INTERNAL_API_KEY` or `DATABASE_URL` is missing, or when a live-provider flag is true without its key.

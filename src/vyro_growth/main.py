@@ -88,6 +88,10 @@ from vyro_growth.api.optimizer import (
     build_latest_optimizer_response,
     build_optimizer_run_response,
 )
+from vyro_growth.api.owner_handoff import (
+    OwnerHandoffPacketResponse,
+    build_owner_handoff_response,
+)
 from vyro_growth.api.review_queue import (
     RecordReviewDecisionRequest,
     RecordReviewDecisionResponse,
@@ -600,6 +604,16 @@ def launch_readiness_checklist(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_launch_readiness_response(db, active_settings)
+
+
+@app.get("/internal/owner-handoff-packet", tags=["internal"])
+def owner_handoff_packet(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> OwnerHandoffPacketResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_owner_handoff_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

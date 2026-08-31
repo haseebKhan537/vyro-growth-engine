@@ -111,6 +111,10 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "/internal/operator-settings-execution-preflight. "
         "Read-only dry-run view; do not execute."
     ),
+    NextActionCode.HANDOFF_IS_NOT_GO_LIVE: (
+        "This handoff packet is for manual owner review only. "
+        "It is not permission or machinery for going live."
+    ),
 }
 
 
