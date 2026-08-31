@@ -353,7 +353,7 @@ Read-only owner-facing preflight. No live action.
 - no GitHub Actions, OpenAI, NPPES/search, Apollo, Smartlead, Google, calendar, voice, ads, SEO, analytics, or other live-provider calls
 - no email, enrollment, autonomous replies, calls, bookings, Meet links, publish, ads, spend, deploy, packet/item execution, live `owner_approved`, or halt/live setting changes
 
-## Phase 28 — Live settings change request queue (current)
+## Phase 28 — Live settings change request queue
 Record-only owner-reviewable live settings change requests. No execution.
 - Database-backed request records with timestamps, statuses, idempotency keys, requested setting names, desired booleans/statuses, and optional launch-readiness finding/next-action codes
 - CLI list/create/detail/decision plus `vyro-growth propose-settings-changes`; internal JSON under `/internal/settings-change-requests`
@@ -361,6 +361,15 @@ Record-only owner-reviewable live settings change requests. No execution.
 - never stores or prints secret values; credential requests name env/config variables only
 - owner decision records are audit-only and do not apply settings, lift halt, execute packets/items, or trigger live actions
 - launch readiness points at proposed requests and can optionally create them without applying anything
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 29 — Settings change request UI drilldowns (current)
+Internal operator HTML list/detail for Phase 28 live settings change requests. Record-only, no execution.
+- `GET /internal/operator-settings-change-requests` and `GET /internal/operator-settings-change-requests/{request_id}`
+- optional `POST /internal/operator-settings-change-requests/{request_id}/decision` records the existing audit-only owner decision
+- sanitized fields only: request type, status, owner decision status, setting names, desired boolean/status, finding/next-action codes, timestamps, source, record-only/no-execution flags, and safe counts
+- linked from the operator dashboard, command-center next-action labels, and launch-readiness next-action labels
+- decision forms never apply settings, lift halt, enable outbound, execute requests, or set live `owner_approved`
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

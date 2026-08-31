@@ -826,6 +826,27 @@ curl -X POST http://localhost:8000/internal/settings-change-requests/propose-fro
 
 Request types: `keep_outbound_disabled`, `request_outbound_enablement_review`, `request_provider_live_flag_review`, `request_operator_halt_review`, `request_credential_configuration_review`, and `keep_safe_default`. Credential reviews name env/config variables only. Duplicate creates with the same idempotency key reuse the existing row. Recording `approved` is an audit record and does not apply the setting or lift halt. `vyro-growth launch-readiness` points at proposed requests without creating them unless `propose-settings-changes` is run.
 
+## Phase 29 — Settings change request UI drilldowns (record only)
+
+Open internal HTML list/detail views of Phase 28 live settings change requests. Recording a decision from a detail page writes the existing audit-only owner decision. It does not apply settings, lift operator halt, enable outbound, execute requests, send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish pages, launch ads, spend money, deploy, or set live `owner_approved`.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-settings-change-requests \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/operator-settings-change-requests?status=pending&request_type=keep_outbound_disabled" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl -X POST http://localhost:8000/internal/operator-settings-change-requests/<request-uuid>/decision \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "decision=approved&reviewer=ops&reviewer_notes=record+only"
+```
+
+The Phase 20 dashboard, command-center next-action labels, and launch-readiness next-action labels link to this queue. Filters include request type, status, and owner decision status. Detail pages show sanitized request type, status, owner decision status, requested setting names, desired boolean/status, finding/next-action codes, timestamps, source, and record-only/no-execution flags. The form accepts a decision value, an optional short owner/reviewer label, and optional notes. Notes are sanitized/redacted before they are stored and again before they are rendered. A successful submit redirects to the detail page and shows the saved high-level decision metadata. Submitting the same decision twice, or refreshing after redirect, does not create a second decision row or apply anything. Invalid decisions and missing requests return generic sanitized HTML. There is no apply, execute, enable outbound, or lift-halt control.
+
+Rendered HTML is IDs, statuses, setting names, codes, timestamps, redacted labels, and sanitized owner notes only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

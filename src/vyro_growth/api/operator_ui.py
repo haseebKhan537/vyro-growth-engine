@@ -17,25 +17,36 @@ OPERATOR_DASHBOARD_PATH = "/internal/operator-dashboard"
 OPERATOR_REVIEW_QUEUE_PATH = "/internal/operator-review-queue"
 OPERATOR_APPROVAL_PACKETS_PATH = "/internal/operator-approval-packets"
 OPERATOR_ACTION_READINESS_PATH = "/internal/operator-action-readiness"
+OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH = "/internal/operator-settings-change-requests"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
 ACTION_READINESS_JSON_PATH = "/internal/action-readiness"
+SETTINGS_CHANGE_JSON_PATH = "/internal/settings-change-requests"
+LAUNCH_READINESS_JSON_PATH = "/internal/launch-readiness"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
-OperatorSurface = Literal["dashboard", "review-queue", "approval-packets", "action-readiness"]
+OperatorSurface = Literal[
+    "dashboard",
+    "review-queue",
+    "approval-packets",
+    "action-readiness",
+    "settings-change-requests",
+]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "dashboard": "Dashboard",
     "review-queue": "Review queue",
     "approval-packets": "Approval packets",
     "action-readiness": "Action readiness",
+    "settings-change-requests": "Settings requests",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
     "review-queue": OPERATOR_REVIEW_QUEUE_PATH,
     "approval-packets": OPERATOR_APPROVAL_PACKETS_PATH,
     "action-readiness": OPERATOR_ACTION_READINESS_PATH,
+    "settings-change-requests": OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
 }
 
 
@@ -92,6 +103,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "review-queue",
         "approval-packets",
         "action-readiness",
+        "settings-change-requests",
     )
     links = []
     for name in surfaces:
