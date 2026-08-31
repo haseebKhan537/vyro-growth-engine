@@ -413,7 +413,7 @@ Internal operator HTML view of the Phase 32 owner go-live handoff packet. Read-o
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 34 — Operator activity audit timeline UI (current)
+## Phase 34 — Operator activity audit timeline UI
 Internal operator HTML timeline over existing activity, audit, and decision records. Read-only, no execution.
 - `GET /internal/operator-audit-timeline`
 - Chronological sanitized entries from stored `activities` plus review, approval-packet, and settings-change decision records
@@ -421,6 +421,16 @@ Internal operator HTML timeline over existing activity, audit, and decision reco
 - Read-only filters: event type, source, status/decision, and date window (`all`, `24h`, `7d`, `30d`)
 - Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, and owner handoff packet UI
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 35 — Compliance evidence binder export (current)
+Read-only owner-review binder consolidating existing safety evidence. No execution.
+- Service plus CLI `vyro-growth compliance-evidence-binder` and internal JSON `GET /internal/compliance-evidence-binder`
+- Reuses launch readiness, settings execution preflight, owner handoff packet, operator audit timeline, smoke gate expectations, deployment safe defaults, and documented compliance guardrails
+- Sections: outbound disabled/operator halt, no-live-provider defaults, no-execution side-effect evidence, PHI/secrets/redaction evidence, consent-based phone-only boundary, CI dry-run smoke/deploy-config gates, operator audit timeline, open manual owner checklist
+- Safe evidence only: status/counts/codes, no-execution flags, operator halt status, outbound/live-provider flag states, CI gate names, route/command names, sanitized timestamps, and missing credential variable names
+- `execution_allowed=false`, `go_live_permitted=false`, and `binder_is_not_go_live=true`; this binder is not permission or machinery for going live
+- Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

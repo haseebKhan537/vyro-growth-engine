@@ -69,6 +69,7 @@ vyro-growth smoke-dry-run --local-only --json
 vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
 vyro-growth owner-handoff-packet --json
+vyro-growth compliance-evidence-binder --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -942,6 +943,27 @@ curl "http://localhost:8000/internal/operator-audit-timeline?event_type=operator
 The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, and owner handoff packet UI link to this page. Filters include event type, source, status/decision, and date window. The page shows event type, sanitized actor/source labels, timestamps, status/decision, artifact/packet/request/candidate/run IDs, reason/code labels, and no-execution/read-only flags. There are no apply, execute, lift-halt, enable-outbound, provider, deploy, campaign, booking, call, publish, or spend controls.
 
 Rendered HTML is IDs, statuses, codes, timestamps, labels, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 35 — Compliance evidence binder export (read-only)
+
+Export a single sanitized owner-review binder that consolidates existing safety evidence: outbound disabled and operator halt, no-live-provider defaults, no-execution side effects, PHI/secrets/redaction, consent-based phone-only boundary, CI dry-run smoke and deploy-config gates, operator audit timeline, and open manual owner checklist items. This layer does not apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, deploy, or call live providers. It is for manual owner review only and is not permission or machinery for going live.
+
+CLI:
+```bash
+vyro-growth compliance-evidence-binder
+vyro-growth compliance-evidence-binder --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/compliance-evidence-binder \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet with the evidence sections above plus compact reused summaries of launch readiness, settings execution preflight, and the owner handoff packet. Fields are statuses, counts, codes, no-execution flags, operator halt status, outbound/live-provider flag states, CI gate names, route/command names, sanitized timestamps, and missing credential variable names. `execution_allowed`, `go_live_permitted`, and `binder_is_not_go_live` remain false/true respectively because a future explicitly approved execution phase does not exist. There is no apply/execute endpoint or button.
+
+JSON is statuses, setting names, codes, timestamps, counts, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 

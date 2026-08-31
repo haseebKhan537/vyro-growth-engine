@@ -55,6 +55,10 @@ from vyro_growth.services.command_center import (
     CommandCenterSummary,
     OperatorCommandCenterService,
 )
+from vyro_growth.services.compliance_evidence_binder import (
+    ComplianceEvidenceBinderService,
+    format_compliance_evidence_binder,
+)
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
 from vyro_growth.services.content_brief import (
     ContentBriefError,
@@ -590,6 +594,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized handoff packet as JSON",
     )
+    binder = subparsers.add_parser(
+        "compliance-evidence-binder",
+        help=(
+            "Export a sanitized compliance evidence binder "
+            "(read-only; does not execute, apply settings, or go live)"
+        ),
+    )
+    binder.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized compliance evidence binder as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -742,6 +758,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "owner-handoff-packet":
         return _run_owner_handoff_packet(args)
+
+    if args.command == "compliance-evidence-binder":
+        return _run_compliance_evidence_binder(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -1932,6 +1951,14 @@ def _run_owner_handoff_packet(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         packet = OwnerHandoffPacketService().build(db, settings)
     print(format_owner_handoff(packet, as_json=args.json))
+    return 0
+
+
+def _run_compliance_evidence_binder(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        binder = ComplianceEvidenceBinderService().build(db, settings)
+    print(format_compliance_evidence_binder(binder, as_json=args.json))
     return 0
 
 
