@@ -297,6 +297,25 @@ def test_output_sanitizes_and_does_not_write_rows(db_session: Session) -> None:
     assert read_operator_halt(db_session) is HaltStatus.HALTED
 
 
+def test_missing_schema_fails_closed_without_secret_leakage(tmp_path: Path) -> None:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    engine = create_engine(f"sqlite+pysqlite:///{tmp_path / 'empty.db'}", future=True)
+    session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)()
+    settings = _settings(openai_api_key=SECRET_VALUE)
+    try:
+        checklist = LaunchReadinessService().assess(session, settings)
+        text = format_launch_readiness(checklist, as_json=True)
+        assert checklist.overall_status == LaunchReadinessStatus.BLOCKED.value
+        assert checklist.database == "unavailable"
+        assert FindingCode.DATABASE_UNAVAILABLE.value in {item.code for item in checklist.findings}
+        _assert_no_leakage(text, SECRET_VALUE)
+    finally:
+        session.close()
+        engine.dispose()
+
+
 def test_cli_launch_readiness_json_exits_nonzero_when_blocked(
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,

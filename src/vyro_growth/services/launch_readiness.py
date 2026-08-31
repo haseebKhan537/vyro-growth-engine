@@ -17,6 +17,7 @@ from typing import Any, Never
 
 import structlog
 from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from vyro_growth.config import (
@@ -175,15 +176,22 @@ class LaunchReadinessService:
         blocked_count = 0
         db_ok = database_is_ready(db)
         if db_ok:
-            halt_before = read_operator_halt(db)
-            pending_packets = _pending_packet_count(db)
-            queue = self.action_readiness.list_queue(db, settings)
-            candidate_count = queue.candidate_count
-            blocked_count = sum(
-                1
-                for item in queue.candidates
-                if item.blocker_status == ActionReadinessBlockerStatus.BLOCKED.value
-            )
+            try:
+                halt_before = read_operator_halt(db)
+                pending_packets = _pending_packet_count(db)
+                queue = self.action_readiness.list_queue(db, settings)
+                candidate_count = queue.candidate_count
+                blocked_count = sum(
+                    1
+                    for item in queue.candidates
+                    if item.blocker_status == ActionReadinessBlockerStatus.BLOCKED.value
+                )
+            except SQLAlchemyError:
+                db_ok = False
+                halt_before = HaltStatus.UNAVAILABLE
+                pending_packets = 0
+                candidate_count = 0
+                blocked_count = 0
         halt_after = read_operator_halt(db) if db_ok else HaltStatus.UNAVAILABLE
         if halt_after is not halt_before:
             raise RuntimeError("launch readiness must not change operator halt status")

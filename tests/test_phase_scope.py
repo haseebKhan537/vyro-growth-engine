@@ -71,6 +71,8 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "growth_optimizer.py",
         "optimizer.py",
         "monitoring.py",
+        "domain.py",
+        "launch_readiness.py",
     }
     calendar_boundary = {
         "config.py",
@@ -88,6 +90,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "growth_optimizer.py",
         "optimizer.py",
         "monitoring.py",
+        "launch_readiness.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -105,6 +108,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "growth_optimizer.py",
         "optimizer.py",
         "monitoring.py",
+        "launch_readiness.py",
     }
     forbidden = (
         "apollo",
