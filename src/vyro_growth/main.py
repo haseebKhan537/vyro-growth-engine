@@ -70,6 +70,9 @@ from vyro_growth.api.operator_approval_packets import (
     build_operator_approval_packets_response,
 )
 from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
+from vyro_growth.api.operator_owner_handoff import (
+    build_operator_owner_handoff_response,
+)
 from vyro_growth.api.operator_review_queue import (
     build_operator_review_decision_response,
     build_operator_review_item_response,
@@ -388,6 +391,20 @@ def operator_action_readiness_item(
         active_settings,
         candidate_id=candidate_id,
     )
+
+
+@app.get(
+    "/internal/operator-owner-handoff-packet",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_owner_handoff_packet(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_owner_handoff_response(db, active_settings)
 
 
 @app.get(

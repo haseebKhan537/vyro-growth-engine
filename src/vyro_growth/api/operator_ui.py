@@ -19,6 +19,7 @@ OPERATOR_APPROVAL_PACKETS_PATH = "/internal/operator-approval-packets"
 OPERATOR_ACTION_READINESS_PATH = "/internal/operator-action-readiness"
 OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH = "/internal/operator-settings-change-requests"
 OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH = "/internal/operator-settings-execution-preflight"
+OPERATOR_OWNER_HANDOFF_PACKET_PATH = "/internal/operator-owner-handoff-packet"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -26,6 +27,7 @@ ACTION_READINESS_JSON_PATH = "/internal/action-readiness"
 SETTINGS_CHANGE_JSON_PATH = "/internal/settings-change-requests"
 SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH = "/internal/settings-execution-preflight"
 LAUNCH_READINESS_JSON_PATH = "/internal/launch-readiness"
+OWNER_HANDOFF_JSON_PATH = "/internal/owner-handoff-packet"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -35,6 +37,7 @@ OperatorSurface = Literal[
     "action-readiness",
     "settings-change-requests",
     "settings-execution-preflight",
+    "owner-handoff-packet",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -44,6 +47,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "action-readiness": "Action readiness",
     "settings-change-requests": "Settings requests",
     "settings-execution-preflight": "Settings preflight",
+    "owner-handoff-packet": "Owner handoff",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -52,6 +56,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "action-readiness": OPERATOR_ACTION_READINESS_PATH,
     "settings-change-requests": OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
     "settings-execution-preflight": OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
+    "owner-handoff-packet": OPERATOR_OWNER_HANDOFF_PACKET_PATH,
 }
 
 
@@ -110,6 +115,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "action-readiness",
         "settings-change-requests",
         "settings-execution-preflight",
+        "owner-handoff-packet",
     )
     links = []
     for name in surfaces:

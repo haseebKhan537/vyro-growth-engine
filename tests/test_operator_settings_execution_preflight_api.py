@@ -127,6 +127,7 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
     assert "There are no apply, execute, lift-halt" in html
     assert 'data-execution-allowed="false"' in html
     assert 'data-dry-run-only="true"' in html
+    assert "/internal/operator-owner-handoff-packet" in html
     for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
 

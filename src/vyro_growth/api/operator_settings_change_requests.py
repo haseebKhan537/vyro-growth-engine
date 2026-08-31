@@ -31,6 +31,7 @@ from vyro_growth.api.operator_review_queue import (
 from vyro_growth.api.operator_ui import (
     LAUNCH_READINESS_JSON_PATH,
     NO_STORE_HEADERS,
+    OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_UI_STYLES,
@@ -252,7 +253,9 @@ def render_settings_change_detail(
         f'{escape(OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH)}">'
         "Back to settings requests</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)}">'
-        "Open settings execution preflight</a></p>\n"
+        "Open settings execution preflight</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)}">'
+        "Open owner go-live handoff packet</a></p>\n"
         "  </main>\n"
         "</body>\n"
         "</html>\n"
@@ -654,6 +657,7 @@ def _render_filters(
     json_href = escape(SETTINGS_CHANGE_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
+    handoff_href = escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Request type filters">'
         f"{' '.join(type_links)}</nav>\n"
@@ -664,6 +668,7 @@ def _render_filters(
         f'      <a class="nav-link nav-json" href="{json_href}">JSON queue</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings execution preflight</a>\n'
+        f'      <a class="nav-link" href="{handoff_href}">Owner handoff packet</a>\n'
         "    </nav>"
     )
 
