@@ -128,10 +128,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "for going live."
     ),
     NextActionCode.RUNBOOK_IS_NOT_DEPLOYMENT: (
-        "Inspect the release-candidate deployment runbook via "
-        "vyro-growth release-candidate-runbook or "
-        "GET /internal/release-candidate-runbook. "
-        "Read-only planning export; it is not a deployment mechanism or "
+        "Inspect the release-candidate deployment runbook at "
+        "/internal/operator-release-candidate-runbook. "
+        "Read-only owner-review view; it is not a deployment mechanism or "
         "permission to go live."
     ),
 }

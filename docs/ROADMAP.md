@@ -444,7 +444,7 @@ Internal operator HTML view of the Phase 35 compliance evidence binder. Read-onl
 - No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 37 — Release-candidate deployment runbook export (current)
+## Phase 37 — Release-candidate deployment runbook export
 Read-only owner/operator planning export consolidating existing safe summaries. No deployment.
 - Service plus CLI `vyro-growth release-candidate-runbook` and internal JSON `GET /internal/release-candidate-runbook`
 - Reuses launch readiness, settings execution preflight, owner handoff packet, compliance evidence binder, operator audit timeline, deployment safe defaults, CI smoke/deploy-config gate names, and documented compliance guardrails
@@ -452,6 +452,17 @@ Read-only owner/operator planning export consolidating existing safe summaries. 
 - Safe metadata only: statuses, counts, codes, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text
 - `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, and `runbook_is_not_deployment=true`; this runbook is not a deployment mechanism or permission to go live
 - Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 38 — Release-candidate deployment runbook UI shell (current)
+Internal operator HTML view of the Phase 37 release-candidate deployment runbook. Read-only, no deployment.
+- `GET /internal/operator-release-candidate-runbook`
+- Renders existing Phase 37 runbook as a sanitized HTML page
+- Linked from the operator dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, and compliance evidence binder UI
+- Shows all runbook sections: release candidate identity and repo branch expectations, required CI gates and local dry-run verification commands, required safe environment defaults and missing credential variable names only, operator halt and outbound-disabled verification, manual deployment sequence as instructions only, rollback checklist as instructions only, post-deploy read-only verification endpoints/commands, documented guardrails, reused read-only summaries, and remaining unresolved blockers/manual owner checklist items
+- Sanitized fields only: statuses, counts, codes, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text
+- Page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, and `runbook_is_not_deployment=true`
+- No apply/execute/lift-halt/enable-outbound/provider/deploy/campaign/booking/call/publish/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):

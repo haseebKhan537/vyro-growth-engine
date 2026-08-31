@@ -1002,6 +1002,21 @@ Output is a sanitized Markdown or JSON packet with sections for release candidat
 
 JSON is statuses, setting names, codes, timestamps, counts, command names, route names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 38 — Release-candidate deployment runbook UI shell (read-only)
+
+Open an internal HTML view of the Phase 37 release-candidate deployment runbook. The owner can inspect the future manual deployment plan, rollback checklist, safe defaults, and remaining blockers in the browser. This layer does not deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a read-only owner-review view, not a deployment mechanism or permission to go live.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-release-candidate-runbook \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, and compliance evidence binder UI link to this page. The page shows all runbook sections: release candidate identity and repo branch expectations, required CI gates and local dry-run verification commands, required safe environment defaults and missing credential variable names only, operator halt and outbound-disabled verification, a manual deployment sequence as instructions only, a rollback checklist as instructions only, post-deploy read-only verification endpoints/commands, documented guardrails, reused read-only summaries, and remaining unresolved blockers/manual owner checklist items. Fields are statuses, counts, codes, command names, route names, flag names/states, missing credential variable names, sanitized timestamps, and checklist text. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, and `runbook_is_not_deployment=true`. There are no apply, execute, lift-halt, enable-outbound, provider, deploy, campaign, booking, call, publish, or spend controls.
+
+Rendered HTML is statuses, setting names, codes, timestamps, counts, command names, route names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

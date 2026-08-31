@@ -83,6 +83,9 @@ from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.operator_owner_handoff import (
     build_operator_owner_handoff_response,
 )
+from vyro_growth.api.operator_release_candidate_runbook import (
+    build_operator_release_candidate_runbook_response,
+)
 from vyro_growth.api.operator_review_queue import (
     build_operator_review_decision_response,
     build_operator_review_item_response,
@@ -458,6 +461,20 @@ def operator_compliance_evidence_binder(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_compliance_evidence_binder_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-release-candidate-runbook",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_release_candidate_runbook(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_release_candidate_runbook_response(db, active_settings)
 
 
 @app.get(

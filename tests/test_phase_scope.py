@@ -441,8 +441,10 @@ def test_release_candidate_runbook_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/release_candidate_runbook.py"),
         Path("src/vyro_growth/api/release_candidate_runbook.py"),
+        Path("src/vyro_growth/api/operator_release_candidate_runbook.py"),
         Path("tests/test_release_candidate_runbook_service.py"),
         Path("tests/test_release_candidate_runbook_api.py"),
+        Path("tests/test_operator_release_candidate_runbook_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

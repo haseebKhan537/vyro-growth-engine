@@ -97,6 +97,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "compliance-evidence-binder" in runbook
     assert "operator-compliance-evidence-binder" in runbook
     assert "release-candidate-runbook" in runbook
+    assert "operator-release-candidate-runbook" in runbook
     assert "018_live_settings_change_requests" in runbook
 
 
