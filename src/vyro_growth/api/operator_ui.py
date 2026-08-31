@@ -22,6 +22,7 @@ OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH = "/internal/operator-settings-execut
 OPERATOR_OWNER_HANDOFF_PACKET_PATH = "/internal/operator-owner-handoff-packet"
 OPERATOR_AUDIT_TIMELINE_PATH = "/internal/operator-audit-timeline"
 OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH = "/internal/operator-compliance-evidence-binder"
+OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH = "/internal/operator-release-candidate-runbook"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -31,6 +32,7 @@ SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH = "/internal/settings-execution-preflight
 LAUNCH_READINESS_JSON_PATH = "/internal/launch-readiness"
 OWNER_HANDOFF_JSON_PATH = "/internal/owner-handoff-packet"
 COMPLIANCE_EVIDENCE_BINDER_JSON_PATH = "/internal/compliance-evidence-binder"
+RELEASE_CANDIDATE_RUNBOOK_JSON_PATH = "/internal/release-candidate-runbook"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -43,6 +45,7 @@ OperatorSurface = Literal[
     "owner-handoff-packet",
     "audit-timeline",
     "compliance-evidence-binder",
+    "release-candidate-runbook",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -55,6 +58,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "owner-handoff-packet": "Owner handoff",
     "audit-timeline": "Audit timeline",
     "compliance-evidence-binder": "Compliance binder",
+    "release-candidate-runbook": "Release runbook",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -66,6 +70,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "owner-handoff-packet": OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     "audit-timeline": OPERATOR_AUDIT_TIMELINE_PATH,
     "compliance-evidence-binder": OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
+    "release-candidate-runbook": OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
 }
 
 
@@ -127,6 +132,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "owner-handoff-packet",
         "audit-timeline",
         "compliance-evidence-binder",
+        "release-candidate-runbook",
     )
     links = []
     for name in surfaces:

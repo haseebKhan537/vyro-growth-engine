@@ -88,6 +88,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-audit-timeline",
     "/internal/operator-compliance-evidence-binder",
     HTTP_ROUTE,
+    "/internal/operator-release-candidate-runbook",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,

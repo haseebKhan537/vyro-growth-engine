@@ -160,6 +160,7 @@ def test_empty_runbook_is_read_only_without_side_effects(db_session: Session) ->
     assert runbook.manual_deployment_sequence
     assert runbook.rollback_checklist
     assert runbook.post_deploy_verification
+    assert "/internal/operator-release-candidate-runbook" in runbook.related_routes
     codes = {item.code for item in runbook.remaining_manual_owner_checklist}
     assert NextActionCode.RUNBOOK_IS_NOT_DEPLOYMENT.value in codes
     assert "execution_disabled_in_this_phase" in codes

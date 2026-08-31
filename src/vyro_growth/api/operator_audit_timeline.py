@@ -19,6 +19,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_AUDIT_TIMELINE_PATH,
     OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
+    OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_UI_STYLES,
     filter_link,
     format_dt,
@@ -146,10 +147,12 @@ def _render_header(result: OperatorAuditTimeline, generated: str) -> str:
 def _render_related_links() -> str:
     handoff_href = escape(OPERATOR_OWNER_HANDOFF_PACKET_PATH)
     binder_href = escape(OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH)
+    runbook_href = escape(OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link" href="{handoff_href}">Owner handoff</a>\n'
         f'      <a class="nav-link" href="{binder_href}">Compliance binder</a>\n'
+        f'      <a class="nav-link" href="{runbook_href}">Release runbook</a>\n'
         "    </nav>"
     )
 
