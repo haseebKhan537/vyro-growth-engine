@@ -472,7 +472,7 @@ The snapshot includes:
 - recent failures with redacted error text
 - safety flags: `OUTBOUND_ENABLED`, operator halt, live-provider flags, live artifact counts
 - Phase 12 readiness/config state and `ready_for_manual_rollout`
-- pending review counts for drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, and acquisition channel plans
+- pending review counts for drafts, enrollment plans, booking plans, voice plans, optimizer recommendations, acquisition channel plans, and content briefs
 - findings with severity `blocked`, `warning`, or `info`
 
 Responses are counts, statuses, and sanitized messages only. They do not include message bodies, draft copy, emails, phones, evidence snippets, API keys, or PHI. The service does not write pipeline rows, send email, place calls, book meetings, or call live providers. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
@@ -511,7 +511,7 @@ Each review item includes:
 - `executable_later` (a later phase may execute an approved item; this phase never does)
 - `executed=false`
 
-Pending artifacts include personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, optimizer recommendations, and acquisition channel plans.
+Pending artifacts include personalization drafts, outreach enrollment plans, reply follow-up classifications, booking plans, voice qualification plans, optimizer recommendations, acquisition channel plans, and content briefs.
 
 Output is IDs, statuses, and sanitized labels only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
@@ -552,6 +552,32 @@ Each plan includes:
 - dry-run/no-spend flags; launch and spend remain false
 
 Identical sanitized snapshots and seeds reuse the existing run. Pending plans appear in `vyro-growth review-queue` as `acquisition_channel_plan`. Recording an approval does not launch, publish, or spend. Output is counts and review text only: no message bodies, draft copy, emails, phones, evidence snippets, or PHI. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged. No live ad, SEO, search, or paid/external provider is called.
+
+## Phase 16 — Landing page brief and SEO content draft foundation
+
+Generate review-only landing page and SEO content briefs from stored aggregate ICP signals, pending Phase 15 acquisition channel plans, and explicit safe operator seeds. This layer does not publish pages, commit website content, launch ads, spend money, send email, or call OpenAI, Google Ads, Search Console, Analytics, SEO, or search APIs.
+
+CLI:
+```bash
+vyro-growth draft-content-briefs
+vyro-growth draft-content-briefs --specialty "Family Medicine" --brief-type specialty_landing_page
+vyro-growth list-content-briefs
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl -X POST http://localhost:8000/internal/content-briefs/generate \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"seeds":[{"brief_type":"seo_article","specialty":"Family Medicine","topic":"billing operations questions"}]}'
+curl http://localhost:8000/internal/content-briefs \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Worker job name: `generate_content_briefs`
+
+Each brief includes type, optional channel-plan id, known specialty/geography/ICP only, title, sanitized summary, outline sections, CTA concept, compliance notes, source metric/seed references, confidence/priority, generated timestamp, `pending_operator_review`, and `published=false`. Approval in the review queue records a decision only and does not publish. Unverifiable claims (clients, savings, certifications, years of experience, case studies, testimonials, provider counts, revenue improvement) and patient-facing medical advice are omitted.
 
 ## Phase 1
 

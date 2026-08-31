@@ -407,6 +407,32 @@ class ReviewArtifactType(StrEnum):
     VOICE_QUALIFICATION_PLAN = "voice_qualification_plan"
     OPTIMIZER_RECOMMENDATION = "optimizer_recommendation"
     ACQUISITION_CHANNEL_PLAN = "acquisition_channel_plan"
+    CONTENT_BRIEF = "content_brief"
+
+
+class ContentBriefRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ContentBriefType(StrEnum):
+    SPECIALTY_LANDING_PAGE = "specialty_landing_page"
+    GEOGRAPHY_LANDING_PAGE = "geography_landing_page"
+    GOOGLE_ADS_LANDING_PAGE = "google_ads_landing_page"
+    SEO_ARTICLE = "seo_article"
+    REFERRAL_PARTNER_PAGE = "referral_partner_page"
+
+
+class ContentBriefPriority(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class ContentBriefApprovalStatus(StrEnum):
+    PENDING_OPERATOR_REVIEW = "pending_operator_review"
 
 
 class ReviewDecisionStatus(StrEnum):

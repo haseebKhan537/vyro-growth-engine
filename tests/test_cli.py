@@ -9,6 +9,7 @@ from vyro_growth.cli import build_parser, main
 from vyro_growth.domain import (
     BookingPlanRunStatus,
     ChannelPlanRunStatus,
+    ContentBriefRunStatus,
     DiscoveryRunStatus,
     EnrichmentRunStatus,
     FindingCode,
@@ -25,6 +26,7 @@ from vyro_growth.domain import (
 from vyro_growth.services.booking_plan import BookingPlanJobResult
 from vyro_growth.services.channel_planning import ChannelPlanRunResult, ChannelPlanView
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
+from vyro_growth.services.content_brief import ContentBriefRunResult, ContentBriefView
 from vyro_growth.services.dashboard import (
     BookingPlanSummary,
     DashboardSummary,
@@ -945,6 +947,7 @@ def test_cli_main_runs_system_status(
             voice_plans=0,
             optimizer_recommendations=1,
             channel_plans=0,
+            content_briefs=0,
         ),
         activity_summary=(ActivityActionCount(action="seeded", count=1),),
         findings=(
@@ -1053,6 +1056,100 @@ def test_cli_main_runs_recommend_growth(
     assert "approval=pending_operator_review" in output
     assert "key=website_enrichment_gap" in output
     assert "applied=False" in output
+
+
+def test_parser_accepts_content_brief_commands() -> None:
+    parser = build_parser()
+    draft = parser.parse_args(
+        [
+            "draft-content-briefs",
+            "--specialty",
+            "Family Medicine",
+            "--brief-type",
+            "specialty_landing_page",
+        ]
+    )
+    listed = parser.parse_args(["list-content-briefs"])
+
+    assert draft.command == "draft-content-briefs"
+    assert draft.specialty == "Family Medicine"
+    assert listed.command == "list-content-briefs"
+
+
+def test_cli_main_runs_draft_content_briefs(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    brief = ContentBriefView(
+        id=uuid4(),
+        brief_key="specialty_landing_page:family-medicine",
+        brief_type="specialty_landing_page",
+        source_channel_plan_id=None,
+        specialty="Family Medicine",
+        geography="TX",
+        icp_label=None,
+        priority="low",
+        confidence=0.6,
+        title="Specialty landing page brief: Family Medicine / TX",
+        summary="Review-only specialty landing page outline.",
+        outline_sections=("Audience: Family Medicine / TX.",),
+        recommended_cta="Invite a practice decision-maker to request a conversation.",
+        compliance_notes=("Review-only brief. Do not publish this page or article.",),
+        source_references={"source_kind": "operator_seed"},
+        generated_at=datetime.now(tz=UTC),
+        approval_status=RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+        published=False,
+        publish_attempted=False,
+        dry_run_only=True,
+    )
+    result = ContentBriefRunResult(
+        content_brief_run_id=uuid4(),
+        status=ContentBriefRunStatus.COMPLETED,
+        model_version="content-brief-v1",
+        snapshot_fingerprint="abc123",
+        brief_count=1,
+        reused_existing=False,
+        published_count=0,
+        dry_run_only=True,
+        published=False,
+        publish_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        ads_launched=False,
+        spend_attempted=False,
+        generated_at=datetime.now(tz=UTC),
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        briefs=(brief,),
+    )
+
+    class DummyService:
+        def generate(
+            self, _db: object, _settings: object, **_kwargs: object
+        ) -> ContentBriefRunResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ContentBriefService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["draft-content-briefs", "--specialty", "Family Medicine"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert f"id={result.content_brief_run_id}" in output
+    assert "briefs=1" in output
+    assert "published=False" in output
+    assert "outbound_attempted=False" in output
+    assert "ads_launched=False" in output
+    assert "key=specialty_landing_page:family-medicine" in output
 
 
 def test_parser_accepts_plan_acquisition_channels() -> None:
@@ -1210,6 +1307,8 @@ def test_cli_worker_lists_jobs_without_running_them(
     output = capsys.readouterr().out
     assert "discover_nppes_practices" in output
     assert "generate_growth_recommendations" in output
+    assert "generate_channel_plans" in output
+    assert "generate_content_briefs" in output
     assert "undeployed_outbound=send_email,schedule_meeting,place_consent_callback" in output
 
 

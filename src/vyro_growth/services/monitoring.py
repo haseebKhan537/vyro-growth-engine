@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings, any_live_provider_enabled, live_provider_flags
 from vyro_growth.domain import (
+    ContentBriefApprovalStatus,
     EnrollmentStatus,
     FindingCode,
     FindingSeverity,
@@ -23,6 +24,8 @@ from vyro_growth.models import (
     CampaignEnrollment,
     ChannelPlan,
     ChannelPlanRun,
+    ContentBrief,
+    ContentBriefRun,
     DiscoveryRun,
     EnrichmentRun,
     OptimizerRecommendation,
@@ -42,6 +45,7 @@ from vyro_growth.services.readiness import ReadinessPayload, assess_readiness
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
+from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.discovery_handler import DISCOVER_NPPES_PRACTICES_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outreach_enrollment_handler import PLAN_OUTREACH_ENROLLMENTS_JOB
@@ -72,6 +76,7 @@ PHASE_JOB_NAMES: dict[str, str] = {
     "voice_qualification_plans": PLAN_VOICE_QUALIFICATIONS_JOB,
     "growth_optimizer": GENERATE_GROWTH_RECOMMENDATIONS_JOB,
     "acquisition_channel_plans": GENERATE_CHANNEL_PLANS_JOB,
+    "content_briefs": GENERATE_CONTENT_BRIEFS_JOB,
 }
 
 
@@ -135,6 +140,7 @@ class PendingReviewCounts:
     voice_plans: int
     optimizer_recommendations: int
     channel_plans: int
+    content_briefs: int
 
     @property
     def total(self) -> int:
@@ -145,6 +151,7 @@ class PendingReviewCounts:
             + self.voice_plans
             + self.optimizer_recommendations
             + self.channel_plans
+            + self.content_briefs
         )
 
 
@@ -292,6 +299,31 @@ class OperatorMonitoringService:
                     run_id=channel_run.id,
                 )
             )
+        briefs = _latest_row(db, ContentBriefRun)
+        if briefs is None:
+            runs.append(
+                LatestJobStatus(
+                    phase="content_briefs",
+                    job_name=PHASE_JOB_NAMES["content_briefs"],
+                    implemented=True,
+                    status="not_started",
+                    started_at=None,
+                    finished_at=None,
+                    run_id=None,
+                )
+            )
+        else:
+            runs.append(
+                LatestJobStatus(
+                    phase="content_briefs",
+                    job_name=PHASE_JOB_NAMES["content_briefs"],
+                    implemented=True,
+                    status=briefs.status,
+                    started_at=briefs.started_at,
+                    finished_at=briefs.finished_at,
+                    run_id=briefs.id,
+                )
+            )
         return tuple(runs)
 
     def _recent_failures(self, db: Session) -> tuple[SanitizedFailure, ...]:
@@ -314,6 +346,7 @@ class OperatorMonitoringService:
             ("voice_qualification_plans", VoiceQualificationRun, None),
             ("growth_optimizer", OptimizerRun, None),
             ("acquisition_channel_plans", ChannelPlanRun, None),
+            ("content_briefs", ContentBriefRun, None),
         )
         for phase, model, extra in sources:
             stmt = select(model).where(model.status == FAILED_STATUS)
@@ -407,6 +440,13 @@ class OperatorMonitoringService:
                 ChannelPlan.approval_status
                 == RecommendationApprovalStatus.PENDING_OPERATOR_REVIEW.value,
                 ChannelPlan.launched.is_(False),
+            ),
+            content_briefs=_count_rows(
+                db,
+                ContentBrief,
+                ContentBrief.approval_status
+                == ContentBriefApprovalStatus.PENDING_OPERATOR_REVIEW.value,
+                ContentBrief.published.is_(False),
             ),
         )
 

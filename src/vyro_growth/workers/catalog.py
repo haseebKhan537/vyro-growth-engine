@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
+from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.discovery_handler import DISCOVER_NPPES_PRACTICES_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outbound import (
@@ -82,6 +83,11 @@ DEPLOYABLE_JOBS: tuple[WorkerJobSpec, ...] = (
         GENERATE_CHANNEL_PLANS_JOB,
         "plan-acquisition-channels",
         "Dry-run acquisition channel plans without spend or launch",
+    ),
+    WorkerJobSpec(
+        GENERATE_CONTENT_BRIEFS_JOB,
+        "draft-content-briefs",
+        "Review-only landing page and SEO content briefs",
     ),
 )
 

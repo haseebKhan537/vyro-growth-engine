@@ -12,6 +12,13 @@ from vyro_growth.api.channel_plans import (
     build_channel_plan_run_response,
     build_latest_channel_plan_response,
 )
+from vyro_growth.api.content_briefs import (
+    ContentBriefRunResponse,
+    GenerateContentBriefsRequest,
+    build_content_brief_run_response,
+    build_latest_content_brief_response,
+    content_brief_http_error,
+)
 from vyro_growth.api.dashboard import (
     DashboardSummaryResponse,
     SafetyCardResponse,
@@ -42,6 +49,7 @@ from vyro_growth.api.review_queue import (
 from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
+from vyro_growth.services.content_brief import ContentBriefError
 from vyro_growth.services.readiness import HealthPayload, assess_readiness, build_health_payload
 from vyro_growth.services.review_queue import ReviewQueueError
 
@@ -149,6 +157,31 @@ def latest_channel_plans(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_latest_channel_plan_response(db)
+
+
+@app.post("/internal/content-briefs/generate", tags=["internal"])
+def generate_content_briefs(
+    db: DbSession,
+    request: GenerateContentBriefsRequest | None = None,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ContentBriefRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_content_brief_run_response(db, active_settings, request)
+    except ContentBriefError as exc:
+        status_code, detail = content_brief_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.get("/internal/content-briefs", tags=["internal"])
+def latest_content_briefs(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ContentBriefRunResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_latest_content_brief_response(db)
 
 
 @app.get("/internal/review-queue", tags=["internal"])

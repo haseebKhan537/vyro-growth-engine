@@ -62,6 +62,8 @@ def test_empty_status_is_zeroed_and_safe(db_session: Session) -> None:
         "growth_optimizer",
         "booking_plans",
         "voice_qualification_plans",
+        "acquisition_channel_plans",
+        "content_briefs",
     }
     assert all(run.status == "not_started" for run in snapshot.latest_runs)
     codes = {item.code for item in snapshot.findings}
@@ -81,6 +83,8 @@ def test_populated_status_counts_pending_review_and_runs(db_session: Session) ->
     assert snapshot.pending_review.booking_plans == 1
     assert snapshot.pending_review.voice_plans == 1
     assert snapshot.pending_review.optimizer_recommendations == 1
+    assert snapshot.pending_review.channel_plans == 0
+    assert snapshot.pending_review.content_briefs == 0
     assert snapshot.pending_review.total == 5
     assert snapshot.safety.operator_halt_status == HaltStatus.HALTED.value
     assert snapshot.readiness.ready_for_manual_rollout is True

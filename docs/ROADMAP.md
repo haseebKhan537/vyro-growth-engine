@@ -187,7 +187,7 @@ Future review-queue work (not in this phase):
 - apply an approved optimizer recommendation
 - launch an approved acquisition channel plan
 
-## Phase 15 — Acquisition channel planning foundation (current)
+## Phase 15 — Acquisition channel planning foundation
 Dry-run channel plans only. No campaign launch, page publish, or spend.
 - deterministic plans from stored specialty/geography aggregates and explicit operator seed inputs
 - channels: Google Search Ads keyword-group concepts, SEO/content/landing-page topics, referral/partner ideas, specialty/geography positioning
@@ -202,3 +202,18 @@ Future channel work (not in this phase):
 - inbound forms
 - retargeting
 - partner outreach
+
+## Phase 16 — Landing page brief and SEO content draft foundation (current)
+Review-only content planning. No publishing, ads, spend, or prospect contact.
+- deterministic briefs from stored aggregate ICP signals, pending Phase 15 channel plans, and explicit safe operator seeds
+- brief types: specialty landing page, geography landing page, Google Ads landing page concept, SEO article outline, referral/partner page concept
+- persisted idempotent brief runs with source references, compliance notes, and `pending_operator_review`
+- CLI `draft-content-briefs` / `list-content-briefs`, worker job `generate_content_briefs`, and internal HTTP generate/list routes
+- review-queue and monitoring integration; approval remains decision-recording only
+- no OpenAI, Google Ads, Search Console, Analytics, SEO, or search API calls
+
+Future content work (not in this phase):
+- publish a landing page or article
+- launch Google Ads or spend budget
+- generate full page/article copy
+- contact prospects from a brief

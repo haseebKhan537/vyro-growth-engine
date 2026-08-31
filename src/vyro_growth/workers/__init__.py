@@ -20,6 +20,10 @@ from vyro_growth.workers.contact_enrichment_handler import (
     ENRICH_DECISION_MAKERS_JOB,
     EnrichDecisionMakersHandler,
 )
+from vyro_growth.workers.content_brief_handler import (
+    GENERATE_CONTENT_BRIEFS_JOB,
+    GenerateContentBriefsHandler,
+)
 from vyro_growth.workers.discovery_handler import (
     DISCOVER_NPPES_PRACTICES_JOB,
     DiscoverNppesPracticesHandler,
@@ -68,8 +72,10 @@ __all__ = [
     "WorkerJobSpec",
     "CLASSIFY_INBOUND_REPLIES_JOB",
     "GENERATE_CHANNEL_PLANS_JOB",
+    "GENERATE_CONTENT_BRIEFS_JOB",
     "GENERATE_GROWTH_RECOMMENDATIONS_JOB",
     "GenerateChannelPlansHandler",
+    "GenerateContentBriefsHandler",
     "GenerateGrowthRecommendationsHandler",
     "PLAN_BOOKING_SLOTS_JOB",
     "PlanBookingSlotsHandler",

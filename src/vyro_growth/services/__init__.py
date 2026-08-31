@@ -17,6 +17,12 @@ from vyro_growth.services.contact_enrichment import (
     ContactEnrichmentResult,
     ContactEnrichmentService,
 )
+from vyro_growth.services.content_brief import (
+    ContentBriefError,
+    ContentBriefRunResult,
+    ContentBriefService,
+    ContentBriefView,
+)
 from vyro_growth.services.dashboard import (
     DashboardAnalyticsService,
     DashboardSummary,
@@ -118,6 +124,10 @@ __all__ = [
     "ContactEnrichmentError",
     "ContactEnrichmentResult",
     "ContactEnrichmentService",
+    "ContentBriefError",
+    "ContentBriefRunResult",
+    "ContentBriefService",
+    "ContentBriefView",
     "DashboardAnalyticsService",
     "DashboardSummary",
     "GrowthOptimizerService",
