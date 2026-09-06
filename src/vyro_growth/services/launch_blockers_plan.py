@@ -83,6 +83,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "provider-setup-checklist",
     "go-live-rehearsal-checklist",
     "rehearsal-outcome-report",
+    "supervised-pilot-plan",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -114,6 +115,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/go-live-rehearsal-checklist",
     "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
+    "/internal/operator-supervised-pilot-plan",
+    "/internal/supervised-pilot-plan",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -132,6 +135,7 @@ _SURFACE_BY_SECTION = {
     "provider_setup_checklist": "provider-setup-checklist",
     "go_live_rehearsal_checklist": "go-live-rehearsal-checklist",
     "rehearsal_outcome_report": "rehearsal-outcome-report",
+    "supervised_pilot_plan": "supervised-pilot-plan",
     "owner_handoff": "owner-handoff-packet",
     "owner_handoff_packet": "owner-handoff-packet",
     "launch_readiness": "launch-readiness",
@@ -523,6 +527,7 @@ def _group_steps(
             "provider-setup-checklist": "Provider setup checklist",
             "go-live-rehearsal-checklist": "Go-live rehearsal checklist",
             "rehearsal-outcome-report": "Rehearsal outcome report",
+            "supervised-pilot-plan": "Supervised pilot launch plan",
             "credentials": "Required credentials",
             "provider_setup": "Provider setup",
         }
@@ -581,6 +586,7 @@ def _surface_label_for_section(source_section: str) -> str:
         "provider-setup-checklist": "Provider setup checklist",
         "go-live-rehearsal-checklist": "Go-live rehearsal checklist",
         "rehearsal-outcome-report": "Rehearsal outcome report",
+        "supervised-pilot-plan": "Supervised pilot launch plan",
         "owner-handoff-packet": "Owner handoff packet",
         "launch-readiness": "Launch readiness",
         "settings-execution-preflight": "Settings execution preflight",
@@ -944,6 +950,16 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         "/internal/staged-rollout-plan or via `vyro-growth "
         "staged-rollout-plan`. Read-only staged planning view; it is "
         "not permission to go live and is not an execution surface.",
+    ),
+    NextActionCode.SUPERVISED_PILOT_PLAN_IS_NOT_GO_LIVE.value: RemediationAdvice(
+        "manual_review",
+        "none",
+        "Inspect the supervised pilot launch plan at "
+        "/internal/operator-supervised-pilot-plan or "
+        "/internal/supervised-pilot-plan or via `vyro-growth "
+        "supervised-pilot-plan`. Supervised pilot planning export "
+        "only; it is not permission to go live and is not an "
+        "execution surface.",
     ),
     EXECUTION_DISABLED_CODE: RemediationAdvice(
         "configuration",

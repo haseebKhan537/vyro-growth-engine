@@ -73,6 +73,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "check-config",
     "smoke-dry-run",
     CLI_COMMAND,
+    "supervised-pilot-plan",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -93,6 +94,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/settings-execution-preflight",
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-supervised-pilot-plan",
+    "/internal/supervised-pilot-plan",
 )
 
 

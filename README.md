@@ -79,6 +79,7 @@ vyro-growth owner-launch-dossier --json
 vyro-growth provider-setup-checklist --json
 vyro-growth go-live-rehearsal-checklist --json
 vyro-growth rehearsal-outcome-report --json
+vyro-growth supervised-pilot-plan --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -1312,6 +1313,27 @@ curl http://localhost:8000/internal/operator-rehearsal-outcome-report \
 The Phase 20 dashboard, go-live rehearsal checklist UI, provider setup checklist UI, owner launch dossier UI, go-live readiness index UI, launch blockers remediation plan UI, staged go-live rollout plan UI, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, release-candidate runbook UI, and release artifact manifest UI link to this page. The page shows overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-deployment flags, operator halt before/after and unchanged proof, rehearsal step counts by status/kind/required owner approval type, expected safe assertion passed/failed counts, failed assertion keys only, remaining owner approval type rollups, blocker and gate code rollups, missing credential/config names only, closed provider/live flag names only, a sanitized outcome summary, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps. Fields are statuses, codes, route names, command names, config names, flag names, missing credential variable names, sanitized timestamps, and counts. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `OUTBOUND_ENABLED=false`, `rehearsal_outcome_report_is_not_go_live=true`, `report_is_not_permission_to_go_live=true`, `report_is_not_execution=true`, and that this is an outcome report review view only. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, or spend controls.
 
 Rendered HTML is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, assertion expected/observed values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 55 — Supervised pilot launch plan export (read-only)
+
+Export a sanitized supervised pilot launch plan that consolidates existing go-live readiness index, launch blockers plan, staged rollout plan, owner launch dossier, provider setup checklist, manual go-live rehearsal checklist, rehearsal outcome report, and settings execution preflight surfaces into a practical small-pilot plan for the first controlled prospecting test. This layer reuses those services as source material and does not recalculate readiness. It does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a planning/export layer only, not permission to go live and not an execution surface.
+
+CLI:
+```bash
+vyro-growth supervised-pilot-plan
+vyro-growth supervised-pilot-plan --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/supervised-pilot-plan \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet with generated timestamp, packet kind and purpose, overall status rollup, explicit `read_only` / `no_execution` / `no_go_live` / `no_deployment` / `no_spend` flags, operator halt before/after and unchanged proof, a count-only pilot scope recommendation (suggested max leads, max drafts, max manually reviewed sends, max daily activity, and stop conditions), grouped prerequisites (website credibility, email/domain setup, email/outreach setup, enrichment credentials, calendar setup, compliance review, owner approvals, and monitoring), safety assertions such as `OUTBOUND_ENABLED=false`, `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `owner_approved=false`, `halt_changed=false`, and `spend_allowed=false`, blocker/gate code rollups, missing credential/config names only, closed provider/live flag names only, manual pilot runbook steps as review text only with `runnable=false` and `executed=0`, abort/rollback criteria as review text only, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, `settings_applied`, `halt_changed`, `owner_approved`, and `spend_allowed` remain false. `OUTBOUND_ENABLED=false`. The export states `supervised_pilot_plan_is_not_go_live=true`. There is no apply/execute/deploy/build/publish endpoint or button.
+
+JSON is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 

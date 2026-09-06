@@ -150,6 +150,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "smoke-dry-run",
     CLI_COMMAND,
     "rehearsal-outcome-report",
+    "supervised-pilot-plan",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -174,6 +175,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
+    "/internal/operator-supervised-pilot-plan",
+    "/internal/supervised-pilot-plan",
 )
 EXPECTED_SAFE_ASSERTION_KEYS: tuple[str, ...] = (
     "executed",
