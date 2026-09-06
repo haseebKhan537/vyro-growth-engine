@@ -32,6 +32,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
     OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
+    OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
@@ -40,6 +41,7 @@ from vyro_growth.api.operator_ui import (
     OWNER_HANDOFF_JSON_PATH,
     OWNER_LAUNCH_DOSSIER_JSON_PATH,
     PROVIDER_SETUP_CHECKLIST_JSON_PATH,
+    REHEARSAL_OUTCOME_REPORT_JSON_PATH,
     RELEASE_ARTIFACT_MANIFEST_JSON_PATH,
     RELEASE_CANDIDATE_RUNBOOK_JSON_PATH,
     SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH,
@@ -194,6 +196,8 @@ def _render_related_links() -> str:
     checklist_href = escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)
     checklist_json_href = escape(PROVIDER_SETUP_CHECKLIST_JSON_PATH)
     rehearsal_json_href = escape(GO_LIVE_REHEARSAL_CHECKLIST_JSON_PATH)
+    outcome_href = escape(OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH)
+    outcome_json_href = escape(REHEARSAL_OUTCOME_REPORT_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
     preflight_json_href = escape(SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH)
@@ -220,6 +224,8 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{checklist_href}">Provider setup</a>\n'
         f'      <a class="nav-link" href="{checklist_json_href}">JSON checklist</a>\n'
         f'      <a class="nav-link" href="{rehearsal_json_href}">JSON rehearsal</a>\n'
+        f'      <a class="nav-link" href="{outcome_href}">Rehearsal outcome</a>\n'
+        f'      <a class="nav-link" href="{outcome_json_href}">JSON outcome</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
         f'      <a class="nav-link" href="{preflight_json_href}">JSON preflight</a>\n'

@@ -110,6 +110,9 @@ from vyro_growth.api.operator_owner_launch_dossier import (
 from vyro_growth.api.operator_provider_setup_checklist import (
     build_operator_provider_setup_checklist_response,
 )
+from vyro_growth.api.operator_rehearsal_outcome_report import (
+    build_operator_rehearsal_outcome_report_response,
+)
 from vyro_growth.api.operator_release_artifact_manifest import (
     build_operator_release_artifact_manifest_response,
 )
@@ -626,6 +629,20 @@ def operator_go_live_rehearsal_checklist(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_go_live_rehearsal_checklist_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-rehearsal-outcome-report",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_rehearsal_outcome_report(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_rehearsal_outcome_report_response(db, active_settings)
 
 
 @app.get(

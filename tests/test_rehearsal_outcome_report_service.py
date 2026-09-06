@@ -33,6 +33,7 @@ from vyro_growth.services.go_live_rehearsal_checklist import GoLiveRehearsalChec
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
 from vyro_growth.services.rehearsal_outcome_report import (
     CLI_COMMAND,
+    HTML_ROUTE,
     HTTP_ROUTE,
     RehearsalOutcomeReportService,
     format_rehearsal_outcome_report,
@@ -184,8 +185,7 @@ def test_empty_outcome_reuses_rehearsal_checklist_and_is_not_permission_to_go_li
     assert report.source_rehearsal_overall_status == checklist.overall_status
     assert report.source_index_overall_status == checklist.source_index_overall_status
     assert (
-        report.source_blockers_plan_overall_status
-        == checklist.source_blockers_plan_overall_status
+        report.source_blockers_plan_overall_status == checklist.source_blockers_plan_overall_status
     )
     assert (
         report.source_staged_rollout_overall_status
@@ -222,6 +222,7 @@ def test_empty_outcome_reuses_rehearsal_checklist_and_is_not_permission_to_go_li
     assert CLI_COMMAND in report.related_commands
     assert REHEARSAL_CLI_COMMAND in report.related_commands
     assert HTTP_ROUTE in report.related_routes
+    assert HTML_ROUTE in report.related_routes
     assert REHEARSAL_HTTP_ROUTE in report.related_routes
     assert "Manual rehearsal outcome only" in report.outcome_summary
     assert "not permission to go live" in report.outcome_summary

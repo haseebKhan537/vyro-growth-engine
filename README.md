@@ -1298,6 +1298,21 @@ Output is a sanitized Markdown or JSON packet with generated timestamp, packet k
 
 JSON is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, assertion expected/observed values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 54 — Operator rehearsal outcome report UI (read-only)
+
+Open an internal HTML view of the Phase 53 rehearsal outcome report. The owner can inspect compact rehearsal outcome counts, failed assertion keys, remaining approval types, and related readiness surfaces in the browser. This layer does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is an outcome report review view only, not permission to go live and not an execution surface.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-rehearsal-outcome-report \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard, go-live rehearsal checklist UI, provider setup checklist UI, owner launch dossier UI, go-live readiness index UI, launch blockers remediation plan UI, staged go-live rollout plan UI, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, release-candidate runbook UI, and release artifact manifest UI link to this page. The page shows overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-deployment flags, operator halt before/after and unchanged proof, rehearsal step counts by status/kind/required owner approval type, expected safe assertion passed/failed counts, failed assertion keys only, remaining owner approval type rollups, blocker and gate code rollups, missing credential/config names only, closed provider/live flag names only, a sanitized outcome summary, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps. Fields are statuses, codes, route names, command names, config names, flag names, missing credential variable names, sanitized timestamps, and counts. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `OUTBOUND_ENABLED=false`, `rehearsal_outcome_report_is_not_go_live=true`, `report_is_not_permission_to_go_live=true`, `report_is_not_execution=true`, and that this is an outcome report review view only. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, or spend controls.
+
+Rendered HTML is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, assertion expected/observed values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

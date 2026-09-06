@@ -30,6 +30,7 @@ OPERATOR_STAGED_ROLLOUT_PLAN_PATH = "/internal/operator-staged-rollout-plan"
 OPERATOR_OWNER_LAUNCH_DOSSIER_PATH = "/internal/operator-owner-launch-dossier"
 OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH = "/internal/operator-provider-setup-checklist"
 OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH = "/internal/operator-go-live-rehearsal-checklist"
+OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH = "/internal/operator-rehearsal-outcome-report"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -47,6 +48,7 @@ STAGED_ROLLOUT_PLAN_JSON_PATH = "/internal/staged-rollout-plan"
 OWNER_LAUNCH_DOSSIER_JSON_PATH = "/internal/owner-launch-dossier"
 PROVIDER_SETUP_CHECKLIST_JSON_PATH = "/internal/provider-setup-checklist"
 GO_LIVE_REHEARSAL_CHECKLIST_JSON_PATH = "/internal/go-live-rehearsal-checklist"
+REHEARSAL_OUTCOME_REPORT_JSON_PATH = "/internal/rehearsal-outcome-report"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -67,6 +69,7 @@ OperatorSurface = Literal[
     "owner-launch-dossier",
     "provider-setup-checklist",
     "go-live-rehearsal-checklist",
+    "rehearsal-outcome-report",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -87,6 +90,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "owner-launch-dossier": "Owner launch dossier",
     "provider-setup-checklist": "Provider setup",
     "go-live-rehearsal-checklist": "Go-live rehearsal",
+    "rehearsal-outcome-report": "Rehearsal outcome",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -106,6 +110,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "owner-launch-dossier": OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
     "provider-setup-checklist": OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
     "go-live-rehearsal-checklist": OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH,
+    "rehearsal-outcome-report": OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH,
 }
 
 
@@ -175,6 +180,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "owner-launch-dossier",
         "provider-setup-checklist",
         "go-live-rehearsal-checklist",
+        "rehearsal-outcome-report",
     )
     links = []
     for name in surfaces:
@@ -182,9 +188,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         href = _SURFACE_HREFS[name]
         links.append(filter_link(href, label, current=name == current))
     return (
-        '    <nav class="section-nav" aria-label="Operator surfaces">'
-        f"{' '.join(links)}\n"
-        "    </nav>"
+        f'    <nav class="section-nav" aria-label="Operator surfaces">{" ".join(links)}\n    </nav>'
     )
 
 

@@ -78,6 +78,7 @@ LINKED_SURFACES = (
     "/internal/operator-owner-launch-dossier",
     "/internal/operator-provider-setup-checklist",
     "/internal/operator-go-live-rehearsal-checklist",
+    "/internal/operator-rehearsal-outcome-report",
 )
 
 
