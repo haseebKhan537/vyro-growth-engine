@@ -51,6 +51,7 @@ OUTCOME_NOT_GO_LIVE_CODE = NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIV
 EXECUTION_DISABLED_CODE = "execution_disabled_in_this_phase"
 CLI_COMMAND = "rehearsal-outcome-report"
 HTTP_ROUTE = "/internal/rehearsal-outcome-report"
+HTML_ROUTE = "/internal/operator-rehearsal-outcome-report"
 KNOWN_STEP_STATUSES: tuple[str, ...] = (
     FindingSeverity.INFO.value,
     FindingSeverity.WARNING.value,
@@ -90,6 +91,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/provider-setup-checklist",
     "/internal/operator-settings-execution-preflight",
     "/internal/settings-execution-preflight",
+    HTML_ROUTE,
     HTTP_ROUTE,
 )
 
@@ -275,8 +277,7 @@ def _from_checklist(
     remaining_approvals = _unique_sorted(
         step.required_owner_approval_type
         for step in checklist.rehearsal_steps
-        if step.required_owner_approval_type != "none"
-        and _needs_follow_up(step.status)
+        if step.required_owner_approval_type != "none" and _needs_follow_up(step.status)
     )
     missing_config_names = _unique_sorted(
         step.config_name
@@ -416,6 +417,7 @@ def _next_actions(checklist: GoLiveRehearsalChecklist) -> tuple[OutcomeNextActio
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             EXECUTION_DISABLED_CODE,
@@ -427,6 +429,7 @@ def _next_actions(checklist: GoLiveRehearsalChecklist) -> tuple[OutcomeNextActio
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE.value,

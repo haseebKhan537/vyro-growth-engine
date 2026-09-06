@@ -184,9 +184,11 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE: (
         "Inspect the rehearsal outcome report at "
+        "/internal/operator-rehearsal-outcome-report or "
         "/internal/rehearsal-outcome-report or via `vyro-growth "
-        "rehearsal-outcome-report`. Compact outcome export only; it "
-        "is not permission to go live and is not an execution surface."
+        "rehearsal-outcome-report`. Compact outcome review view "
+        "only; it is not permission to go live and is not an "
+        "execution surface."
     ),
 }
 

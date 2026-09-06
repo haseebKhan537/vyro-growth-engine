@@ -629,7 +629,7 @@ Internal operator HTML shell of the Phase 51 manual go-live rehearsal checklist.
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 53 — Rehearsal outcome report export (current)
+## Phase 53 — Rehearsal outcome report export
 Sanitized read-only CLI and internal JSON export that summarizes the current Phase 51 manual go-live rehearsal checklist into a compact outcome packet. Report/export only, no execution.
 - CLI `vyro-growth rehearsal-outcome-report` with Markdown output and `--json` output
 - Internal JSON `GET /internal/rehearsal-outcome-report`
@@ -642,6 +642,17 @@ Sanitized read-only CLI and internal JSON export that summarizes the current Pha
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - HTTP responses return `Cache-Control: no-store`
 - This is an outcome report/export only, not permission to go live and not an execution surface
+
+## Phase 54 — Operator rehearsal outcome report UI (current)
+Internal operator HTML shell of the Phase 53 rehearsal outcome report. Read-only, no execution.
+- `GET /internal/operator-rehearsal-outcome-report`
+- Reuses existing Phase 53 `RehearsalOutcomeReportService` / payload and does not duplicate readiness calculations
+- Linked from the operator dashboard, go-live rehearsal checklist UI, provider setup checklist UI, owner launch dossier UI, go-live readiness index, staged rollout UI, launch blockers UI, release candidate runbook UI, release artifact manifest UI, and related readiness surfaces
+- Renders overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-deployment flags, operator halt before/after and unchanged proof, rehearsal step count and counts by status/kind/required owner approval type, expected safe assertion pass/fail counts, failed safe assertion keys only, remaining owner approval type rollups, blocker/gate code rollups, missing credential/config names only, closed provider/live flag names only, outcome summary as sanitized review text only, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names, missing credential variable names, sanitized timestamps, and counts
+- Page states this is an outcome report review view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

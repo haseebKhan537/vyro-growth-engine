@@ -250,6 +250,7 @@ def test_renderer_populated_section_filter_hides_other_panels() -> None:
     assert "/internal/operator-owner-launch-dossier" in html
     assert "/internal/operator-provider-setup-checklist" in html
     assert "/internal/operator-go-live-rehearsal-checklist" in html
+    assert "/internal/operator-rehearsal-outcome-report" in html
     for marker in ACTION_MARKERS:
         assert marker not in html.lower()
 
@@ -467,8 +468,7 @@ def test_operator_dashboard_reports_packets_without_executing(
     assert PHI_SNIPPET not in body
     assert PROSPECT_EMAIL not in body
     assert (
-        db_session.scalar(select(func.count()).select_from(OwnerApprovalPacket))
-        == before_packets
+        db_session.scalar(select(func.count()).select_from(OwnerApprovalPacket)) == before_packets
     )
     assert db_session.scalar(select(func.count()).select_from(Activity)) == before_activities
     assert read_operator_halt(db_session) is HaltStatus.HALTED

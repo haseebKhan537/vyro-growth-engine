@@ -172,6 +172,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     MANIFEST_HTTP_ROUTE,
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
 )
 EXPECTED_SAFE_ASSERTION_KEYS: tuple[str, ...] = (

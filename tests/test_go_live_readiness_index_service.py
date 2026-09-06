@@ -164,6 +164,7 @@ def test_empty_index_is_read_only_and_not_permission_to_go_live(db_session: Sess
     assert "/internal/operator-provider-setup-checklist" in index.related_routes
     assert "/internal/provider-setup-checklist" in index.related_routes
     assert "/internal/operator-go-live-rehearsal-checklist" in index.related_routes
+    assert "/internal/operator-rehearsal-outcome-report" in index.related_routes
     assert "/internal/go-live-rehearsal-checklist" in index.related_routes
     assert "/internal/rehearsal-outcome-report" in index.related_routes
     assert payload["go_live_permitted"] is False
@@ -200,9 +201,7 @@ def test_index_reuses_summaries_and_does_not_leak_or_write(db_session: Session) 
     second = GoLiveReadinessIndexService().build(db_session, settings)
 
     launch = next(card for card in first.surfaces if card.key == "launch-readiness")
-    preflight = next(
-        card for card in first.surfaces if card.key == "settings-execution-preflight"
-    )
+    preflight = next(card for card in first.surfaces if card.key == "settings-execution-preflight")
     handoff = next(card for card in first.surfaces if card.key == "owner-handoff-packet")
     assert launch.overall_status
     assert any(item.label == "Requests" for item in preflight.counts)

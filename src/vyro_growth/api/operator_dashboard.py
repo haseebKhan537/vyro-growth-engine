@@ -45,6 +45,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
     OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
+    OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_REVIEW_QUEUE_PATH,
@@ -284,7 +285,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)}">'
         "Provider setup</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)}">'
-        "Go-live rehearsal</a>\n"
+        "Go-live rehearsal</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH)}">'
+        "Rehearsal outcome</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -370,6 +373,9 @@ def _render_safety(
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)}">'
         "Open go-live rehearsal checklist</a> — read-only review view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH)}">'
+        "Open rehearsal outcome report</a> — read-only review view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
@@ -579,6 +585,9 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)}">'
         "Open go-live rehearsal checklist</a> — read-only review view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH)}">'
+        "Open rehearsal outcome report</a> — read-only review view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"

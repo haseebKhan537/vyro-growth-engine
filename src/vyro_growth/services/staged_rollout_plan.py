@@ -146,6 +146,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/provider-setup-checklist",
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/go-live-rehearsal-checklist",
+    "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
 )
 _STATUS_RANK = {
@@ -489,9 +490,9 @@ def _stage_0(
                 config_name="OUTBOUND_ENABLED",
             ),
             _item(
-                NextActionCode.KEEP_OPERATOR_HALT.value if halt_ok else (
-                    NextActionCode.RECORD_OPERATOR_HALT.value
-                ),
+                NextActionCode.KEEP_OPERATOR_HALT.value
+                if halt_ok
+                else (NextActionCode.RECORD_OPERATOR_HALT.value),
                 "info" if halt_ok else FindingSeverity.WARNING.value,
                 (
                     "Verify operator halt remains halted. This plan does not "

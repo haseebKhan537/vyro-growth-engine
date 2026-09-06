@@ -91,6 +91,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/provider-setup-checklist",
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/go-live-rehearsal-checklist",
+    "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
 )
 _SEVERITY_RANK = {
@@ -647,14 +648,16 @@ def _remaining_checklist(
         NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE.value,
         FindingSeverity.INFO.value,
         "rehearsal_outcome_report",
+        html_route="/internal/operator-rehearsal-outcome-report",
         json_route="/internal/rehearsal-outcome-report",
         command_name="rehearsal-outcome-report",
         label=(
             "Inspect the rehearsal outcome report at "
+            "/internal/operator-rehearsal-outcome-report or "
             "/internal/rehearsal-outcome-report or via `vyro-growth "
-            "rehearsal-outcome-report`. Compact outcome export only; "
-            "it is not permission to go live and is not an execution "
-            "surface."
+            "rehearsal-outcome-report`. Compact outcome review view "
+            "only; it is not permission to go live and is not an "
+            "execution surface."
         ),
     )
     for handoff_item in handoff.remaining_manual_owner_checklist:
@@ -722,7 +725,7 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
             )
         case "rehearsal_outcome_report":
             return (
-                None,
+                "/internal/operator-rehearsal-outcome-report",
                 "/internal/rehearsal-outcome-report",
                 "rehearsal-outcome-report",
             )
