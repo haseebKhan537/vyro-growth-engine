@@ -401,7 +401,7 @@ def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
         settings,
         request_type=SettingsChangeRequestType.REQUEST_OUTBOUND_ENABLEMENT_REVIEW.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
-        idempotency_key="ui-plan",
+        idempotency_key="ui-plan-main",
         reviewer_notes=PHI_SNIPPET,
     )
     SettingsChangeRequestService().record_decision(
