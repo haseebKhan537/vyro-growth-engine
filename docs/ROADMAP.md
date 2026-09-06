@@ -522,7 +522,7 @@ Sanitized read-only CLI and internal JSON export that turns Phase 42 go-live rea
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - This is a remediation planning export only, not permission to go live and not an execution surface
 
-## Phase 44 — Operator launch blockers remediation plan UI (current)
+## Phase 44 — Operator launch blockers remediation plan UI
 Internal operator HTML shell of the Phase 43 launch blockers remediation plan. Read-only, no execution.
 - `GET /internal/operator-launch-blockers-plan`
 - Reuses existing Phase 43 `LaunchBlockersPlanService` / payload and does not duplicate readiness calculations
@@ -532,6 +532,18 @@ Internal operator HTML shell of the Phase 43 launch blockers remediation plan. R
 - Page states this is a remediation planning view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 45 — Staged go-live rollout plan export (current)
+Sanitized read-only CLI and internal JSON export that consolidates the go-live readiness index, launch blockers remediation plan, compliance evidence binder, release-candidate runbook, release artifact manifest, and launch readiness checks into a staged manual rollout plan. Planning/export only, no execution.
+- CLI `vyro-growth staged-rollout-plan` with Markdown output and `--json` output
+- Internal JSON `GET /internal/staged-rollout-plan`
+- Reuses existing readiness/blocker/runbook/binder/manifest/launch-readiness services as source material and does not duplicate source-of-truth readiness logic
+- Deterministic stage groups: stage 0 safe defaults and operator halt verification; stage 1 credential/configuration preparation by variable name only; stage 2 local dry-run verification and CI gates; stage 3 owner review of packets/checklists/readiness surfaces; stage 4 future manual deployment preparation only; stage 5 future owner-approved live enablement prerequisites only
+- Safe metadata only: stage key/label, status, blocker/gate codes, required owner approval type if any, manual checklist items, and safe route/CLI/config-name references
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `manual_review_only=true`, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, and `staged_rollout_plan_is_not_go_live=true`
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- This is a staged rollout planning export only, not permission to go live and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

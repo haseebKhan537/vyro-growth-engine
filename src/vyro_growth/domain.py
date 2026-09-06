@@ -437,6 +437,9 @@ class NextActionCode(StrEnum):
     LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION = (
         "launch_blockers_plan_is_not_permission_to_go_live"
     )
+    STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE = (
+        "staged_rollout_plan_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

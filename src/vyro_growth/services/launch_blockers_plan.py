@@ -78,6 +78,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "release-candidate-runbook",
     "release-artifact-manifest",
     CLI_COMMAND,
+    "staged-rollout-plan",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -99,6 +100,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-audit-timeline",
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-staged-rollout-plan",
+    "/internal/staged-rollout-plan",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -112,6 +115,7 @@ _STATUS_RANK = {
 _SURFACE_BY_SECTION = {
     "go_live_readiness_index": "go-live-readiness-index",
     "launch_blockers_plan": "launch-blockers-plan",
+    "staged_rollout_plan": "staged-rollout-plan",
     "owner_handoff": "owner-handoff-packet",
     "owner_handoff_packet": "owner-handoff-packet",
     "launch_readiness": "launch-readiness",
@@ -498,6 +502,7 @@ def _group_steps(
         {
             "launch-blockers-plan": "Launch blockers remediation plan",
             "go-live-readiness-index": "Go-live readiness index",
+            "staged-rollout-plan": "Staged go-live rollout plan",
             "credentials": "Required credentials",
             "provider_setup": "Provider setup",
         }
@@ -551,6 +556,7 @@ def _surface_label_for_section(source_section: str) -> str:
     labels = {
         "launch-blockers-plan": "Launch blockers remediation plan",
         "go-live-readiness-index": "Go-live readiness index",
+        "staged-rollout-plan": "Staged go-live rollout plan",
         "owner-handoff-packet": "Owner handoff packet",
         "launch-readiness": "Launch readiness",
         "settings-execution-preflight": "Settings execution preflight",
@@ -905,6 +911,14 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         f"{HTML_ROUTE} or {HTTP_ROUTE} or via `vyro-growth {CLI_COMMAND}`. "
         "Read-only planning view; it is not permission to go live and is "
         "not an execution surface.",
+    ),
+    NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE.value: RemediationAdvice(
+        "manual_review",
+        "none",
+        "Inspect the staged go-live rollout plan at "
+        "/internal/staged-rollout-plan or via `vyro-growth "
+        "staged-rollout-plan`. Read-only staged planning export; it is "
+        "not permission to go live and is not an execution surface.",
     ),
     EXECUTION_DISABLED_CODE: RemediationAdvice(
         "configuration",

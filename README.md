@@ -1128,6 +1128,27 @@ The Phase 20 dashboard, go-live readiness index UI, command-center next-action l
 
 Rendered HTML is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 45 — Staged go-live rollout plan export (read-only)
+
+Export a sanitized staged go-live rollout plan that consolidates the existing go-live readiness index, launch blockers remediation plan, compliance evidence binder, release-candidate runbook, release artifact manifest, and launch readiness checks. This layer reuses those services as source material and does not recalculate readiness. It does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a staged rollout planning export only, not permission to go live and not an execution surface.
+
+CLI:
+```bash
+vyro-growth staged-rollout-plan
+vyro-growth staged-rollout-plan --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/staged-rollout-plan \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet grouped into deterministic stages: stage 0 safe defaults and operator halt verification; stage 1 credential/configuration preparation by variable name only; stage 2 local dry-run verification and CI gates; stage 3 owner review of packets/checklists/readiness surfaces; stage 4 future manual deployment preparation only; stage 5 future owner-approved live enablement prerequisites only. Each stage includes stage key/label, status, blocker/gate codes, required owner approval type if any, manual checklist items, and safe route/CLI/config-name references. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, `settings_applied`, `halt_changed`, and `owner_approved` remain false. `OUTBOUND_ENABLED=false`. The export states `staged_rollout_plan_is_not_go_live=true`. There is no apply/execute/deploy/build/publish endpoint or button.
+
+JSON is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:
