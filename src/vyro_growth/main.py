@@ -60,6 +60,10 @@ from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
 )
+from vyro_growth.api.launch_blockers_plan import (
+    LaunchBlockersPlanResponse,
+    build_launch_blockers_plan_response,
+)
 from vyro_growth.api.launch_readiness import (
     LaunchReadinessResponse,
     build_launch_readiness_response,
@@ -783,6 +787,16 @@ def go_live_readiness_index(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_go_live_readiness_index_response(db, active_settings)
+
+
+@app.get("/internal/launch-blockers-plan", tags=["internal"])
+def launch_blockers_plan(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> LaunchBlockersPlanResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_launch_blockers_plan_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

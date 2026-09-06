@@ -73,6 +73,7 @@ vyro-growth compliance-evidence-binder --json
 vyro-growth release-candidate-runbook --json
 vyro-growth release-artifact-manifest --json
 vyro-growth go-live-readiness-index --json
+vyro-growth launch-blockers-plan --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -1088,6 +1089,27 @@ curl http://localhost:8000/internal/go-live-readiness-index \
 ```
 
 Output is a sanitized Markdown or JSON packet with the same safe readiness rollup: operator dashboard / command center, launch readiness, settings execution preflight, owner handoff packet, compliance evidence binder, release-candidate runbook, release artifact manifest, operator audit timeline counts, live-blocking flags, and the manual owner checklist rollup. Fields are statuses, counts, codes, routes, commands, flag names/states, missing credential variable names, sanitized timestamps, and checklist labels. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, `build_allowed`, and `artifact_publish_allowed` remain false. `OUTBOUND_ENABLED=false`. The export states it is not permission to go live. There is no apply/execute/deploy/build/publish endpoint or button.
+
+JSON is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 43 — Launch blockers remediation plan export (read-only)
+
+Export existing Phase 42 go-live readiness index blockers as a sanitized remediation plan. This layer reuses the index as the source of truth and does not recalculate readiness. It does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a remediation planning export only, not permission to go live and not an execution surface.
+
+CLI:
+```bash
+vyro-growth launch-blockers-plan
+vyro-growth launch-blockers-plan --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/launch-blockers-plan \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet grouped by readiness surface or blocker category. Each step includes blocker code, surface key/label, current status, recommended manual remediation step, required owner approval type if any, step kind (configuration, credential, legal/compliance, deployment, provider setup, or manual review), and safe route/CLI/config-name references. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, `settings_applied`, `halt_changed`, and `owner_approved` remain false. `OUTBOUND_ENABLED=false`. The export states it is not permission to go live. There is no apply/execute/deploy/build/publish endpoint or button.
 
 JSON is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
