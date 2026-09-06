@@ -42,6 +42,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
+    OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_REVIEW_QUEUE_PATH,
@@ -275,7 +276,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)}">'
         "Launch blockers</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)}">'
-        "Staged rollout</a>\n"
+        "Staged rollout</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)}">'
+        "Owner launch dossier</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -352,6 +355,9 @@ def _render_safety(
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)}">'
         "Open staged go-live rollout plan</a> — read-only planning view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)}">'
+        "Open owner launch dossier</a> — read-only review view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
@@ -552,6 +558,9 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)}">'
         "Open staged go-live rollout plan</a> — read-only planning view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)}">'
+        "Open owner launch dossier</a> — read-only review view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"

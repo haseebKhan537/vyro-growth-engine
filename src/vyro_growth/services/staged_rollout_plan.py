@@ -137,6 +137,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-audit-timeline",
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-owner-launch-dossier",
     "/internal/owner-launch-dossier",
 )
 _STATUS_RANK = {

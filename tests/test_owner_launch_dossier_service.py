@@ -42,6 +42,7 @@ from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, s
 from vyro_growth.services.owner_handoff import OwnerHandoffPacketService
 from vyro_growth.services.owner_launch_dossier import (
     CLI_COMMAND,
+    HTML_ROUTE,
     HTTP_ROUTE,
     SOURCE_KEYS,
     OwnerLaunchDossierService,
@@ -222,6 +223,7 @@ def test_empty_dossier_reuses_sources_and_is_not_permission_to_go_live(
     assert BLOCKERS_HTTP_ROUTE in dossier.related_routes
     assert STAGED_HTTP_ROUTE in dossier.related_routes
     assert HTTP_ROUTE in dossier.related_routes
+    assert HTML_ROUTE in dossier.related_routes
     assert CLI_COMMAND in dossier.related_commands
     assert tuple(source.key for source in dossier.sources) == SOURCE_KEYS
     codes = {action.code for action in dossier.next_actions}

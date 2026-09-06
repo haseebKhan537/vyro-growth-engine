@@ -97,6 +97,9 @@ from vyro_growth.api.operator_launch_blockers_plan import (
 from vyro_growth.api.operator_owner_handoff import (
     build_operator_owner_handoff_response,
 )
+from vyro_growth.api.operator_owner_launch_dossier import (
+    build_operator_owner_launch_dossier_response,
+)
 from vyro_growth.api.operator_release_artifact_manifest import (
     build_operator_release_artifact_manifest_response,
 )
@@ -563,6 +566,20 @@ def operator_staged_rollout_plan(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_staged_rollout_plan_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-owner-launch-dossier",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_owner_launch_dossier(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_owner_launch_dossier_response(db, active_settings)
 
 
 @app.get(

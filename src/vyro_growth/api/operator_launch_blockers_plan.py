@@ -28,6 +28,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
+    OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
@@ -176,6 +177,7 @@ def _render_related_links() -> str:
     manifest_json_href = escape(RELEASE_ARTIFACT_MANIFEST_JSON_PATH)
     timeline_href = escape(OPERATOR_AUDIT_TIMELINE_PATH)
     staged_href = escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)
+    dossier_href = escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Linked readiness surfaces">\n'
         f'      <a class="nav-link" href="{dashboard_href}">Dashboard</a>\n'
@@ -183,6 +185,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{index_json_href}">JSON index</a>\n'
         f'      <a class="nav-link" href="{plan_json_href}">JSON plan</a>\n'
         f'      <a class="nav-link" href="{staged_href}">Staged rollout</a>\n'
+        f'      <a class="nav-link" href="{dossier_href}">Owner launch dossier</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
         f'      <a class="nav-link" href="{preflight_json_href}">JSON preflight</a>\n'

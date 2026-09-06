@@ -81,6 +81,7 @@ DOSSIER_NOT_GO_LIVE_CODE = NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE.va
 EXECUTION_DISABLED_CODE = "execution_disabled_in_this_phase"
 CLI_COMMAND = "owner-launch-dossier"
 HTTP_ROUTE = "/internal/owner-launch-dossier"
+HTML_ROUTE = "/internal/operator-owner-launch-dossier"
 HANDOFF_CLI_COMMAND = "owner-handoff-packet"
 HANDOFF_HTTP_ROUTE = "/internal/owner-handoff-packet"
 HANDOFF_HTML_ROUTE = "/internal/operator-owner-handoff-packet"
@@ -138,6 +139,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     PREFLIGHT_HTML_ROUTE,
     PREFLIGHT_HTTP_ROUTE,
     AUDIT_HTML_ROUTE,
+    HTML_ROUTE,
     HTTP_ROUTE,
 )
 _STATUS_RANK = {
@@ -698,6 +700,7 @@ def _next_actions(
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             EXECUTION_DISABLED_CODE,
@@ -708,6 +711,7 @@ def _next_actions(
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             NextActionCode.KEEP_OUTBOUND_DISABLED.value,
