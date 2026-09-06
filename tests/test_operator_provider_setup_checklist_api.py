@@ -72,6 +72,8 @@ LINKED_SURFACES = (
     "/internal/owner-launch-dossier",
     "/internal/operator-provider-setup-checklist",
     "/internal/provider-setup-checklist",
+    "/internal/operator-go-live-rehearsal-checklist",
+    "/internal/go-live-rehearsal-checklist",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",
     "/internal/settings-execution-preflight",

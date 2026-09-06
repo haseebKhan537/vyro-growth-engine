@@ -129,6 +129,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     RUNBOOK_HTTP_ROUTE,
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-go-live-rehearsal-checklist",
     "/internal/go-live-rehearsal-checklist",
 )
 _STATUS_RANK = {

@@ -29,6 +29,7 @@ from vyro_growth.services.go_live_readiness_index import (
 from vyro_growth.services.go_live_rehearsal_checklist import (
     CLI_COMMAND,
     GATE_KEYS,
+    HTML_ROUTE,
     HTTP_ROUTE,
     SOURCE_KEYS,
     GoLiveRehearsalChecklistService,
@@ -231,6 +232,7 @@ def test_empty_rehearsal_reuses_sources_and_is_not_permission_to_go_live(
     assert DOSSIER_HTTP_ROUTE in checklist.related_routes
     assert PROVIDER_HTTP_ROUTE in checklist.related_routes
     assert HTTP_ROUTE in checklist.related_routes
+    assert HTML_ROUTE in checklist.related_routes
     assert CLI_COMMAND in checklist.related_commands
     assert tuple(source.key for source in checklist.sources) == SOURCE_KEYS
     assert {step.gate_key for step in checklist.rehearsal_steps} == set(GATE_KEYS)

@@ -1,11 +1,11 @@
-"""Read-only operator provider setup checklist HTML shell.
+"""Read-only operator go-live rehearsal checklist HTML shell.
 
-Phase 50 renders a sanitized view of the existing Phase 49 provider
-credential/setup checklist. It reuses ProviderSetupChecklistService and
-never recalculates readiness. It never executes, builds, publishes,
-deploys, applies settings, lifts halt, enables outbound, calls providers,
-or changes live state. This page is a provider setup review view only,
-not permission to go live and not an execution surface.
+Phase 52 renders a sanitized view of the existing Phase 51 manual go-live
+rehearsal checklist. It reuses GoLiveRehearsalChecklistService and never
+recalculates readiness. It never executes, builds, publishes, deploys,
+applies settings, lifts halt, enables outbound, calls providers, or changes
+live state. This page is a manual rehearsal review view only, not a script
+runner, not permission to go live, and not an execution surface.
 """
 
 from __future__ import annotations
@@ -53,36 +53,36 @@ from vyro_growth.api.operator_ui import (
 )
 from vyro_growth.config import Settings
 from vyro_growth.domain import FindingSeverity
-from vyro_growth.services.provider_setup_checklist import (
-    LocalVerificationGate,
-    ProviderCredentialStatus,
-    ProviderFlagState,
-    ProviderSetupCategory,
-    ProviderSetupChecklist,
-    ProviderSetupChecklistService,
-    ProviderSetupNextAction,
+from vyro_growth.services.go_live_rehearsal_checklist import (
+    GoLiveRehearsalChecklist,
+    GoLiveRehearsalChecklistService,
+    RehearsalAssertion,
+    RehearsalNextAction,
+    RehearsalRollbackNote,
+    RehearsalSourceSurface,
+    RehearsalStep,
 )
 from vyro_growth.services.release_artifact_manifest import LocalGitMetadata
 
 logger = structlog.get_logger(__name__)
 
 
-def render_provider_setup_checklist_error() -> str:
+def render_go_live_rehearsal_checklist_error() -> str:
     return render_failure_page(
-        page_id="operator-provider-setup-checklist-error",
-        title="Provider setup checklist unavailable",
-        heading="Read-only provider setup checklist unavailable",
-        banner="Unable to load the provider setup checklist.",
+        page_id="operator-go-live-rehearsal-checklist-error",
+        title="Go-live rehearsal checklist unavailable",
+        heading="Read-only go-live rehearsal checklist unavailable",
+        banner="Unable to load the go-live rehearsal checklist.",
         detail=(
-            "The sanitized provider-setup review view could not be rendered. "
+            "The sanitized manual-rehearsal review view could not be rendered. "
             "Retry after checking database connectivity and runtime config. "
-            "This page is a provider setup review view only, not permission "
+            "This page is a manual rehearsal review view only, not permission "
             "to go live and not an execution surface."
         ),
     )
 
 
-def render_provider_setup_checklist(checklist: ProviderSetupChecklist) -> str:
+def render_go_live_rehearsal_checklist(checklist: GoLiveRehearsalChecklist) -> str:
     generated = html_escape(format_dt(checklist.generated_at))
     return (
         "<!DOCTYPE html>\n"
@@ -90,32 +90,37 @@ def render_provider_setup_checklist(checklist: ProviderSetupChecklist) -> str:
         "<head>\n"
         '  <meta charset="utf-8">\n'
         '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        "  <title>Provider setup checklist</title>\n"
+        "  <title>Go-live rehearsal checklist</title>\n"
         f"{OPERATOR_UI_STYLES}\n"
         "</head>\n"
         "<body>\n"
-        '  <main id="operator-provider-setup-checklist" data-read-only="true" '
+        '  <main id="operator-go-live-rehearsal-checklist" data-read-only="true" '
         'data-dry-run-only="true" data-execution-allowed="false" '
         'data-go-live-permitted="false" data-deployment-allowed="false" '
         'data-build-allowed="false" data-artifact-publish-allowed="false" '
         'data-no-execution="true" data-no-go-live="true" '
         'data-no-deployment="true" data-manual-review-only="true" '
-        'data-provider-setup-checklist-is-not-go-live="true" '
+        'data-go-live-rehearsal-checklist-is-not-go-live="true" '
         'data-checklist-is-not-permission-to-go-live="true" '
         'data-checklist-is-not-execution="true" '
+        'data-rehearsal-is-not-a-script-runner="true" '
         'data-index-is-not-permission-to-go-live="true" '
         'data-dossier-is-not-permission-to-go-live="true" '
         'data-staged-rollout-plan-is-not-go-live="true" '
-        'data-runbook-is-not-deployment="true">\n'
+        'data-provider-setup-checklist-is-not-go-live="true" '
+        'data-runbook-is-not-deployment="true" '
+        'data-manifest-is-not-a-build-or-deploy="true">\n'
         f"{_render_header(checklist, generated)}\n"
-        f"{render_operator_nav('provider-setup-checklist')}\n"
+        f"{render_operator_nav('go-live-rehearsal-checklist')}\n"
         f"{_render_related_links()}\n"
         f"{_render_live_blocking_flags(checklist)}\n"
+        f"{_render_expected_assertions(checklist.expected_safe_assertions)}\n"
         f"{_render_source_references(checklist)}\n"
-        f"{_render_categories(checklist.categories)}\n"
+        f"{_render_included_surfaces(checklist.sources)}\n"
+        f"{_render_rehearsal_steps(checklist.rehearsal_steps)}\n"
+        f"{_render_rollback_guidance(checklist.rollback_guidance)}\n"
         f"{_render_related_inventory(checklist)}\n"
         f"{_render_local_git(checklist.local_git)}\n"
-        f"{_render_verification_gates(checklist.local_verification_gates)}\n"
         f"{_render_next_actions(checklist.next_actions)}\n"
         f"{_render_footer(checklist, generated)}\n"
         "  </main>\n"
@@ -124,27 +129,27 @@ def render_provider_setup_checklist(checklist: ProviderSetupChecklist) -> str:
     )
 
 
-def build_operator_provider_setup_checklist_response(
+def build_operator_go_live_rehearsal_checklist_response(
     db: Session,
     settings: Settings,
     *,
-    service: ProviderSetupChecklistService | None = None,
+    service: GoLiveRehearsalChecklistService | None = None,
 ) -> HTMLResponse:
     try:
-        builder = service or ProviderSetupChecklistService()
+        builder = service or GoLiveRehearsalChecklistService()
         checklist = builder.build(db, settings)
-        html = render_provider_setup_checklist(checklist)
+        html = render_go_live_rehearsal_checklist(checklist)
         return HTMLResponse(content=html, status_code=200, headers=NO_STORE_HEADERS)
     except Exception:
-        logger.exception("operator_provider_setup_checklist_render_failed", read_only=True)
+        logger.exception("operator_go_live_rehearsal_checklist_render_failed", read_only=True)
         return HTMLResponse(
-            content=render_provider_setup_checklist_error(),
+            content=render_go_live_rehearsal_checklist_error(),
             status_code=500,
             headers=NO_STORE_HEADERS,
         )
 
 
-def _render_header(checklist: ProviderSetupChecklist, generated: str) -> str:
+def _render_header(checklist: GoLiveRehearsalChecklist, generated: str) -> str:
     git = checklist.local_git
     git_meta = (
         f" · git {html_escape(git.current_branch)}@{html_escape(git.current_sha)}"
@@ -154,16 +159,17 @@ def _render_header(checklist: ProviderSetupChecklist, generated: str) -> str:
     return (
         '    <header class="page-header">\n'
         "      <div>\n"
-        "        <h1>Provider setup checklist</h1>\n"
+        "        <h1>Go-live rehearsal checklist</h1>\n"
         '        <p class="lede">Read-only owner/operator review view of the '
-        "existing provider credential/setup checklist. Execution remains "
+        "existing manual go-live rehearsal checklist. Execution remains "
         "disabled. This page does not build, publish, deploy, apply "
         "settings, or lift halt. OUTBOUND_ENABLED=false. "
         "go_live_permitted=false. execution_allowed=false. "
         "deployment_allowed=false. build_allowed=false. "
-        "artifact_publish_allowed=false. "
-        "provider_setup_checklist_is_not_go_live=true. This page is a "
-        "provider setup review view only, not permission to go live and "
+        "artifact_publish_allowed=false. owner_approved=false. "
+        "go_live_rehearsal_checklist_is_not_go_live=true. "
+        "rehearsal_is_not_a_script_runner=true. This page is a "
+        "manual rehearsal review view only, not permission to go live and "
         "not an execution surface.</p>\n"
         "      </div>\n"
         f'      <p class="meta">Generated {generated} · overall '
@@ -185,8 +191,8 @@ def _render_related_links() -> str:
     staged_json_href = escape(STAGED_ROLLOUT_PLAN_JSON_PATH)
     dossier_href = escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
     dossier_json_href = escape(OWNER_LAUNCH_DOSSIER_JSON_PATH)
+    checklist_href = escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)
     checklist_json_href = escape(PROVIDER_SETUP_CHECKLIST_JSON_PATH)
-    rehearsal_href = escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)
     rehearsal_json_href = escape(GO_LIVE_REHEARSAL_CHECKLIST_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
@@ -211,8 +217,8 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{staged_json_href}">JSON staged plan</a>\n'
         f'      <a class="nav-link" href="{dossier_href}">Owner launch dossier</a>\n'
         f'      <a class="nav-link" href="{dossier_json_href}">JSON dossier</a>\n'
+        f'      <a class="nav-link" href="{checklist_href}">Provider setup</a>\n'
         f'      <a class="nav-link" href="{checklist_json_href}">JSON checklist</a>\n'
-        f'      <a class="nav-link" href="{rehearsal_href}">Go-live rehearsal</a>\n'
         f'      <a class="nav-link" href="{rehearsal_json_href}">JSON rehearsal</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
@@ -230,7 +236,7 @@ def _render_related_links() -> str:
     )
 
 
-def _render_live_blocking_flags(checklist: ProviderSetupChecklist) -> str:
+def _render_live_blocking_flags(checklist: GoLiveRehearsalChecklist) -> str:
     return (
         '    <section class="status-strip" id="live-blocking-flags" '
         'aria-label="Live-blocking flags">\n'
@@ -244,12 +250,14 @@ def _render_live_blocking_flags(checklist: ProviderSetupChecklist) -> str:
         f"      {metric('Build allowed', yes_no(checklist.build_allowed))}\n"
         f"      {metric('Artifact publish allowed',
             yes_no(checklist.artifact_publish_allowed))}\n"
-        f"      {metric('Provider setup checklist is not go-live',
-            yes_no(checklist.provider_setup_checklist_is_not_go_live))}\n"
+        f"      {metric('Go-live rehearsal checklist is not go-live',
+            yes_no(checklist.go_live_rehearsal_checklist_is_not_go_live))}\n"
         f"      {metric('Checklist is not permission to go live',
             yes_no(checklist.checklist_is_not_permission_to_go_live))}\n"
         f"      {metric('Checklist is not execution',
             yes_no(checklist.checklist_is_not_execution))}\n"
+        f"      {metric('Rehearsal is not a script runner',
+            yes_no(checklist.rehearsal_is_not_a_script_runner))}\n"
         "    </section>\n"
         '    <section class="panel" id="checklist-gates">\n'
         "      <h2>Read-only flags and closed defaults</h2>\n"
@@ -285,12 +293,47 @@ def _render_live_blocking_flags(checklist: ProviderSetupChecklist) -> str:
         "values, API keys, tokens, message bodies, emails, phones, evidence "
         "snippets, or unsafe error text. OUTBOUND_ENABLED=false. "
         "go_live_permitted=false and execution_allowed=false. This is a "
-        "read-only provider setup review view, not permission to go live.</p>\n"
+        "read-only manual rehearsal review view, not permission to go live.</p>\n"
         "    </section>"
     )
 
 
-def _render_source_references(checklist: ProviderSetupChecklist) -> str:
+def _render_expected_assertions(assertions: tuple[RehearsalAssertion, ...]) -> str:
+    if not assertions:
+        body = '<p class="empty-state">No expected safe assertions.</p>'
+    else:
+        rows = "".join(_assertion_row(item) for item in assertions)
+        body = (
+            '<table class="dense"><thead><tr>'
+            "<th>Key</th><th>Expected</th><th>Observed</th><th>Passed</th>"
+            f"</tr></thead><tbody>{rows}</tbody></table>"
+        )
+    return (
+        '    <section class="panel" id="expected-safe-assertions">\n'
+        "      <h2>Expected safe assertions</h2>\n"
+        '      <p class="hint">These assertions are review reminders only. '
+        "This page does not execute, apply settings, lift halt, or change "
+        "live flags. Expected values include OUTBOUND_ENABLED=false, "
+        "go_live_permitted=false, execution_allowed=false, "
+        "deployment_allowed=false, owner_approved=false, and halt unchanged.</p>\n"
+        f"      {body}\n"
+        "    </section>"
+    )
+
+
+def _assertion_row(item: RehearsalAssertion) -> str:
+    status = "ready_for_owner_review" if item.passed else FindingSeverity.BLOCKED.value
+    return (
+        f'<tr class="{_status_class(status)}">'
+        f'<td class="mono">{html_escape(item.key)}</td>'
+        f'<td class="mono">{html_escape(item.expected)}</td>'
+        f'<td class="mono">{html_escape(item.observed)}</td>'
+        f"<td>{yes_no(item.passed)}</td>"
+        "</tr>"
+    )
+
+
+def _render_source_references(checklist: GoLiveRehearsalChecklist) -> str:
     rows = "".join(
         (
             _source_row(
@@ -329,6 +372,13 @@ def _render_source_references(checklist: ProviderSetupChecklist) -> str:
                 OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
             ),
             _source_row(
+                "Provider setup checklist",
+                checklist.source_provider_setup_command,
+                checklist.source_provider_setup_route,
+                checklist.source_provider_setup_overall_status,
+                OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
+            ),
+            _source_row(
                 "Settings execution preflight",
                 checklist.source_preflight_command,
                 checklist.source_preflight_route,
@@ -342,13 +392,20 @@ def _render_source_references(checklist: ProviderSetupChecklist) -> str:
                 checklist.source_runbook_overall_status,
                 OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
             ),
+            _source_row(
+                "Release artifact manifest",
+                checklist.source_manifest_command,
+                checklist.source_manifest_route,
+                checklist.source_manifest_overall_status,
+                OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
+            ),
         )
     )
     return (
         '    <section class="panel" id="source-references">\n'
         "      <h2>Source references</h2>\n"
-        '      <p class="hint">This page reuses the existing Phase 49 '
-        "provider setup checklist payload. It does not recalculate "
+        '      <p class="hint">This page reuses the existing Phase 51 '
+        "go-live rehearsal checklist payload. It does not recalculate "
         "readiness or execute.</p>\n"
         '<table class="dense"><thead><tr>'
         "<th>Source</th><th>Command</th><th>JSON route</th><th>Overall status</th>"
@@ -388,104 +445,153 @@ def _source_row(
     )
 
 
-def _render_categories(categories: tuple[ProviderSetupCategory, ...]) -> str:
-    if not categories:
-        body = '<p class="empty-state">No provider setup categories.</p>'
+def _render_included_surfaces(sources: tuple[RehearsalSourceSurface, ...]) -> str:
+    if not sources:
+        body = '<p class="empty-state">No included source surfaces.</p>'
     else:
-        body = "".join(_render_category_card(category) for category in categories)
+        body = "".join(_render_source_card(source) for source in sources)
     return (
-        '    <section class="panel" id="provider-setup-categories">\n'
-        "      <h2>Provider setup categories</h2>\n"
-        '      <p class="hint">Each card is a Phase 49 provider setup '
-        "category. Opening a linked page does not execute, apply, build, "
-        "publish, or deploy. Credential names and flag names are shown; "
-        "values are never shown.</p>\n"
+        '    <section class="panel" id="included-surfaces">\n'
+        "      <h2>Included source surfaces</h2>\n"
+        '      <p class="hint">Each card is a Phase 51 source surface. '
+        "Opening a linked page does not execute, apply, build, publish, or "
+        "deploy.</p>\n"
         f"{body}"
         "    </section>"
     )
 
 
-def _render_category_card(category: ProviderSetupCategory) -> str:
+def _render_source_card(source: RehearsalSourceSurface) -> str:
+    html_link = (
+        f'<a class="nav-link" href="{escape(source.html_route)}">Open HTML</a>'
+        if source.html_route
+        else ""
+    )
+    json_link = (
+        f'<a class="nav-link" href="{escape(source.json_route)}">JSON</a>'
+        if source.json_route
+        else ""
+    )
+    command = (
+        f'<span class="mono">{html_escape(source.command_name)}</span>'
+        if source.command_name
+        else html_escape("—")
+    )
     return (
-        f'      <section class="panel" id="category-{escape(category.key)}">\n'
-        f"        <h3>{html_escape(category.label)}</h3>\n"
-        '        <p class="hint">Required owner approval type '
-        f"{html_escape(category.required_owner_approval_type)} · status "
-        f"{html_escape(category.overall_status)} · "
-        f"{html_escape(category.preparation_label)}</p>\n"
+        f'      <section class="panel" id="surface-{escape(source.key)}">\n'
+        f"        <h3>{html_escape(source.label)}</h3>\n"
+        '        <p class="hint">'
+        f"{html_link} {json_link} Command {command} · status "
+        f"{html_escape(source.overall_status)} · purpose "
+        f"{html_escape(source.purpose)}</p>\n"
         '        <div class="metric-grid">\n'
-        f"          {metric('Key', category.key)}\n"
-        f"          {metric('Approval type', category.required_owner_approval_type)}\n"
-        f"          {metric('Read only', yes_no(category.read_only))}\n"
-        f"          {metric('No execution', yes_no(category.no_execution))}\n"
-        f"          {metric('Go live permitted', yes_no(category.go_live_permitted))}\n"
-        f"          {metric('Deployment allowed', yes_no(category.deployment_allowed))}\n"
+        f"          {metric('Read only', yes_no(source.read_only))}\n"
+        f"          {metric('No execution', yes_no(source.no_execution))}\n"
+        f"          {metric('Go live permitted', yes_no(source.go_live_permitted))}\n"
+        f"          {metric('Deployment allowed', yes_no(source.deployment_allowed))}\n"
         "        </div>\n"
-        "        <h3>Config names</h3>\n"
-        f"        {_render_codes(category.config_names, empty='No config names.')}\n"
-        "        <h3>Missing credential variable names</h3>\n"
-        f"        {_render_codes(category.missing_credential_names, empty='None missing.')}\n"
-        "        <h3>Closed provider flag names</h3>\n"
-        f"        {_render_codes(category.closed_provider_flag_names, empty='None closed.')}\n"
-        "        <h3>Credential statuses</h3>\n"
-        f"        {_render_credential_statuses(category.credential_statuses)}\n"
-        "        <h3>Flag states</h3>\n"
-        f"        {_render_flag_states(category.flag_states)}\n"
         "        <h3>Blocker codes</h3>\n"
-        f"        {_render_codes(category.blocker_codes, empty='No blocker codes.')}\n"
+        f"        {_render_codes(source.blocker_codes, empty='No blocker codes.')}\n"
         "        <h3>Gate codes</h3>\n"
-        f"        {_render_codes(category.gate_codes, empty='No gate codes.')}\n"
-        "        <h3>Related commands</h3>\n"
-        f"        {_render_codes(category.related_commands, empty='No related commands.')}\n"
-        "        <h3>Related routes</h3>\n"
-        f"        {_render_route_links(category.related_routes, empty='No related routes.')}\n"
+        f"        {_render_codes(source.gate_codes, empty='No gate codes.')}\n"
+        "        <h3>Missing credential variable names</h3>\n"
+        f"        {_render_codes(source.missing_credential_names, empty='None missing.')}\n"
         "      </section>\n"
     )
 
 
-def _render_credential_statuses(
-    statuses: tuple[ProviderCredentialStatus, ...],
-) -> str:
-    if not statuses:
-        return '<p class="empty-state">No credential statuses.</p>'
-    rows = "".join(
-        (
-            f'<tr class="{_status_class(item.status)}">'
-            f'<td class="mono">{html_escape(item.name)}</td>'
-            f"<td>{yes_no(item.present)}</td>"
-            f"<td>{html_escape(item.status)}</td>"
-            f"<td>{yes_no(item.required)}</td>"
-            "</tr>"
-        )
-        for item in statuses
+def _render_rehearsal_steps(steps: tuple[RehearsalStep, ...]) -> str:
+    if not steps:
+        body = '<p class="empty-state">No rehearsal steps.</p>'
+    else:
+        body = "".join(_render_step_card(step) for step in steps)
+    return (
+        '    <section class="panel" id="rehearsal-steps">\n'
+        "      <h2>Manual rehearsal steps</h2>\n"
+        '      <p class="hint">Each card is a Phase 51 rehearsal step. '
+        "Steps are manual instructions only. runnable=false and executed=0. "
+        "Command names and routes are references only. This page does not "
+        "run commands or change live state.</p>\n"
+        f"{body}"
+        "    </section>"
+    )
+
+
+def _render_step_card(step: RehearsalStep) -> str:
+    html_link = (
+        f'<a class="nav-link" href="{escape(step.html_route)}">Open HTML</a>'
+        if step.html_route
+        else ""
+    )
+    json_link = (
+        f'<a class="nav-link" href="{escape(step.json_route)}">JSON</a>'
+        if step.json_route
+        else ""
+    )
+    command = (
+        f'<span class="mono">{html_escape(step.command_name)}</span>'
+        if step.command_name
+        else html_escape("—")
     )
     return (
-        '<table class="dense"><thead><tr>'
-        "<th>Name</th><th>Present</th><th>Status</th><th>Required</th>"
-        f"</tr></thead><tbody>{rows}</tbody></table>"
+        f'      <section class="panel" id="step-{escape(step.step_key)}">\n'
+        f"        <h3>{html_escape(step.label)}</h3>\n"
+        '        <p class="hint">Required owner approval type '
+        f"{html_escape(step.required_owner_approval_type)} · gate "
+        f"{html_escape(step.gate_key)} · status {html_escape(step.status)} · "
+        f"kind {html_escape(step.step_kind)}. {html_link} {json_link} "
+        f"Command {command}</p>\n"
+        f'        <p class="hint">{html_escape(step.instruction)}</p>\n'
+        '        <div class="metric-grid">\n'
+        f"          {metric('Step key', step.step_key)}\n"
+        f"          {metric('Gate key', step.gate_key)}\n"
+        f"          {metric('Approval type', step.required_owner_approval_type)}\n"
+        f"          {metric('Step kind', step.step_kind)}\n"
+        f"          {metric('Runnable', yes_no(step.runnable))}\n"
+        f"          {metric('Executed', step.executed)}\n"
+        f"          {metric('Config name', step.config_name)}\n"
+        "        </div>\n"
+        "        <h3>Expected assertions</h3>\n"
+        f"        {_render_codes(step.expected_assertions, empty='No expected assertions.')}\n"
+        "        <h3>Blocker codes</h3>\n"
+        f"        {_render_codes(step.blocker_codes, empty='No blocker codes.')}\n"
+        "        <h3>Gate codes</h3>\n"
+        f"        {_render_codes(step.gate_codes, empty='No gate codes.')}\n"
+        "      </section>\n"
     )
 
 
-def _render_flag_states(flags: tuple[ProviderFlagState, ...]) -> str:
-    if not flags:
-        return '<p class="empty-state">No flag states.</p>'
-    rows = "".join(
-        (
-            f'<tr class="{_status_class("closed" if not item.enabled else "open")}">'
-            f'<td class="mono">{html_escape(item.name)}</td>'
-            f"<td>{yes_no(item.enabled)}</td>"
-            "</tr>"
+def _render_rollback_guidance(notes: tuple[RehearsalRollbackNote, ...]) -> str:
+    if not notes:
+        body = '<p class="empty-state">No rollback or abort guidance.</p>'
+    else:
+        rows = "".join(_rollback_row(note) for note in notes)
+        body = (
+            '<table class="dense"><thead><tr>'
+            "<th>Code</th><th>Label</th><th>Instruction</th>"
+            f"</tr></thead><tbody>{rows}</tbody></table>"
         )
-        for item in flags
-    )
     return (
-        '<table class="dense"><thead><tr>'
-        "<th>Name</th><th>Enabled</th>"
-        f"</tr></thead><tbody>{rows}</tbody></table>"
+        '    <section class="panel" id="rollback-guidance">\n'
+        "      <h2>Rollback and abort guidance</h2>\n"
+        '      <p class="hint">Review text only. This page does not abort, '
+        "roll back, lift halt, apply settings, or change live flags.</p>\n"
+        f"      {body}\n"
+        "    </section>"
     )
 
 
-def _render_related_inventory(checklist: ProviderSetupChecklist) -> str:
+def _rollback_row(note: RehearsalRollbackNote) -> str:
+    return (
+        "<tr>"
+        f'<td class="mono">{html_escape(note.code)}</td>'
+        f"<td>{html_escape(note.label)}</td>"
+        f"<td>{html_escape(note.instruction)}</td>"
+        "</tr>"
+    )
+
+
+def _render_related_inventory(checklist: GoLiveRehearsalChecklist) -> str:
     return (
         '    <section class="panel" id="related-routes">\n'
         "      <h2>Related safe routes</h2>\n"
@@ -517,48 +623,9 @@ def _render_local_git(git: LocalGitMetadata) -> str:
     )
 
 
-def _render_verification_gates(gates: tuple[LocalVerificationGate, ...]) -> str:
-    if not gates:
-        body = '<p class="empty-state">No local verification gates.</p>'
-    else:
-        rows = "".join(_verification_gate_row(gate) for gate in gates)
-        body = (
-            '<table class="dense"><thead><tr>'
-            "<th>Code</th><th>Status</th><th>Command</th><th>Route</th>"
-            "<th>Label</th>"
-            f"</tr></thead><tbody>{rows}</tbody></table>"
-        )
-    return (
-        '    <section class="panel" id="local-verification-gates">\n'
-        "      <h2>Local verification gates</h2>\n"
-        '      <p class="hint">These gates are review reminders only. This '
-        "page does not run CI, call GitHub Actions, or change live flags.</p>\n"
-        f"      {body}\n"
-        "    </section>"
-    )
-
-
-def _verification_gate_row(gate: LocalVerificationGate) -> str:
-    route_cell = (
-        f'<a class="row-link mono" href="{escape(gate.json_route)}">'
-        f"{html_escape(gate.json_route)}</a>"
-        if gate.json_route
-        else html_escape("—")
-    )
-    return (
-        f'<tr class="{_status_class(gate.status)}">'
-        f'<td class="mono">{html_escape(gate.code)}</td>'
-        f"<td>{html_escape(gate.status)}</td>"
-        f'<td class="mono">{html_escape(gate.command_name)}</td>'
-        f"<td>{route_cell}</td>"
-        f"<td>{html_escape(gate.label)}</td>"
-        "</tr>"
-    )
-
-
-def _render_next_actions(actions: tuple[ProviderSetupNextAction, ...]) -> str:
+def _render_next_actions(actions: tuple[RehearsalNextAction, ...]) -> str:
     if not actions:
-        body = '<p class="empty-state">No owner preparation steps.</p>'
+        body = '<p class="empty-state">No owner next steps.</p>'
     else:
         rows = "".join(_next_action_row(action) for action in actions)
         body = (
@@ -568,8 +635,8 @@ def _render_next_actions(actions: tuple[ProviderSetupNextAction, ...]) -> str:
             f"</tr></thead><tbody>{rows}</tbody></table>"
         )
     return (
-        '    <section class="panel" id="owner-preparation-steps">\n'
-        "      <h2>Non-executable owner preparation steps</h2>\n"
+        '    <section class="panel" id="owner-next-steps">\n'
+        "      <h2>Non-executable owner next steps</h2>\n"
         '      <p class="hint">These labels are review reminders only. They do '
         "not execute, approve, apply, deploy, or lift halt.</p>\n"
         f"      {body}\n"
@@ -577,7 +644,7 @@ def _render_next_actions(actions: tuple[ProviderSetupNextAction, ...]) -> str:
     )
 
 
-def _next_action_row(action: ProviderSetupNextAction) -> str:
+def _next_action_row(action: RehearsalNextAction) -> str:
     route = action.html_route or action.json_route
     route_cell = (
         f'<a class="row-link mono" href="{escape(route)}">{html_escape(route)}</a>'
@@ -596,7 +663,7 @@ def _next_action_row(action: ProviderSetupNextAction) -> str:
     )
 
 
-def _render_footer(checklist: ProviderSetupChecklist, generated: str) -> str:
+def _render_footer(checklist: GoLiveRehearsalChecklist, generated: str) -> str:
     return (
         '    <footer class="footnote" id="side-effects">\n'
         f"      <p>Generated {generated}. Read-only={yes_no(checklist.read_only)}. "
@@ -615,16 +682,18 @@ def _render_footer(checklist: ProviderSetupChecklist, generated: str) -> str:
         f"Deployment allowed={yes_no(checklist.deployment_allowed)}. "
         f"Build allowed={yes_no(checklist.build_allowed)}. "
         f"Artifact publish allowed={yes_no(checklist.artifact_publish_allowed)}. "
-        f"Provider setup checklist is not go-live="
-        f"{yes_no(checklist.provider_setup_checklist_is_not_go_live)}. "
+        f"Go-live rehearsal checklist is not go-live="
+        f"{yes_no(checklist.go_live_rehearsal_checklist_is_not_go_live)}. "
         f"Checklist is not permission to go live="
         f"{yes_no(checklist.checklist_is_not_permission_to_go_live)}. "
         f"Checklist is not execution={yes_no(checklist.checklist_is_not_execution)}. "
+        f"Rehearsal is not a script runner="
+        f"{yes_no(checklist.rehearsal_is_not_a_script_runner)}. "
         "There are no apply, execute, lift-halt, enable-outbound, provider, "
         "build, publish, deploy, campaign, booking, call, or spend controls on "
-        "this page. This is a read-only provider setup review view, not "
+        "this page. This is a read-only manual rehearsal review view, not "
         "permission to go live and not an execution surface. Current route "
-        f"{html_escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)}.</p>\n"
+        f"{html_escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)}.</p>\n"
         "    </footer>"
     )
 

@@ -73,6 +73,7 @@ LINKED_SURFACES = (
     "/internal/operator-staged-rollout-plan",
     "/internal/operator-owner-launch-dossier",
     "/internal/operator-provider-setup-checklist",
+    "/internal/operator-go-live-rehearsal-checklist",
 )
 
 
