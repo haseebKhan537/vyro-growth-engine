@@ -695,7 +695,7 @@ Sanitized read-only CLI and internal JSON export that summarizes whether the cur
 - HTTP responses return `Cache-Control: no-store`
 - This is a candidate readiness review export only, not permission to go live and not an execution surface
 
-## Phase 58 — Operator supervised pilot candidate readiness UI (current)
+## Phase 58 — Operator supervised pilot candidate readiness UI
 Internal operator HTML shell of the Phase 57 supervised pilot candidate readiness export. Read-only, no execution.
 - `GET /internal/operator-supervised-pilot-candidates`
 - Reuses existing Phase 57 `SupervisedPilotCandidateService` / payload and does not duplicate candidate readiness calculations
@@ -705,6 +705,19 @@ Internal operator HTML shell of the Phase 57 supervised pilot candidate readines
 - Page states this is a candidate readiness review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/contact controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 59 — Supervised pilot go/no-go packet export (current)
+Sanitized read-only CLI and internal JSON export that combines the supervised pilot plan, candidate readiness, provider setup checklist, rehearsal outcome report, launch readiness / go-live readiness index, review/action readiness queues, owner approval/settings request rollups, and operator halt state into one owner go/no-go decision packet. Review/export only, no execution.
+- CLI `vyro-growth supervised-pilot-go-no-go` with Markdown output and `--json` output
+- Internal JSON `GET /internal/supervised-pilot-go-no-go`
+- Reuses existing supervised-pilot-plan, candidate-readiness, provider-setup, rehearsal-outcome, launch-readiness / go-live-index, review/action-readiness, owner-approval, settings-request, and operator-halt surfaces
+- Safe metadata only: generated timestamp, packet kind/purpose, overall go/no-go status (`blocked` / `warning` / `ready_for_owner_review` / `info`), explicit no-execution flags, unchanged halt proof, prerequisite and candidate readiness summaries using counts/codes only, go/no-go gates with code/status/label/blocking boolean/route/command names, owner decision prerequisite type/code names only, missing credential/config names only, closed provider/live flag names only, blocked reason counts only, safe next-step codes/labels, related routes/commands, and safe local git metadata
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_outbound=true`, `no_provider_calls=true`, `no_spend=true`, `dry_run_only=true`, `manual_review_only=true`, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, and `supervised_pilot_go_no_go_is_not_go_live=true`
+- Does not expose practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, secrets, env values, or unsafe errors
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is a go/no-go review export only, not permission to go live and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

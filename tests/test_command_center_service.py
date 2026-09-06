@@ -104,6 +104,7 @@ def test_empty_command_center_is_zeroed_and_safe(db_session: Session) -> None:
     assert NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.SUPERVISED_PILOT_PLAN_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE.value in codes
+    assert NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.RUN_DISCOVERY_WHEN_READY.value in codes
     assert summary.finding_counts.warning >= 1
     assert summary.finding_counts.blocked == 0

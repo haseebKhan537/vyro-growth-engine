@@ -318,6 +318,9 @@ def test_documented_smoke_gate_and_cleared_halt_is_ready_for_owner_review(
     assert NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE.value in {
         item.next_action_code for item in checklist.next_actions
     }
+    assert NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE.value in {
+        item.next_action_code for item in checklist.next_actions
+    }
     assert checklist.pending_settings_change_request_count == 0
     assert any(
         item.request_type == "keep_outbound_disabled"

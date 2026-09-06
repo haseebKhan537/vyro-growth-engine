@@ -96,6 +96,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "smoke-dry-run",
     CLI_COMMAND,
     "supervised-pilot-candidates",
+    "supervised-pilot-go-no-go",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -120,6 +121,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
+    "/internal/supervised-pilot-go-no-go",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
