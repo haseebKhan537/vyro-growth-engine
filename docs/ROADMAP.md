@@ -671,7 +671,7 @@ Sanitized read-only CLI and internal JSON export that consolidates the go-live r
 - HTTP responses return `Cache-Control: no-store`
 - This is a supervised pilot planning export only, not permission to go live and not an execution surface
 
-## Phase 56 — Operator supervised pilot launch plan UI (current)
+## Phase 56 — Operator supervised pilot launch plan UI
 Internal operator HTML shell of the Phase 55 supervised pilot launch plan. Read-only, no execution.
 - `GET /internal/operator-supervised-pilot-plan`
 - Reuses existing Phase 55 `SupervisedPilotPlanService` / payload and does not duplicate readiness calculations
@@ -681,6 +681,19 @@ Internal operator HTML shell of the Phase 55 supervised pilot launch plan. Read-
 - Page states this is a supervised pilot planning review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 57 — Supervised pilot candidate readiness export (current)
+Sanitized read-only CLI and internal JSON export that summarizes whether the current system has a safe small-pilot candidate pool ready for owner review. Review/export only, no execution.
+- CLI `vyro-growth supervised-pilot-candidates` with Markdown output and `--json` output
+- Internal JSON `GET /internal/supervised-pilot-candidates`
+- Reuses existing discovery/enrichment/scoring/outreach readiness aggregates plus the supervised pilot plan, provider setup, rehearsal outcome, launch readiness, and operator halt state
+- Safe metadata only: generated timestamp, packet kind/purpose, overall status, explicit no-execution flags, unchanged halt proof, candidate scope counts, candidate pool counts by generic readiness/status/stage/source/specialty/state buckets, scoring distribution counts, missing prerequisite/gate codes, suppression/kill-switch rollups, blocked-count reasons, safe next-step codes/labels, related routes/commands, and safe local git metadata
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_outbound=true`, `no_provider_calls=true`, `no_spend=true`, `dry_run_only=true`, `manual_review_only=true`, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, and `supervised_pilot_candidates_is_not_go_live=true`
+- Does not expose practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, secrets, env values, or unsafe errors
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is a candidate readiness review export only, not permission to go live and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

@@ -159,6 +159,7 @@ def test_empty_index_is_read_only_and_not_permission_to_go_live(db_session: Sess
     assert NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.SUPERVISED_PILOT_PLAN_IS_NOT_GO_LIVE.value in codes
+    assert NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE.value in codes
     assert "provider-setup-checklist" in index.related_commands
     assert "go-live-rehearsal-checklist" in index.related_commands
     assert "rehearsal-outcome-report" in index.related_commands
