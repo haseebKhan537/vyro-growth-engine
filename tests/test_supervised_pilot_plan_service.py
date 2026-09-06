@@ -191,7 +191,7 @@ def test_empty_pilot_plan_reuses_existing_surfaces_and_is_not_permission_to_go_l
     assert OUTCOME_CLI_COMMAND in plan.related_commands
     assert HTTP_ROUTE in plan.related_routes
     assert HTML_ROUTE in plan.related_routes
-    assert "planning counts only" in plan.pilot_scope.recommendation_summary
+    assert "count limits only" in plan.pilot_scope.recommendation_summary
     _assert_no_execution(payload)
     assert _counts(db_session) == before
     assert read_operator_halt(db_session) is before_halt

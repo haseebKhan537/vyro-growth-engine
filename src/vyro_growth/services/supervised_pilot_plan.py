@@ -1380,31 +1380,34 @@ def _format_markdown(plan: SupervisedPilotPlan, payload: dict[str, Any]) -> str:
         "",
         "## Safety assertions",
     ]
-    for item in plan.safety_assertions:
+    for assertion in plan.safety_assertions:
         lines.append(
-            f"- {item.key}: expected={item.expected} observed={item.observed} "
-            f"passed={_bool_text(item.passed)}"
+            f"- {assertion.key}: expected={assertion.expected} "
+            f"observed={assertion.observed} passed={_bool_text(assertion.passed)}"
         )
     lines.extend(["", "## Pilot prerequisites"])
-    for item in plan.prerequisites:
+    for prerequisite in plan.prerequisites:
         lines.append(
-            f"- [{item.status}] {item.key} approval={item.required_owner_approval_type} "
-            f"missing={_format_codes(item.missing_credential_names)} "
-            f"closed_flags={_format_codes(item.closed_provider_flag_names)} "
-            f"label={item.label}"
+            f"- [{prerequisite.status}] {prerequisite.key} "
+            f"approval={prerequisite.required_owner_approval_type} "
+            f"missing={_format_codes(prerequisite.missing_credential_names)} "
+            f"closed_flags={_format_codes(prerequisite.closed_provider_flag_names)} "
+            f"label={prerequisite.label}"
         )
     lines.extend(["", "## Manual pilot runbook"])
-    for item in plan.runbook_steps:
-        command_name = item.command_name or "-"
-        json_route = item.json_route or "-"
+    for step in plan.runbook_steps:
+        command_name = step.command_name or "-"
+        json_route = step.json_route or "-"
         lines.append(
-            f"- [{item.status}] {item.step_key} runnable={_bool_text(item.runnable)} "
-            f"executed={item.executed} command={command_name} "
-            f"json_route={json_route} label={item.label}"
+            f"- [{step.status}] {step.step_key} runnable={_bool_text(step.runnable)} "
+            f"executed={step.executed} command={command_name} "
+            f"json_route={json_route} label={step.label}"
         )
     lines.extend(["", "## Pilot abort and rollback criteria"])
-    for item in plan.abort_criteria:
-        lines.append(f"- {item.code}: {item.label} instruction={item.instruction}")
+    for criterion in plan.abort_criteria:
+        lines.append(
+            f"- {criterion.code}: {criterion.label} instruction={criterion.instruction}"
+        )
     lines.extend(["", "## Owner next actions"])
     for action in plan.next_actions:
         command_name = action.command_name or "-"
