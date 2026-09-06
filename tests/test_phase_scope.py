@@ -75,6 +75,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "launch_readiness.py",
         "settings_change_requests.py",
         "settings_execution_preflight.py",
+        "provider_setup_checklist.py",
     }
     calendar_boundary = {
         "config.py",
@@ -95,6 +96,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "launch_readiness.py",
         "settings_change_requests.py",
         "settings_execution_preflight.py",
+        "provider_setup_checklist.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -115,6 +117,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "launch_readiness.py",
         "settings_change_requests.py",
         "settings_execution_preflight.py",
+        "provider_setup_checklist.py",
     }
     forbidden = (
         "apollo",
