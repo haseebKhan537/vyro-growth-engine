@@ -9,7 +9,8 @@ live and is not an execution surface.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+import json
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -19,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings, any_live_provider_enabled
 from vyro_growth.domain import FindingSeverity, NextActionCode
-from vyro_growth.observability import sanitize_operator_text
+from vyro_growth.observability import sanitize_mapping, sanitize_operator_text
 from vyro_growth.services.command_center import (
     CommandCenterSummary,
     OperatorCommandCenterService,
@@ -43,6 +44,8 @@ PACKET_PURPOSE = "manual_owner_review_index_only"
 INDEX_NOT_PERMISSION_CODE = NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION.value
 EXECUTION_DISABLED_CODE = "execution_disabled_in_this_phase"
 SECTION_INDEX = "go_live_readiness_index"
+CLI_COMMAND = "go-live-readiness-index"
+HTTP_ROUTE = "/internal/go-live-readiness-index"
 HTML_ROUTE = "/internal/operator-go-live-readiness-index"
 RELATED_COMMANDS: tuple[str, ...] = (
     "operator-command-center",
@@ -52,6 +55,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "compliance-evidence-binder",
     "release-candidate-runbook",
     "release-artifact-manifest",
+    CLI_COMMAND,
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -70,6 +74,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/release-artifact-manifest",
     "/internal/operator-audit-timeline",
     HTML_ROUTE,
+    HTTP_ROUTE,
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -162,6 +167,8 @@ class GoLiveReadinessIndex:
     closed_provider_flag_names: tuple[str, ...]
     missing_credential_names: tuple[str, ...]
     blocker_codes: tuple[str, ...]
+    cli_command: str
+    http_route: str
     related_commands: tuple[str, ...]
     related_routes: tuple[str, ...]
     local_git: LocalGitMetadata
@@ -244,6 +251,8 @@ class GoLiveReadinessIndexService:
             operator_halt_after=halt_after.value,
             outbound_enabled=settings.outbound_enabled,
             live_providers_enabled=any_live_provider_enabled(settings),
+            cli_command=CLI_COMMAND,
+            http_route=HTTP_ROUTE,
             closed_provider_flag_names=_unique_sorted(
                 (
                     *handoff.closed_provider_flag_names,
@@ -572,7 +581,7 @@ def _remaining_checklist(
 def _routes_for_section(source_section: str) -> tuple[str | None, str | None, str | None]:
     match source_section:
         case "go_live_readiness_index":
-            return (HTML_ROUTE, None, None)
+            return (HTML_ROUTE, HTTP_ROUTE, CLI_COMMAND)
         case "owner_handoff" | "owner_handoff_packet":
             return (
                 "/internal/operator-owner-handoff-packet",
@@ -633,7 +642,7 @@ def _safe_text(value: object) -> str:
     return text or ""
 
 
-def _bool_text(value: bool) -> str:
+def _bool_text(value: object) -> str:
     return "true" if value else "false"
 
 
@@ -684,6 +693,8 @@ def index_payload(index: GoLiveReadinessIndex) -> dict[str, Any]:
         "closed_provider_flag_names": list(index.closed_provider_flag_names),
         "missing_credential_names": list(index.missing_credential_names),
         "blocker_codes": list(index.blocker_codes),
+        "cli_command": CLI_COMMAND,
+        "http_route": HTTP_ROUTE,
         "related_commands": list(index.related_commands),
         "related_routes": list(index.related_routes),
         "local_git": {
@@ -722,3 +733,135 @@ def index_payload(index: GoLiveReadinessIndex) -> dict[str, Any]:
             for item in index.remaining_manual_owner_checklist
         ],
     }
+
+
+def format_go_live_readiness_index(
+    index: GoLiveReadinessIndex,
+    *,
+    as_json: bool = False,
+) -> str:
+    payload = sanitize_mapping(index_payload(index))
+    if as_json:
+        return json.dumps(payload, sort_keys=True)
+    return _format_markdown(index, payload)
+
+
+def _format_markdown(index: GoLiveReadinessIndex, payload: dict[str, Any]) -> str:
+    lines = [
+        "# Go-live readiness index",
+        "",
+        "This index is a sanitized owner/operator review export of existing "
+        "readiness, evidence, runbook, manifest, and audit surfaces. It is not "
+        "permission to go live and is not an execution surface.",
+        "",
+        f"- overall: {payload['overall_status']}",
+        f"- packet_kind: {payload['packet_kind']}",
+        f"- purpose: {payload['purpose']}",
+        f"- read_only: {_bool_text(payload['read_only'])}",
+        f"- no_execution: {_bool_text(payload['no_execution'])}",
+        f"- dry_run_only: {_bool_text(payload['dry_run_only'])}",
+        f"- executed: {payload['executed']}",
+        f"- owner_approved: {_bool_text(payload['owner_approved'])}",
+        f"- settings_applied: {_bool_text(payload['settings_applied'])}",
+        f"- halt_changed: {_bool_text(payload['halt_changed'])}",
+        f"- live_action: {_bool_text(payload['live_action'])}",
+        f"- execution_allowed: {_bool_text(payload['execution_allowed'])}",
+        f"- go_live_permitted: {_bool_text(payload['go_live_permitted'])}",
+        f"- deployment_allowed: {_bool_text(payload['deployment_allowed'])}",
+        f"- deployment_attempted: {_bool_text(payload['deployment_attempted'])}",
+        f"- deployed: {_bool_text(payload['deployed'])}",
+        f"- build_allowed: {_bool_text(payload['build_allowed'])}",
+        f"- artifact_publish_allowed: {_bool_text(payload['artifact_publish_allowed'])}",
+        (
+            "- index_is_not_permission_to_go_live: "
+            f"{_bool_text(payload['index_is_not_permission_to_go_live'])}"
+        ),
+        f"- handoff_is_not_go_live: {_bool_text(payload['handoff_is_not_go_live'])}",
+        f"- binder_is_not_go_live: {_bool_text(payload['binder_is_not_go_live'])}",
+        f"- runbook_is_not_deployment: {_bool_text(payload['runbook_is_not_deployment'])}",
+        (
+            "- manifest_is_not_a_build_or_deploy: "
+            f"{_bool_text(payload['manifest_is_not_a_build_or_deploy'])}"
+        ),
+        (
+            "- future_execution_phase_exists: "
+            f"{_bool_text(payload['future_execution_phase_exists'])}"
+        ),
+        (
+            "- future_deployment_phase_exists: "
+            f"{_bool_text(payload['future_deployment_phase_exists'])}"
+        ),
+        (
+            "- operator_halt: "
+            f"status={payload['operator_halt_status']} "
+            f"before={payload['operator_halt_before']} "
+            f"after={payload['operator_halt_after']}"
+        ),
+        f"- outbound_enabled: {_bool_text(payload['outbound_enabled'])}",
+        f"- live_providers_enabled: {_bool_text(payload['live_providers_enabled'])}",
+        f"- cli_command: {payload['cli_command']}",
+        f"- http_route: {payload['http_route']}",
+        f"- html_route: {HTML_ROUTE}",
+        f"- blocker_codes: {_format_codes(index.blocker_codes)}",
+        f"- missing_credential_names: {_format_codes(index.missing_credential_names)}",
+        f"- closed_provider_flag_names: {_format_codes(index.closed_provider_flag_names)}",
+        "",
+        "## Live-blocking flags",
+        f"- OUTBOUND_ENABLED={_bool_text(index.outbound_enabled)}",
+        f"- operator_halt_status={index.operator_halt_status}",
+        f"- live_providers_enabled={_bool_text(index.live_providers_enabled)}",
+        "- execution_allowed=false",
+        "- go_live_permitted=false",
+        "- deployment_allowed=false",
+        "- build_allowed=false",
+        "- artifact_publish_allowed=false",
+        "- index_is_not_permission_to_go_live=true",
+        f"- local_git_available: {_bool_text(index.local_git.available)}",
+        f"- current_branch: {index.local_git.current_branch}",
+        f"- current_sha: {index.local_git.current_sha}",
+        f"- working_tree_status: {index.local_git.working_tree_status}",
+        f"- git_provider_called: {_bool_text(index.local_git.git_provider_called)}",
+        f"- github_actions_called: {_bool_text(index.local_git.github_actions_called)}",
+        "",
+        "## Readiness surfaces",
+    ]
+    for card in index.surfaces:
+        json_route = card.json_route or "-"
+        command_name = card.command_name or "-"
+        lines.extend(
+            [
+                f"### {card.label}",
+                f"- key: {card.key}",
+                f"- overall_status: {card.overall_status}",
+                f"- html_route: {card.html_route}",
+                f"- json_route: {json_route}",
+                f"- command_name: {command_name}",
+                f"- counts: {_format_counts(card.counts)}",
+                f"- blocker_codes: {_format_codes(card.blocker_codes)}",
+                f"- flag_states: {_format_codes(card.flag_states)}",
+            ]
+        )
+    lines.extend(["", "## Remaining unresolved blockers and manual owner checklist"])
+    if index.remaining_manual_owner_checklist:
+        for item in index.remaining_manual_owner_checklist:
+            json_route = item.json_route or "-"
+            command_name = item.command_name or "-"
+            html_route = item.html_route or "-"
+            lines.append(
+                f"- [{item.status}] {item.code} severity={item.severity} "
+                f"source={item.source_section} html_route={html_route} "
+                f"json_route={json_route} command={command_name} label={item.label}"
+            )
+    else:
+        lines.append("- checklist: none")
+    return "\n".join(lines)
+
+
+def _format_counts(values: Sequence[IndexCount]) -> str:
+    if not values:
+        return "-"
+    return "; ".join(f"{item.label}={item.value}" for item in values)
+
+
+def _format_codes(values: Sequence[str]) -> str:
+    return ",".join(values) if values else "-"

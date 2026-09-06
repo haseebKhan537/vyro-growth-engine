@@ -36,6 +36,7 @@ OWNER_HANDOFF_JSON_PATH = "/internal/owner-handoff-packet"
 COMPLIANCE_EVIDENCE_BINDER_JSON_PATH = "/internal/compliance-evidence-binder"
 RELEASE_ARTIFACT_MANIFEST_JSON_PATH = "/internal/release-artifact-manifest"
 RELEASE_CANDIDATE_RUNBOOK_JSON_PATH = "/internal/release-candidate-runbook"
+GO_LIVE_READINESS_INDEX_JSON_PATH = "/internal/go-live-readiness-index"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[

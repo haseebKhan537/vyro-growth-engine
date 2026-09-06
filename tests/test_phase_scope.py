@@ -487,8 +487,10 @@ def test_release_artifact_manifest_does_not_call_live_providers() -> None:
 def test_go_live_readiness_index_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/go_live_readiness_index.py"),
+        Path("src/vyro_growth/api/go_live_readiness_index.py"),
         Path("src/vyro_growth/api/operator_go_live_readiness_index.py"),
         Path("tests/test_go_live_readiness_index_service.py"),
+        Path("tests/test_go_live_readiness_index_api.py"),
         Path("tests/test_operator_go_live_readiness_index_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()

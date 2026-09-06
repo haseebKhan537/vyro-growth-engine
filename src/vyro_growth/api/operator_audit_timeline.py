@@ -338,7 +338,7 @@ def _entry_row(item: AuditTimelineEntry) -> str:
         f"<td>{titleize(item.source_surface)}"
         f'<div class="meta">{html_escape(item.actor_label)}</div></td>'
         f"<td>{html_escape(status)}</td>"
-        f'<td class="mono">{html_escape(ids)}</td>'
+        f'<td class="mono">{escape(ids)}</td>'
         f"<td>{html_escape(flags)}</td>"
         f"<td>{html_escape(item.reason_label)}</td>"
         "</tr>"

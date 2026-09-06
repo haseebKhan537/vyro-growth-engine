@@ -71,6 +71,7 @@ LINKED_SURFACES = (
     "/internal/release-candidate-runbook",
     "/internal/operator-release-artifact-manifest",
     "/internal/release-artifact-manifest",
+    "/internal/go-live-readiness-index",
     "/internal/operator-audit-timeline",
 )
 
@@ -170,6 +171,8 @@ def _empty_index(**overrides: object) -> GoLiveReadinessIndex:
         "closed_provider_flag_names": ("VOICE_LIVE_ENABLED",),
         "missing_credential_names": (),
         "blocker_codes": ("execution_disabled_in_this_phase",),
+        "cli_command": "go-live-readiness-index",
+        "http_route": "/internal/go-live-readiness-index",
         "related_commands": ("launch-readiness",),
         "related_routes": LINKED_SURFACES,
         "local_git": LocalGitMetadata(
