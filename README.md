@@ -1413,6 +1413,23 @@ Output is a sanitized Markdown or JSON packet with generated timestamp, packet k
 
 JSON is statuses, setting names, codes, timestamps, counts, route names, command names, specialty categories, state abbreviations, generic source names, and flags only: no practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+The export also links to `GET /internal/operator-supervised-pilot-go-no-go`.
+
+## Phase 60 — Operator supervised pilot go/no-go UI (read-only)
+
+Open an internal HTML view of the Phase 59 supervised pilot go/no-go packet. The owner can inspect whether the first controlled supervised pilot is blocked, warning, or ready for owner review using safe counts, statuses, and codes only. This layer does not scrape, call providers, select candidates, enroll, send, call, book, spend, publish, build, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, or set live `owner_approved`. It is a go/no-go review view only, not permission to go live and not an execution surface.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-supervised-pilot-go-no-go \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard, go-live readiness index UI, supervised pilot launch plan UI, supervised pilot candidate readiness UI, launch blockers remediation plan UI, staged go-live rollout plan UI, owner launch dossier UI, provider setup checklist UI, go-live rehearsal checklist UI, rehearsal outcome report UI, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, release-candidate runbook UI, and release artifact manifest UI link to this page. The page shows overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-outbound / no-provider-calls / no-deployment / no-spend / dry-run-only / manual-review-only flags, operator halt before/status/after and unchanged proof, prerequisite category summary using counts/statuses only, candidate readiness summary using counts/codes only, blocked reason counts, review queue / action readiness / approval packet / settings request count rollups, go/no-go gates with code/status/label/blocking boolean/route/command names, owner decision prerequisite type/code names only, missing credential/config names only, closed provider/live flag names only, blocker/gate codes, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps. Fields are statuses, codes, route names, command names, config names, flag names, missing credential variable names, specialty categories, state abbreviations, generic source names, sanitized timestamps, and counts. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `spend_allowed=false`, `OUTBOUND_ENABLED=false`, `no_outbound=true`, `no_provider_calls=true`, `supervised_pilot_go_no_go_is_not_go_live=true`, `export_is_not_permission_to_go_live=true`, `export_is_not_execution=true`, and that this is a go/no-go review view only. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, spend, candidate selection, or contact controls.
+
+Rendered HTML is statuses, setting names, codes, timestamps, counts, route names, command names, specialty categories, state abbreviations, generic source names, and flags only: no practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 1
 
 Production foundation:

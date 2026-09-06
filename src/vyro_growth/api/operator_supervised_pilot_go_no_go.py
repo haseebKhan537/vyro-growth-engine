@@ -1,12 +1,12 @@
-"""Read-only operator supervised pilot candidate readiness HTML shell.
+"""Read-only operator supervised pilot go/no-go HTML shell.
 
-Phase 58 renders a sanitized view of the existing Phase 57 supervised
-pilot candidate readiness export. It reuses SupervisedPilotCandidateService
-and never recalculates candidate readiness. It never executes, builds,
-publishes, deploys, applies settings, lifts halt, enables outbound, calls
+Phase 60 renders a sanitized view of the existing Phase 59 supervised
+pilot go/no-go packet. It reuses SupervisedPilotGoNoGoService and never
+recalculates go/no-go readiness. It never executes, builds, publishes,
+deploys, applies settings, lifts halt, enables outbound, calls
 providers, scrapes, selects candidates, spends, or changes live state.
-This page is a candidate readiness review view only, not permission to
-go live and not an execution surface.
+This page is a go/no-go review view only, not permission to go live and
+not an execution surface.
 """
 
 from __future__ import annotations
@@ -63,34 +63,33 @@ from vyro_growth.api.operator_ui import (
 from vyro_growth.config import Settings
 from vyro_growth.domain import FindingSeverity
 from vyro_growth.services.release_artifact_manifest import LocalGitMetadata
-from vyro_growth.services.supervised_pilot_candidates import (
-    CandidateCount,
-    CandidateNextAction,
-    CandidateScopeRecommendation,
-    SupervisedPilotCandidates,
-    SupervisedPilotCandidateService,
+from vyro_growth.services.supervised_pilot_go_no_go import (
+    GoNoGoCount,
+    GoNoGoGate,
+    GoNoGoNextAction,
+    SupervisedPilotGoNoGo,
+    SupervisedPilotGoNoGoService,
 )
 
 logger = structlog.get_logger(__name__)
 
 
-def render_supervised_pilot_candidates_error() -> str:
+def render_supervised_pilot_go_no_go_error() -> str:
     return render_failure_page(
-        page_id="operator-supervised-pilot-candidates-error",
-        title="Supervised pilot candidate readiness unavailable",
-        heading="Read-only supervised pilot candidate readiness unavailable",
-        banner="Unable to load the supervised pilot candidate readiness export.",
+        page_id="operator-supervised-pilot-go-no-go-error",
+        title="Supervised pilot go/no-go unavailable",
+        heading="Read-only supervised pilot go/no-go unavailable",
+        banner="Unable to load the supervised pilot go/no-go packet.",
         detail=(
-            "The sanitized candidate-readiness review view could not be "
-            "rendered. Retry after checking database connectivity and "
-            "runtime config. This page is a candidate readiness review "
-            "view only, not permission to go live and not an execution "
-            "surface."
+            "The sanitized go/no-go review view could not be rendered. "
+            "Retry after checking database connectivity and runtime "
+            "config. This page is a go/no-go review view only, not "
+            "permission to go live and not an execution surface."
         ),
     )
 
 
-def render_supervised_pilot_candidates(packet: SupervisedPilotCandidates) -> str:
+def render_supervised_pilot_go_no_go(packet: SupervisedPilotGoNoGo) -> str:
     generated = html_escape(format_dt(packet.generated_at))
     return (
         "<!DOCTYPE html>\n"
@@ -98,11 +97,11 @@ def render_supervised_pilot_candidates(packet: SupervisedPilotCandidates) -> str
         "<head>\n"
         '  <meta charset="utf-8">\n'
         '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        "  <title>Supervised pilot candidate readiness</title>\n"
+        "  <title>Supervised pilot go/no-go</title>\n"
         f"{OPERATOR_UI_STYLES}\n"
         "</head>\n"
         "<body>\n"
-        '  <main id="operator-supervised-pilot-candidates" data-read-only="true" '
+        '  <main id="operator-supervised-pilot-go-no-go" data-read-only="true" '
         'data-dry-run-only="true" data-execution-allowed="false" '
         'data-go-live-permitted="false" data-deployment-allowed="false" '
         'data-build-allowed="false" data-artifact-publish-allowed="false" '
@@ -110,26 +109,32 @@ def render_supervised_pilot_candidates(packet: SupervisedPilotCandidates) -> str
         'data-no-go-live="true" data-no-outbound="true" '
         'data-no-provider-calls="true" data-no-deployment="true" '
         'data-no-spend="true" data-manual-review-only="true" '
-        'data-supervised-pilot-candidates-is-not-go-live="true" '
+        'data-supervised-pilot-go-no-go-is-not-go-live="true" '
         'data-export-is-not-permission-to-go-live="true" '
         'data-export-is-not-execution="true" '
         'data-supervised-pilot-plan-is-not-go-live="true" '
+        'data-supervised-pilot-candidates-is-not-go-live="true" '
         'data-rehearsal-outcome-report-is-not-go-live="true" '
         'data-go-live-rehearsal-checklist-is-not-go-live="true" '
         'data-provider-setup-checklist-is-not-go-live="true">\n'
         f"{_render_header(packet, generated)}\n"
-        f"{render_operator_nav('supervised-pilot-candidates')}\n"
+        f"{render_operator_nav('supervised-pilot-go-no-go')}\n"
         f"{_render_related_links()}\n"
         f"{_render_live_blocking_flags(packet)}\n"
-        f"{_render_candidate_scope(packet.candidate_scope)}\n"
-        f"{_render_bucket_sections(packet)}\n"
-        f"{_render_suppression_kill_switch(packet)}\n"
+        f"{_render_prerequisite_summary(packet)}\n"
+        f"{_render_candidate_summary(packet)}\n"
+        f"{_render_blocked_reason_counts(packet)}\n"
+        f"{_render_review_queue_rollups(packet)}\n"
+        f"{_render_action_readiness_rollups(packet)}\n"
+        f"{_render_approval_packet_rollups(packet)}\n"
+        f"{_render_settings_request_rollups(packet)}\n"
+        f"{_render_go_no_go_gates(packet)}\n"
         f"{
             _render_codes_section(
-                'missing-prerequisite-codes',
-                'Missing prerequisite codes',
-                packet.missing_prerequisite_codes,
-                empty='No missing prerequisite codes.',
+                'owner-decision-prerequisites',
+                'Owner decision prerequisite codes',
+                packet.owner_decision_prerequisites,
+                empty='No owner decision prerequisite codes.',
             )
         }\n"
         f"{
@@ -154,30 +159,30 @@ def render_supervised_pilot_candidates(packet: SupervisedPilotCandidates) -> str
     )
 
 
-def build_operator_supervised_pilot_candidates_response(
+def build_operator_supervised_pilot_go_no_go_response(
     db: Session,
     settings: Settings,
     *,
-    service: SupervisedPilotCandidateService | None = None,
+    service: SupervisedPilotGoNoGoService | None = None,
 ) -> HTMLResponse:
     try:
-        builder = service or SupervisedPilotCandidateService()
+        builder = service or SupervisedPilotGoNoGoService()
         packet = builder.build(db, settings)
-        html = render_supervised_pilot_candidates(packet)
+        html = render_supervised_pilot_go_no_go(packet)
         return HTMLResponse(content=html, status_code=200, headers=NO_STORE_HEADERS)
     except Exception:
         logger.exception(
-            "operator_supervised_pilot_candidates_render_failed",
+            "operator_supervised_pilot_go_no_go_render_failed",
             read_only=True,
         )
         return HTMLResponse(
-            content=render_supervised_pilot_candidates_error(),
+            content=render_supervised_pilot_go_no_go_error(),
             status_code=500,
             headers=NO_STORE_HEADERS,
         )
 
 
-def _render_header(packet: SupervisedPilotCandidates, generated: str) -> str:
+def _render_header(packet: SupervisedPilotGoNoGo, generated: str) -> str:
     git = packet.local_git
     git_meta = (
         f" · git {html_escape(git.current_branch)}@{html_escape(git.current_sha)}"
@@ -187,21 +192,20 @@ def _render_header(packet: SupervisedPilotCandidates, generated: str) -> str:
     return (
         '    <header class="page-header">\n'
         "      <div>\n"
-        "        <h1>Supervised pilot candidate readiness</h1>\n"
+        "        <h1>Supervised pilot go/no-go</h1>\n"
         '        <p class="lede">Read-only owner/operator review view of the '
-        "existing supervised pilot candidate readiness export. Execution "
-        "remains disabled. This page does not scrape, select candidates, "
-        "contact, send, call, book, enroll, build, publish, deploy, apply "
-        "settings, spend, or lift halt. OUTBOUND_ENABLED=false. "
+        "existing supervised pilot go/no-go packet. Execution remains "
+        "disabled. This page does not scrape, select candidates, contact, "
+        "send, call, book, enroll, build, publish, deploy, apply settings, "
+        "spend, or lift halt. OUTBOUND_ENABLED=false. "
         "go_live_permitted=false. execution_allowed=false. "
         "deployment_allowed=false. build_allowed=false. "
         "artifact_publish_allowed=false. spend_allowed=false. "
         "owner_approved=false. no_outbound=true. no_provider_calls=true. "
-        "supervised_pilot_candidates_is_not_go_live=true. "
+        "supervised_pilot_go_no_go_is_not_go_live=true. "
         "export_is_not_permission_to_go_live=true. "
-        "export_is_not_execution=true. This page is a candidate readiness "
-        "review view only, not permission to go live and not an execution "
-        "surface.</p>\n"
+        "export_is_not_execution=true. This page is a go/no-go review view "
+        "only, not permission to go live and not an execution surface.</p>\n"
         "      </div>\n"
         f'      <p class="meta">Generated {generated} · overall '
         f"{html_escape(packet.overall_status)} · halt "
@@ -230,8 +234,8 @@ def _render_related_links() -> str:
     outcome_json_href = escape(REHEARSAL_OUTCOME_REPORT_JSON_PATH)
     plan_href = escape(OPERATOR_SUPERVISED_PILOT_PLAN_PATH)
     plan_json_href = escape(SUPERVISED_PILOT_PLAN_JSON_PATH)
+    candidates_href = escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
     candidates_json_href = escape(SUPERVISED_PILOT_CANDIDATES_JSON_PATH)
-    go_no_go_href = escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)
     go_no_go_json_href = escape(SUPERVISED_PILOT_GO_NO_GO_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
@@ -264,8 +268,8 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{outcome_json_href}">JSON outcome</a>\n'
         f'      <a class="nav-link" href="{plan_href}">Supervised pilot</a>\n'
         f'      <a class="nav-link" href="{plan_json_href}">JSON pilot plan</a>\n'
+        f'      <a class="nav-link" href="{candidates_href}">Pilot candidates</a>\n'
         f'      <a class="nav-link" href="{candidates_json_href}">JSON candidates</a>\n'
-        f'      <a class="nav-link" href="{go_no_go_href}">Pilot go/no-go</a>\n'
         f'      <a class="nav-link" href="{go_no_go_json_href}">JSON go/no-go</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
@@ -283,7 +287,7 @@ def _render_related_links() -> str:
     )
 
 
-def _render_live_blocking_flags(packet: SupervisedPilotCandidates) -> str:
+def _render_live_blocking_flags(packet: SupervisedPilotGoNoGo) -> str:
     halt_unchanged = packet.operator_halt_before == packet.operator_halt_after
     return (
         '    <section class="status-strip" id="live-blocking-flags" '
@@ -302,8 +306,8 @@ def _render_live_blocking_flags(packet: SupervisedPilotCandidates) -> str:
         f"      {metric('No provider calls', yes_no(packet.no_provider_calls))}\n"
         f"      {
             metric(
-                'Supervised pilot candidates is not go-live',
-                yes_no(packet.supervised_pilot_candidates_is_not_go_live),
+                'Supervised pilot go/no-go is not go-live',
+                yes_no(packet.supervised_pilot_go_no_go_is_not_go_live),
             )
         }\n"
         f"      {
@@ -314,7 +318,7 @@ def _render_live_blocking_flags(packet: SupervisedPilotCandidates) -> str:
         }\n"
         f"      {metric('Export is not execution', yes_no(packet.export_is_not_execution))}\n"
         "    </section>\n"
-        '    <section class="panel" id="candidate-gates">\n'
+        '    <section class="panel" id="go-no-go-flags">\n'
         "      <h2>Read-only flags and halt proof</h2>\n"
         '      <div class="metric-grid">\n'
         f"        {metric('Packet kind', packet.packet_kind)}\n"
@@ -353,148 +357,207 @@ def _render_live_blocking_flags(packet: SupervisedPilotCandidates) -> str:
         "environment values, API keys, tokens, or unsafe error text. "
         "OUTBOUND_ENABLED=false. go_live_permitted=false and "
         "execution_allowed=false. spend_allowed=false. This is a read-only "
-        "candidate readiness review view, not permission to go live.</p>\n"
+        "go/no-go review view, not permission to go live.</p>\n"
         "    </section>"
     )
 
 
-def _render_candidate_scope(scope: CandidateScopeRecommendation) -> str:
+def _render_prerequisite_summary(packet: SupervisedPilotGoNoGo) -> str:
     return (
-        '    <section class="panel" id="candidate-scope">\n'
-        "      <h2>Safe count-only candidate scope</h2>\n"
-        '      <p class="hint">Planning counts only. These limits do not '
-        "select, enroll, send, spend, scrape, or execute.</p>\n"
+        '    <section class="panel" id="prerequisite-summary">\n'
+        "      <h2>Prerequisite category summary</h2>\n"
+        '      <p class="hint">Counts and statuses only. Prerequisite '
+        "category names stay as codes. This page does not recalculate "
+        "readiness.</p>\n"
         '      <div class="metric-grid">\n'
-        f"        {metric('Suggested candidate count', scope.suggested_candidate_count)}\n"
-        f"        {metric('Suggested max leads', scope.suggested_max_leads)}\n"
-        f"        {metric('Suggested max drafts', scope.suggested_max_drafts)}\n"
-        f"        {
-            metric(
-                'Suggested max manually reviewed sends',
-                scope.suggested_max_manually_reviewed_sends,
-            )
-        }\n"
-        f"        {metric('Suggested max daily activity', scope.suggested_max_daily_activity)}\n"
-        f"        {metric('Ready for review count', scope.ready_for_review_count)}\n"
-        f"        {metric('Blocked candidate count', scope.blocked_candidate_count)}\n"
-        f"        {metric('Total candidate count', scope.total_candidate_count)}\n"
+        f"        {metric('Missing prerequisite codes', len(packet.missing_prerequisite_codes))}\n"
         "      </div>\n"
-        "      <h3>Stop conditions</h3>\n"
-        f"      {_render_codes(scope.stop_conditions, empty='No stop conditions.')}\n"
-        f'      <p class="hint">{html_escape(scope.recommendation_summary)}</p>\n'
-        "    </section>"
-    )
-
-
-def _render_bucket_sections(packet: SupervisedPilotCandidates) -> str:
-    sections = (
-        (
-            "counts-by-readiness",
-            "Candidate counts by readiness",
-            packet.candidate_counts_by_readiness,
-        ),
-        (
-            "counts-by-status",
-            "Candidate counts by status",
-            packet.candidate_counts_by_status,
-        ),
-        (
-            "counts-by-stage",
-            "Candidate counts by stage",
-            packet.candidate_counts_by_stage,
-        ),
-        (
-            "counts-by-source",
-            "Candidate counts by source",
-            packet.candidate_counts_by_source,
-        ),
-        (
-            "counts-by-specialty",
-            "Candidate counts by specialty category",
-            packet.candidate_counts_by_specialty,
-        ),
-        (
-            "counts-by-state",
-            "Candidate counts by state",
-            packet.candidate_counts_by_state,
-        ),
-        (
-            "scoring-distribution",
-            "Scoring distribution counts",
-            packet.scoring_distribution,
-        ),
-        (
-            "website-match-counts",
-            "Website match counts",
-            packet.website_match_counts,
-        ),
-        (
-            "outreach-status-counts",
-            "Outreach status counts",
-            packet.outreach_status_counts,
-        ),
-        (
-            "blocked-counts",
-            "Blocked counts by generic reason",
-            packet.blocked_counts,
-        ),
-    )
-    return "\n".join(
-        _render_count_section(section_id, heading, items) for section_id, heading, items in sections
-    )
-
-
-def _render_count_section(
-    section_id: str,
-    heading: str,
-    items: tuple[CandidateCount, ...],
-) -> str:
-    return (
-        f'    <section class="panel" id="{escape(section_id)}">\n'
-        f"      <h2>{html_escape(heading)}</h2>\n"
-        '      <p class="hint">Safe keys and counts only. Practice names, '
-        "provider names, NPI numbers, emails, phones, websites, and raw "
-        "evidence are never shown.</p>\n"
-        f"      {_render_counts(items, empty='No counts in this bucket.')}\n"
-        "    </section>"
-    )
-
-
-def _render_suppression_kill_switch(packet: SupervisedPilotCandidates) -> str:
-    return (
-        '    <section class="panel" id="suppression-kill-switch">\n'
-        "      <h2>Suppression and kill-switch status rollups</h2>\n"
-        '      <div class="metric-grid">\n'
-        f"        {
-            metric(
-                'Kill switch outbound disabled',
-                yes_no(packet.kill_switch_outbound_disabled),
-            )
-        }\n"
-        f"        {
-            metric(
-                'Kill switch operator halt active',
-                yes_no(packet.kill_switch_operator_halt_active),
-            )
-        }\n"
-        f"        {
-            metric(
-                'Kill switch live providers closed',
-                yes_no(packet.kill_switch_live_providers_closed),
-            )
-        }\n"
-        f"        {metric('Suppression record count', packet.suppression_record_count)}\n"
-        "      </div>\n"
-        "      <h3>Suppression counts by reason</h3>\n"
+        "      <h3>Counts by status</h3>\n"
         f"      {
             _render_counts(
-                packet.suppression_counts_by_reason,
-                empty='No suppression reason counts.',
+                packet.prerequisite_counts_by_status,
+                empty='No prerequisite status counts.',
             )
         }\n"
-        '      <p class="hint">Generic reasons and counts only. This page '
-        "does not lift halt, enable outbound, or contact anyone.</p>\n"
+        "      <h3>Missing prerequisite codes</h3>\n"
+        f"      {
+            _render_codes(
+                packet.missing_prerequisite_codes,
+                empty='No missing prerequisite codes.',
+            )
+        }\n"
         "    </section>"
+    )
+
+
+def _render_candidate_summary(packet: SupervisedPilotGoNoGo) -> str:
+    return (
+        '    <section class="panel" id="candidate-readiness-summary">\n'
+        "      <h2>Candidate readiness summary</h2>\n"
+        '      <p class="hint">Counts and codes only. Practice names, '
+        "provider names, NPI numbers, emails, phones, and websites are "
+        "never shown.</p>\n"
+        '      <div class="metric-grid">\n'
+        f"        {metric('Ready for review count', packet.ready_for_review_count)}\n"
+        f"        {metric('Blocked candidate count', packet.blocked_candidate_count)}\n"
+        f"        {metric('Total candidate count', packet.total_candidate_count)}\n"
+        "      </div>\n"
+        "      <h3>Counts by readiness</h3>\n"
+        f"      {
+            _render_counts(
+                packet.candidate_counts_by_readiness,
+                empty='No candidate readiness counts.',
+            )
+        }\n"
+        "    </section>"
+    )
+
+
+def _render_blocked_reason_counts(packet: SupervisedPilotGoNoGo) -> str:
+    return (
+        '    <section class="panel" id="blocked-reason-counts">\n'
+        "      <h2>Blocked reason counts</h2>\n"
+        '      <p class="hint">Generic reason codes and counts only.</p>\n'
+        f"      {
+            _render_counts(
+                packet.blocked_reason_counts,
+                empty='No blocked reason counts.',
+            )
+        }\n"
+        "    </section>"
+    )
+
+
+def _render_review_queue_rollups(packet: SupervisedPilotGoNoGo) -> str:
+    return (
+        '    <section class="panel" id="review-queue-rollups">\n'
+        "      <h2>Review queue count rollups</h2>\n"
+        '      <div class="metric-grid">\n'
+        f"        {metric('Pending count', packet.review_queue_pending_count)}\n"
+        f"        {metric('Decided count', packet.review_queue_decided_count)}\n"
+        "      </div>\n"
+        "      <h3>Counts by artifact type</h3>\n"
+        f"      {
+            _render_counts(
+                packet.review_queue_counts_by_artifact_type,
+                empty='No review queue artifact-type counts.',
+            )
+        }\n"
+        "    </section>"
+    )
+
+
+def _render_action_readiness_rollups(packet: SupervisedPilotGoNoGo) -> str:
+    return (
+        '    <section class="panel" id="action-readiness-rollups">\n'
+        "      <h2>Action readiness count rollups</h2>\n"
+        '      <div class="metric-grid">\n'
+        f"        {
+            metric(
+                'Action readiness candidate count',
+                packet.action_readiness_candidate_count,
+            )
+        }\n"
+        "      </div>\n"
+        "      <h3>Counts by status</h3>\n"
+        f"      {
+            _render_counts(
+                packet.action_readiness_counts_by_status,
+                empty='No action readiness status counts.',
+            )
+        }\n"
+        "      <h3>Counts by blocker</h3>\n"
+        f"      {
+            _render_counts(
+                packet.action_readiness_counts_by_blocker,
+                empty='No action readiness blocker counts.',
+            )
+        }\n"
+        "    </section>"
+    )
+
+
+def _render_approval_packet_rollups(packet: SupervisedPilotGoNoGo) -> str:
+    return (
+        '    <section class="panel" id="approval-packet-rollups">\n'
+        "      <h2>Approval packet count rollups</h2>\n"
+        '      <div class="metric-grid">\n'
+        f"        {metric('Approval packet count', packet.approval_packet_count)}\n"
+        "      </div>\n"
+        "      <h3>Counts by preflight</h3>\n"
+        f"      {
+            _render_counts(
+                packet.approval_packet_counts_by_preflight,
+                empty='No approval packet preflight counts.',
+            )
+        }\n"
+        "    </section>"
+    )
+
+
+def _render_settings_request_rollups(packet: SupervisedPilotGoNoGo) -> str:
+    return (
+        '    <section class="panel" id="settings-request-rollups">\n'
+        "      <h2>Settings request count rollups</h2>\n"
+        '      <div class="metric-grid">\n'
+        f"        {metric('Settings request count', packet.settings_request_count)}\n"
+        f"        {metric('Pending count', packet.settings_request_pending_count)}\n"
+        "      </div>\n"
+        "      <h3>Counts by type</h3>\n"
+        f"      {
+            _render_counts(
+                packet.settings_request_counts_by_type,
+                empty='No settings request type counts.',
+            )
+        }\n"
+        "      <h3>Counts by decision</h3>\n"
+        f"      {
+            _render_counts(
+                packet.settings_request_counts_by_decision,
+                empty='No settings request decision counts.',
+            )
+        }\n"
+        "    </section>"
+    )
+
+
+def _render_go_no_go_gates(packet: SupervisedPilotGoNoGo) -> str:
+    if not packet.go_no_go_gates:
+        body = '<p class="empty-state">No go/no-go gates.</p>'
+    else:
+        rows = "".join(_gate_row(gate) for gate in packet.go_no_go_gates)
+        body = (
+            '<table class="dense"><thead><tr>'
+            "<th>Code</th><th>Status</th><th>Blocking</th><th>Command</th>"
+            "<th>Route</th><th>Label</th>"
+            f"</tr></thead><tbody>{rows}</tbody></table>"
+        )
+    return (
+        '    <section class="panel" id="go-no-go-gates">\n'
+        "      <h2>Go/no-go gates</h2>\n"
+        '      <p class="hint">Codes, statuses, labels, blocking flags, and '
+        "related route/command names only. These gates do not execute.</p>\n"
+        f"      {body}\n"
+        "    </section>"
+    )
+
+
+def _gate_row(gate: GoNoGoGate) -> str:
+    route = gate.html_route or gate.json_route
+    route_cell = (
+        f'<a class="row-link mono" href="{escape(route)}">{html_escape(route)}</a>'
+        if route
+        else html_escape("—")
+    )
+    return (
+        f'<tr class="{_status_class(gate.status)}">'
+        f'<td class="mono">{html_escape(gate.code)}</td>'
+        f"<td>{html_escape(gate.status)}</td>"
+        f"<td>{yes_no(gate.blocking)}</td>"
+        f'<td class="mono">{html_escape(gate.command_name)}</td>'
+        f"<td>{route_cell}</td>"
+        f"<td>{html_escape(gate.label)}</td>"
+        "</tr>"
     )
 
 
@@ -513,7 +576,7 @@ def _render_codes_section(
     )
 
 
-def _render_blocker_gate_codes(packet: SupervisedPilotCandidates) -> str:
+def _render_blocker_gate_codes(packet: SupervisedPilotGoNoGo) -> str:
     return (
         '    <section class="panel" id="blocker-gate-codes">\n'
         "      <h2>Blocker and gate code rollups</h2>\n"
@@ -525,7 +588,7 @@ def _render_blocker_gate_codes(packet: SupervisedPilotCandidates) -> str:
     )
 
 
-def _render_missing_names(packet: SupervisedPilotCandidates) -> str:
+def _render_missing_names(packet: SupervisedPilotGoNoGo) -> str:
     return (
         '    <section class="panel" id="missing-names">\n'
         "      <h2>Missing credential and config names</h2>\n"
@@ -538,7 +601,7 @@ def _render_missing_names(packet: SupervisedPilotCandidates) -> str:
     )
 
 
-def _render_closed_flags(packet: SupervisedPilotCandidates) -> str:
+def _render_closed_flags(packet: SupervisedPilotGoNoGo) -> str:
     return (
         '    <section class="panel" id="closed-provider-flags">\n'
         "      <h2>Closed provider and live flag names</h2>\n"
@@ -547,7 +610,7 @@ def _render_closed_flags(packet: SupervisedPilotCandidates) -> str:
     )
 
 
-def _render_source_references(packet: SupervisedPilotCandidates) -> str:
+def _render_source_references(packet: SupervisedPilotGoNoGo) -> str:
     rows = "".join(
         (
             _source_row(
@@ -556,6 +619,13 @@ def _render_source_references(packet: SupervisedPilotCandidates) -> str:
                 packet.source_pilot_plan_route,
                 packet.source_pilot_plan_overall_status,
                 packet.source_pilot_plan_html_route,
+            ),
+            _source_row(
+                "Supervised pilot candidates",
+                packet.source_candidates_command,
+                packet.source_candidates_route,
+                packet.source_candidates_overall_status,
+                packet.source_candidates_html_route,
             ),
             _source_row(
                 "Rehearsal outcome report",
@@ -597,9 +667,9 @@ def _render_source_references(packet: SupervisedPilotCandidates) -> str:
     return (
         '    <section class="panel" id="source-references">\n'
         "      <h2>Source references</h2>\n"
-        '      <p class="hint">This page reuses the existing Phase 57 '
-        "supervised pilot candidate readiness payload. It does not "
-        "recalculate candidate readiness or execute.</p>\n"
+        '      <p class="hint">This page reuses the existing Phase 59 '
+        "supervised pilot go/no-go payload. It does not recalculate "
+        "go/no-go readiness or execute.</p>\n"
         '<table class="dense"><thead><tr>'
         "<th>Source</th><th>Command</th><th>JSON route</th><th>Overall status</th>"
         "<th>HTML route</th>"
@@ -636,7 +706,7 @@ def _source_row(
     )
 
 
-def _render_related_inventory(packet: SupervisedPilotCandidates) -> str:
+def _render_related_inventory(packet: SupervisedPilotGoNoGo) -> str:
     return (
         '    <section class="panel" id="related-routes">\n'
         "      <h2>Related safe routes</h2>\n"
@@ -668,7 +738,7 @@ def _render_local_git(git: LocalGitMetadata) -> str:
     )
 
 
-def _render_next_actions(actions: tuple[CandidateNextAction, ...]) -> str:
+def _render_next_actions(actions: tuple[GoNoGoNextAction, ...]) -> str:
     if not actions:
         body = '<p class="empty-state">No owner next steps.</p>'
     else:
@@ -690,7 +760,7 @@ def _render_next_actions(actions: tuple[CandidateNextAction, ...]) -> str:
     )
 
 
-def _next_action_row(action: CandidateNextAction) -> str:
+def _next_action_row(action: GoNoGoNextAction) -> str:
     route = action.html_route or action.json_route
     route_cell = (
         f'<a class="row-link mono" href="{escape(route)}">{html_escape(route)}</a>'
@@ -709,7 +779,7 @@ def _next_action_row(action: CandidateNextAction) -> str:
     )
 
 
-def _render_footer(packet: SupervisedPilotCandidates, generated: str) -> str:
+def _render_footer(packet: SupervisedPilotGoNoGo, generated: str) -> str:
     return (
         '    <footer class="footnote" id="side-effects">\n'
         f"      <p>Generated {generated}. Read-only={yes_no(packet.read_only)}. "
@@ -732,13 +802,15 @@ def _render_footer(packet: SupervisedPilotCandidates, generated: str) -> str:
         f"Build allowed={yes_no(packet.build_allowed)}. "
         f"Artifact publish allowed={yes_no(packet.artifact_publish_allowed)}. "
         f"Spend allowed={yes_no(packet.spend_allowed)}. "
-        f"Supervised pilot candidates is not go-live="
-        f"{yes_no(packet.supervised_pilot_candidates_is_not_go_live)}. "
+        f"Supervised pilot go/no-go is not go-live="
+        f"{yes_no(packet.supervised_pilot_go_no_go_is_not_go_live)}. "
         f"Export is not permission to go live="
         f"{yes_no(packet.export_is_not_permission_to_go_live)}. "
         f"Export is not execution={yes_no(packet.export_is_not_execution)}. "
         f"Supervised pilot plan is not go-live="
         f"{yes_no(packet.supervised_pilot_plan_is_not_go_live)}. "
+        f"Supervised pilot candidates is not go-live="
+        f"{yes_no(packet.supervised_pilot_candidates_is_not_go_live)}. "
         f"Rehearsal outcome report is not go-live="
         f"{yes_no(packet.rehearsal_outcome_report_is_not_go_live)}. "
         f"Go-live rehearsal checklist is not go-live="
@@ -748,14 +820,14 @@ def _render_footer(packet: SupervisedPilotCandidates, generated: str) -> str:
         "There are no apply, execute, lift-halt, enable-outbound, provider, "
         "build, publish, deploy, campaign, booking, call, spend, candidate "
         "selection, or contact controls on this page. This is a read-only "
-        "candidate readiness review view, not permission to go live and not "
-        "an execution surface. Current route "
-        f"{html_escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)}.</p>\n"
+        "go/no-go review view, not permission to go live and not an "
+        "execution surface. Current route "
+        f"{html_escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)}.</p>\n"
         "    </footer>"
     )
 
 
-def _render_counts(items: tuple[CandidateCount, ...], *, empty: str) -> str:
+def _render_counts(items: tuple[GoNoGoCount, ...], *, empty: str) -> str:
     present = [item for item in items if item.key]
     if not present:
         return f'<p class="empty-state">{escape(empty)}</p>'

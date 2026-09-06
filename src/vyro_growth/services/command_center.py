@@ -208,8 +208,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE: (
         "Inspect the supervised pilot go/no-go packet at "
+        "/internal/operator-supervised-pilot-go-no-go or "
         "/internal/supervised-pilot-go-no-go or via `vyro-growth "
-        "supervised-pilot-go-no-go`. Go/no-go review export only; "
+        "supervised-pilot-go-no-go`. Go/no-go review view only; "
         "it is not permission to go live and is not an execution "
         "surface."
     ),

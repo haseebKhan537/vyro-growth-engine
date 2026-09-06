@@ -53,6 +53,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+    OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
 )
 from vyro_growth.config import Settings
@@ -293,7 +294,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_PLAN_PATH)}">'
         "Supervised pilot</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)}">'
-        "Pilot candidates</a>\n"
+        "Pilot candidates</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)}">'
+        "Pilot go/no-go</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -388,6 +391,9 @@ def _render_safety(
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)}">'
         "Open supervised pilot candidate readiness</a> — read-only review view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)}">'
+        "Open supervised pilot go/no-go</a> — read-only review view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
@@ -606,6 +612,9 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)}">'
         "Open supervised pilot candidate readiness</a> — read-only review view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)}">'
+        "Open supervised pilot go/no-go</a> — read-only review view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"

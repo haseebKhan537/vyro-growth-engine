@@ -120,6 +120,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-plan",
     "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
+    "/internal/operator-supervised-pilot-go-no-go",
+    "/internal/supervised-pilot-go-no-go",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -981,8 +983,9 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         "manual_review",
         "none",
         "Inspect the supervised pilot go/no-go packet at "
+        "/internal/operator-supervised-pilot-go-no-go or "
         "/internal/supervised-pilot-go-no-go or via `vyro-growth "
-        "supervised-pilot-go-no-go`. Go/no-go review export only; "
+        "supervised-pilot-go-no-go`. Go/no-go review view only; "
         "it is not permission to go live and is not an execution "
         "surface.",
     ),

@@ -706,7 +706,7 @@ Internal operator HTML shell of the Phase 57 supervised pilot candidate readines
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/contact controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 59 — Supervised pilot go/no-go packet export (current)
+## Phase 59 — Supervised pilot go/no-go packet export
 Sanitized read-only CLI and internal JSON export that combines the supervised pilot plan, candidate readiness, provider setup checklist, rehearsal outcome report, launch readiness / go-live readiness index, review/action readiness queues, owner approval/settings request rollups, and operator halt state into one owner go/no-go decision packet. Review/export only, no execution.
 - CLI `vyro-growth supervised-pilot-go-no-go` with Markdown output and `--json` output
 - Internal JSON `GET /internal/supervised-pilot-go-no-go`
@@ -718,6 +718,17 @@ Sanitized read-only CLI and internal JSON export that combines the supervised pi
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - HTTP responses return `Cache-Control: no-store`
 - This is a go/no-go review export only, not permission to go live and not an execution surface
+
+## Phase 60 — Operator supervised pilot go/no-go UI (current)
+Internal operator HTML shell of the Phase 59 supervised pilot go/no-go packet. Read-only, no execution.
+- `GET /internal/operator-supervised-pilot-go-no-go`
+- Reuses existing Phase 59 `SupervisedPilotGoNoGoService` / payload and does not duplicate go/no-go readiness calculations
+- Linked from the operator dashboard, go-live readiness index, supervised pilot plan UI, supervised pilot candidate UI, launch blockers UI, staged rollout UI, owner launch dossier UI, provider setup checklist UI, rehearsal outcome UI, release/readiness pages, and related readiness surfaces
+- Renders overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-outbound / no-provider-calls / no-deployment / no-spend / dry-run-only / manual-review-only flags, operator halt before/status/after and unchanged proof, prerequisite category summary using counts/statuses only, candidate readiness summary using counts/codes only, blocked reason counts, review queue / action readiness / approval packet / settings request count rollups, go/no-go gates with code/status/label/blocking boolean/route/command names, owner decision prerequisite type/code names only, missing credential/config names only, closed provider/live flag names only, blocker/gate codes, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names, missing credential variable names, specialty categories, state abbreviations, generic source names, sanitized timestamps, and counts
+- Page states this is a go/no-go review view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/contact controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
