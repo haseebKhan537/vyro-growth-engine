@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -127,6 +127,10 @@ from vyro_growth.api.optimizer import (
 from vyro_growth.api.owner_handoff import (
     OwnerHandoffPacketResponse,
     build_owner_handoff_response,
+)
+from vyro_growth.api.owner_launch_dossier import (
+    OwnerLaunchDossierResponse,
+    build_owner_launch_dossier_response,
 )
 from vyro_growth.api.release_artifact_manifest import (
     ReleaseArtifactManifestResponse,
@@ -845,6 +849,18 @@ def staged_rollout_plan(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_staged_rollout_plan_response(db, active_settings)
+
+
+@app.get("/internal/owner-launch-dossier", tags=["internal"])
+def owner_launch_dossier(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> OwnerLaunchDossierResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_owner_launch_dossier_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

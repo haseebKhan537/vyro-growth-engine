@@ -109,6 +109,8 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "/internal/staged-rollout-plan" in runbook
     assert "operator-staged-rollout-plan" in runbook
     assert "vyro-growth staged-rollout-plan" in runbook
+    assert "/internal/owner-launch-dossier" in runbook
+    assert "vyro-growth owner-launch-dossier" in runbook
     assert "018_live_settings_change_requests" in runbook
 
 

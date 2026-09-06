@@ -159,6 +159,12 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "staged-rollout-plan`. Read-only staged planning view; it is "
         "not permission to go live and is not an execution surface."
     ),
+    NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE: (
+        "Inspect the owner launch dossier at "
+        "/internal/owner-launch-dossier or via `vyro-growth "
+        "owner-launch-dossier`. Read-only owner-review export; it is "
+        "not permission to go live and is not an execution surface."
+    ),
 }
 
 
@@ -546,6 +552,11 @@ def _next_actions(
         NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="staged_rollout_plan",
+    )
+    add(
+        NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="owner_launch_dossier",
     )
 
     return tuple(

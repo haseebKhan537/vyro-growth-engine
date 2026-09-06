@@ -435,6 +435,16 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Local git metadata may include sanitized branch name and SHA from reused read-only builders only. Do not include remotes, commit messages, author emails, or secret values.
 - The page must state `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `OUTBOUND_ENABLED=false`, `staged_rollout_plan_is_not_go_live=true`, and that this is a staged rollout planning view only, not permission to go live and not an execution surface.
 
+## Owner launch dossier export integrity
+- Phase 47 owner launch dossier CLI and JSON are a sanitized read-only review export over existing readiness, blocker, staged-rollout, handoff, binder, runbook, manifest, settings-preflight, and audit surfaces. They never execute, build, publish, deploy, or perform a live workflow.
+- Do not change `OUTBOUND_ENABLED`, provider live flags, deployment settings, campaign live settings, scoring thresholds, or operator halt.
+- Do not apply settings, execute settings requests, set live `owner_approved`, execute review items/approval packets, send email, enroll campaigns, generate sendable autonomous replies, place calls, book meetings, create Google Meet links, publish content, launch ads, spend money, build containers, publish artifacts, or deploy.
+- Do not add apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls, mutation forms, workers, or mutators.
+- Export statuses, blocker/gate codes, missing credential variable names, route names, command names, config names, sanitized timestamps, counts, and safe local git metadata only.
+- Do not export secret values, environment values, API keys, tokens, provider secrets, message bodies, full outreach draft copy, real emails, real phones, evidence snippets, PHI, or unsafe raw error text.
+- Local git metadata may include sanitized branch name and SHA from reused read-only builders only. Do not include remotes, commit messages, author emails, or secret values.
+- The export must state `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `OUTBOUND_ENABLED=false`, `owner_launch_dossier_is_not_go_live=true`, and that this is a review export only, not permission to go live and not an execution surface.
+
 ## Enrichment integrity
 - AI-generated prospect facts are not authoritative.
 - Store source URLs and confidence/evidence for material enrichment claims.

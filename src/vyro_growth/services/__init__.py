@@ -127,6 +127,11 @@ from vyro_growth.services.owner_handoff import (
     OwnerHandoffPacketService,
     format_owner_handoff,
 )
+from vyro_growth.services.owner_launch_dossier import (
+    OwnerLaunchDossier,
+    OwnerLaunchDossierService,
+    format_owner_launch_dossier,
+)
 from vyro_growth.services.personalization import (
     PersonalizationError,
     PersonalizationJobResult,
@@ -265,6 +270,8 @@ __all__ = [
     "OperatorCommandCenterService",
     "OwnerHandoffPacket",
     "OwnerHandoffPacketService",
+    "OwnerLaunchDossier",
+    "OwnerLaunchDossierService",
     "OutboundAction",
     "OutboundBlockedError",
     "OutboundDecision",
@@ -319,6 +326,7 @@ __all__ = [
     "format_release_artifact_manifest",
     "format_release_candidate_runbook",
     "format_owner_handoff",
+    "format_owner_launch_dossier",
     "format_settings_change_list",
     "format_settings_change_propose",
     "format_settings_change_request",

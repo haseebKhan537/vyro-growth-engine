@@ -58,6 +58,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     CLI_COMMAND,
     "launch-blockers-plan",
     "staged-rollout-plan",
+    "owner-launch-dossier",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -81,6 +82,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/launch-blockers-plan",
     "/internal/operator-staged-rollout-plan",
     "/internal/staged-rollout-plan",
+    "/internal/owner-launch-dossier",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -585,6 +587,20 @@ def _remaining_checklist(
             "is not permission to go live and is not an execution surface."
         ),
     )
+    add(
+        NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "owner_launch_dossier",
+        html_route=None,
+        json_route="/internal/owner-launch-dossier",
+        command_name="owner-launch-dossier",
+        label=(
+            "Inspect the owner launch dossier at "
+            "/internal/owner-launch-dossier or via `vyro-growth "
+            "owner-launch-dossier`. Read-only owner-review export; it "
+            "is not permission to go live and is not an execution surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -629,6 +645,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-staged-rollout-plan",
                 "/internal/staged-rollout-plan",
                 "staged-rollout-plan",
+            )
+        case "owner_launch_dossier":
+            return (
+                None,
+                "/internal/owner-launch-dossier",
+                "owner-launch-dossier",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (
