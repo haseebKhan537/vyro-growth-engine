@@ -149,6 +149,10 @@ from vyro_growth.api.provider_setup_checklist import (
     ProviderSetupChecklistResponse,
     build_provider_setup_checklist_response,
 )
+from vyro_growth.api.rehearsal_outcome_report import (
+    RehearsalOutcomeReportResponse,
+    build_rehearsal_outcome_report_response,
+)
 from vyro_growth.api.release_artifact_manifest import (
     ReleaseArtifactManifestResponse,
     build_release_artifact_manifest_response,
@@ -944,6 +948,18 @@ def go_live_rehearsal_checklist(
     _require_internal_key(active_settings, x_internal_api_key)
     response.headers["Cache-Control"] = "no-store"
     return build_go_live_rehearsal_checklist_response(db, active_settings)
+
+
+@app.get("/internal/rehearsal-outcome-report", tags=["internal"])
+def rehearsal_outcome_report(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> RehearsalOutcomeReportResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_rehearsal_outcome_report_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

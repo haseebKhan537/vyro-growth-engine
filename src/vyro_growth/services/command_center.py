@@ -182,6 +182,12 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "only; it is not a script runner, not permission to go live, "
         "and is not an execution surface."
     ),
+    NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE: (
+        "Inspect the rehearsal outcome report at "
+        "/internal/rehearsal-outcome-report or via `vyro-growth "
+        "rehearsal-outcome-report`. Compact outcome export only; it "
+        "is not permission to go live and is not an execution surface."
+    ),
 }
 
 
@@ -584,6 +590,11 @@ def _next_actions(
         NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="go_live_rehearsal_checklist",
+    )
+    add(
+        NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="rehearsal_outcome_report",
     )
 
     return tuple(

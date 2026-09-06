@@ -61,6 +61,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "owner-launch-dossier",
     "provider-setup-checklist",
     "go-live-rehearsal-checklist",
+    "rehearsal-outcome-report",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -90,6 +91,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/provider-setup-checklist",
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/go-live-rehearsal-checklist",
+    "/internal/rehearsal-outcome-report",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -641,6 +643,20 @@ def _remaining_checklist(
             "and is not an execution surface."
         ),
     )
+    add(
+        NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "rehearsal_outcome_report",
+        json_route="/internal/rehearsal-outcome-report",
+        command_name="rehearsal-outcome-report",
+        label=(
+            "Inspect the rehearsal outcome report at "
+            "/internal/rehearsal-outcome-report or via `vyro-growth "
+            "rehearsal-outcome-report`. Compact outcome export only; "
+            "it is not permission to go live and is not an execution "
+            "surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -703,6 +719,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-go-live-rehearsal-checklist",
                 "/internal/go-live-rehearsal-checklist",
                 "go-live-rehearsal-checklist",
+            )
+        case "rehearsal_outcome_report":
+            return (
+                None,
+                "/internal/rehearsal-outcome-report",
+                "rehearsal-outcome-report",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (

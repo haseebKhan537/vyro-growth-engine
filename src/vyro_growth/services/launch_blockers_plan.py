@@ -82,6 +82,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "owner-launch-dossier",
     "provider-setup-checklist",
     "go-live-rehearsal-checklist",
+    "rehearsal-outcome-report",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -111,6 +112,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/provider-setup-checklist",
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/go-live-rehearsal-checklist",
+    "/internal/rehearsal-outcome-report",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -128,6 +130,7 @@ _SURFACE_BY_SECTION = {
     "owner_launch_dossier": "owner-launch-dossier",
     "provider_setup_checklist": "provider-setup-checklist",
     "go_live_rehearsal_checklist": "go-live-rehearsal-checklist",
+    "rehearsal_outcome_report": "rehearsal-outcome-report",
     "owner_handoff": "owner-handoff-packet",
     "owner_handoff_packet": "owner-handoff-packet",
     "launch_readiness": "launch-readiness",
@@ -518,6 +521,7 @@ def _group_steps(
             "owner-launch-dossier": "Owner launch dossier",
             "provider-setup-checklist": "Provider setup checklist",
             "go-live-rehearsal-checklist": "Go-live rehearsal checklist",
+            "rehearsal-outcome-report": "Rehearsal outcome report",
             "credentials": "Required credentials",
             "provider_setup": "Provider setup",
         }
@@ -575,6 +579,7 @@ def _surface_label_for_section(source_section: str) -> str:
         "owner-launch-dossier": "Owner launch dossier",
         "provider-setup-checklist": "Provider setup checklist",
         "go-live-rehearsal-checklist": "Go-live rehearsal checklist",
+        "rehearsal-outcome-report": "Rehearsal outcome report",
         "owner-handoff-packet": "Owner handoff packet",
         "launch-readiness": "Launch readiness",
         "settings-execution-preflight": "Settings execution preflight",

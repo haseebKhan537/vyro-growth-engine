@@ -154,6 +154,11 @@ from vyro_growth.services.readiness import (
     build_health_payload,
     database_is_ready,
 )
+from vyro_growth.services.rehearsal_outcome_report import (
+    RehearsalOutcomeReport,
+    RehearsalOutcomeReportService,
+    format_rehearsal_outcome_report,
+)
 from vyro_growth.services.release_artifact_manifest import (
     ReleaseArtifactManifest,
     ReleaseArtifactManifestService,
@@ -256,6 +261,8 @@ __all__ = [
     "GoLiveReadinessIndexService",
     "GoLiveRehearsalChecklist",
     "GoLiveRehearsalChecklistService",
+    "RehearsalOutcomeReport",
+    "RehearsalOutcomeReportService",
     "LaunchBlockersPlan",
     "LaunchBlockersPlanService",
     "StagedRolloutPlan",
@@ -335,6 +342,7 @@ __all__ = [
     "format_compliance_evidence_binder",
     "format_go_live_readiness_index",
     "format_go_live_rehearsal_checklist",
+    "format_rehearsal_outcome_report",
     "format_launch_blockers_plan",
     "format_staged_rollout_plan",
     "format_launch_readiness",

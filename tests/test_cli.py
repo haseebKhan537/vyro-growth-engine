@@ -1875,6 +1875,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     rehearsal = parser.parse_args(["go-live-rehearsal-checklist", "--json"])
     assert rehearsal.command == "go-live-rehearsal-checklist"
     assert rehearsal.json is True
+    outcome = parser.parse_args(["rehearsal-outcome-report", "--json"])
+    assert outcome.command == "rehearsal-outcome-report"
+    assert outcome.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:
