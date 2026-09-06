@@ -74,6 +74,7 @@ LINKED_SURFACES = (
     "/internal/go-live-readiness-index",
     "/internal/operator-launch-blockers-plan",
     "/internal/operator-staged-rollout-plan",
+    "/internal/operator-owner-launch-dossier",
     "/internal/operator-audit-timeline",
 )
 

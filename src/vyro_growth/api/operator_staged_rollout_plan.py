@@ -29,6 +29,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
+    OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
@@ -182,6 +183,7 @@ def _render_related_links() -> str:
     manifest_href = escape(OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH)
     manifest_json_href = escape(RELEASE_ARTIFACT_MANIFEST_JSON_PATH)
     timeline_href = escape(OPERATOR_AUDIT_TIMELINE_PATH)
+    dossier_href = escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Linked readiness surfaces">\n'
         f'      <a class="nav-link" href="{dashboard_href}">Dashboard</a>\n'
@@ -203,6 +205,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{manifest_href}">Release manifest</a>\n'
         f'      <a class="nav-link" href="{manifest_json_href}">JSON manifest</a>\n'
         f'      <a class="nav-link" href="{timeline_href}">Audit timeline</a>\n'
+        f'      <a class="nav-link" href="{dossier_href}">Owner launch dossier</a>\n'
         "    </nav>"
     )
 

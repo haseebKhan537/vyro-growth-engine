@@ -82,6 +82,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/launch-blockers-plan",
     "/internal/operator-staged-rollout-plan",
     "/internal/staged-rollout-plan",
+    "/internal/operator-owner-launch-dossier",
     "/internal/owner-launch-dossier",
 )
 _SEVERITY_RANK = {
@@ -591,13 +592,14 @@ def _remaining_checklist(
         NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE.value,
         FindingSeverity.INFO.value,
         "owner_launch_dossier",
-        html_route=None,
+        html_route="/internal/operator-owner-launch-dossier",
         json_route="/internal/owner-launch-dossier",
         command_name="owner-launch-dossier",
         label=(
             "Inspect the owner launch dossier at "
+            "/internal/operator-owner-launch-dossier or "
             "/internal/owner-launch-dossier or via `vyro-growth "
-            "owner-launch-dossier`. Read-only owner-review export; it "
+            "owner-launch-dossier`. Read-only owner-review view; it "
             "is not permission to go live and is not an execution surface."
         ),
     )
@@ -648,7 +650,7 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
             )
         case "owner_launch_dossier":
             return (
-                None,
+                "/internal/operator-owner-launch-dossier",
                 "/internal/owner-launch-dossier",
                 "owner-launch-dossier",
             )

@@ -161,8 +161,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE: (
         "Inspect the owner launch dossier at "
+        "/internal/operator-owner-launch-dossier or "
         "/internal/owner-launch-dossier or via `vyro-growth "
-        "owner-launch-dossier`. Read-only owner-review export; it is "
+        "owner-launch-dossier`. Read-only owner-review view; it is "
         "not permission to go live and is not an execution surface."
     ),
 }

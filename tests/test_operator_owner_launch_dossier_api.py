@@ -12,11 +12,11 @@ from sqlalchemy.orm import Session
 from tests.test_action_readiness_service import _seed_plans_and_packets
 from tests.test_dashboard_service import PHI_SNIPPET, PROSPECT_EMAIL
 from tests.test_launch_readiness_service import SECRET_VALUE, _assert_no_leakage
-from vyro_growth.api.operator_launch_blockers_plan import (
-    render_launch_blockers_plan,
-    render_launch_blockers_plan_error,
+from vyro_growth.api.operator_owner_launch_dossier import (
+    render_owner_launch_dossier,
+    render_owner_launch_dossier_error,
 )
-from vyro_growth.api.operator_ui import OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH
+from vyro_growth.api.operator_ui import OPERATOR_OWNER_LAUNCH_DOSSIER_PATH
 from vyro_growth.config import Settings
 from vyro_growth.database import get_db
 from vyro_growth.domain import FindingSeverity, NextActionCode, SettingsChangeRequestType
@@ -28,12 +28,15 @@ from vyro_growth.models import (
     Meeting,
     OutreachMessage,
 )
-from vyro_growth.services.launch_blockers_plan import (
-    LaunchBlockersPlan,
-    RemediationGroup,
-    RemediationStep,
-)
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
+from vyro_growth.services.owner_launch_dossier import (
+    SOURCE_KEYS,
+    DossierAuditSummary,
+    DossierNextAction,
+    DossierSettingsPreflightSummary,
+    DossierSourceSurface,
+    OwnerLaunchDossier,
+)
 from vyro_growth.services.release_artifact_manifest import LocalGitMetadata
 from vyro_growth.services.settings_change_requests import SettingsChangeRequestService
 
@@ -45,16 +48,28 @@ GIT_SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
 GIT_BRANCH_RE = re.compile(r"cursor/[A-Za-z0-9._/\-]+")
 SECTION_IDS = (
     "live-blocking-flags",
-    "plan-gates",
-    "source-index",
+    "dossier-gates",
+    "source-references",
+    "included-surfaces",
     "related-routes",
     "related-commands",
-    "remediation-groups",
+    "local-git",
+    "settings-preflight",
+    "operator-audit",
+    "owner-next-actions",
     "side-effects",
 )
+SOURCE_SECTION_IDS = tuple(f"surface-{key}" for key in SOURCE_KEYS)
 LINKED_SURFACES = (
     "/internal/operator-dashboard",
-    "/internal/operator-command-center",
+    "/internal/operator-go-live-readiness-index",
+    "/internal/go-live-readiness-index",
+    "/internal/operator-launch-blockers-plan",
+    "/internal/launch-blockers-plan",
+    "/internal/operator-staged-rollout-plan",
+    "/internal/staged-rollout-plan",
+    "/internal/operator-owner-launch-dossier",
+    "/internal/owner-launch-dossier",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",
     "/internal/settings-execution-preflight",
@@ -66,12 +81,7 @@ LINKED_SURFACES = (
     "/internal/release-candidate-runbook",
     "/internal/operator-release-artifact-manifest",
     "/internal/release-artifact-manifest",
-    "/internal/operator-go-live-readiness-index",
-    "/internal/go-live-readiness-index",
     "/internal/operator-audit-timeline",
-    "/internal/launch-blockers-plan",
-    "/internal/operator-staged-rollout-plan",
-    "/internal/operator-owner-launch-dossier",
 )
 
 
@@ -92,45 +102,92 @@ def _patch_settings(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> None
     monkeypatch.setattr("vyro_growth.main.get_settings", lambda: settings)
 
 
-def _step(**overrides: object) -> RemediationStep:
+def _source(**overrides: object) -> DossierSourceSurface:
     payload: dict[str, object] = {
-        "blocker_code": NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION.value,
-        "surface_key": "launch-blockers-plan",
-        "surface_label": "Launch blockers remediation plan",
-        "current_status": FindingSeverity.INFO.value,
-        "recommended_step": "Inspect the read-only remediation plan.",
-        "owner_approval_type": "none",
-        "step_kind": "manual_review",
-        "html_route": OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
-        "json_route": "/internal/launch-blockers-plan",
-        "command_name": "launch-blockers-plan",
+        "key": "go-live-readiness-index",
+        "label": "Go-live readiness index",
+        "purpose": "manual_owner_review_index_only",
+        "overall_status": FindingSeverity.INFO.value,
+        "command_name": "go-live-readiness-index",
+        "json_route": "/internal/go-live-readiness-index",
+        "html_route": "/internal/operator-go-live-readiness-index",
+        "blocker_codes": (NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION.value,),
+        "gate_codes": ("owner_review",),
+        "missing_credential_names": (),
+        "read_only": True,
+        "no_execution": True,
+        "go_live_permitted": False,
+        "deployment_allowed": False,
+    }
+    payload.update(overrides)
+    return DossierSourceSurface(**payload)  # type: ignore[arg-type]
+
+
+def _action(**overrides: object) -> DossierNextAction:
+    payload: dict[str, object] = {
+        "code": NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE.value,
+        "status": FindingSeverity.INFO.value,
+        "label": "This owner launch dossier is a sanitized review export only.",
+        "command_name": "owner-launch-dossier",
+        "json_route": "/internal/owner-launch-dossier",
+        "html_route": OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         "config_name": None,
     }
     payload.update(overrides)
-    return RemediationStep(**payload)  # type: ignore[arg-type]
+    return DossierNextAction(**payload)  # type: ignore[arg-type]
 
 
-def _group(**overrides: object) -> RemediationGroup:
+def _preflight(**overrides: object) -> DossierSettingsPreflightSummary:
     payload: dict[str, object] = {
-        "group_key": "launch-blockers-plan",
-        "group_label": "Launch blockers remediation plan",
-        "group_kind": "surface",
         "overall_status": FindingSeverity.INFO.value,
-        "step_count": "1",
-        "steps": (_step(),),
+        "request_count": 0,
+        "pending_decision_count": 0,
+        "approved_decision_count": 0,
+        "blocked_count": 0,
+        "executable_count": 0,
+        "blocker_codes": (),
+        "missing_gate_codes": (),
+        "missing_credential_names": (),
+        "closed_provider_flag_names": (),
+        "no_execution": True,
+        "dry_run_only": True,
+        "executed": 0,
+        "settings_applied": False,
+        "execution_allowed": False,
     }
     payload.update(overrides)
-    return RemediationGroup(**payload)  # type: ignore[arg-type]
+    return DossierSettingsPreflightSummary(**payload)  # type: ignore[arg-type]
 
 
-def _empty_plan(**overrides: object) -> LaunchBlockersPlan:
+def _audit(**overrides: object) -> DossierAuditSummary:
+    payload: dict[str, object] = {
+        "matching_count": 0,
+        "shown_count": 0,
+        "truncated": False,
+        "available_event_types": (),
+        "available_sources": (),
+        "available_statuses": (),
+        "read_only": True,
+        "no_execution": True,
+        "executed": 0,
+        "halt_changed": False,
+        "outbound_enabled": False,
+        "operator_halt_status": "halted",
+    }
+    payload.update(overrides)
+    return DossierAuditSummary(**payload)  # type: ignore[arg-type]
+
+
+def _empty_dossier(**overrides: object) -> OwnerLaunchDossier:
     payload: dict[str, object] = {
         "generated_at": datetime(2026, 8, 31, 12, 0, tzinfo=UTC),
-        "packet_kind": "launch_blockers_remediation_plan",
-        "purpose": "manual_owner_remediation_planning_only",
+        "packet_kind": "owner_launch_dossier",
+        "purpose": "manual_owner_review_export_only",
         "overall_status": "blocked",
         "read_only": True,
         "no_execution": True,
+        "no_go_live": True,
+        "no_deployment": True,
         "dry_run_only": True,
         "executed": 0,
         "execution_attempted": False,
@@ -156,28 +213,54 @@ def _empty_plan(**overrides: object) -> LaunchBlockersPlan:
         "artifact_publish_allowed": False,
         "container_build_attempted": False,
         "artifact_publish_attempted": False,
+        "outbound_enabled": False,
+        "live_providers_enabled": False,
         "manual_review_only": True,
-        "plan_is_not_permission_to_go_live": True,
-        "plan_is_not_execution": True,
+        "owner_launch_dossier_is_not_go_live": True,
+        "dossier_is_not_permission_to_go_live": True,
+        "dossier_is_not_execution": True,
         "index_is_not_permission_to_go_live": True,
         "handoff_is_not_go_live": True,
         "binder_is_not_go_live": True,
         "runbook_is_not_deployment": True,
         "manifest_is_not_a_build_or_deploy": True,
+        "staged_rollout_plan_is_not_go_live": True,
         "operator_halt_status": "halted",
         "operator_halt_before": "halted",
         "operator_halt_after": "halted",
-        "outbound_enabled": False,
-        "live_providers_enabled": False,
         "closed_provider_flag_names": ("VOICE_LIVE_ENABLED",),
         "missing_credential_names": (),
         "blocker_codes": ("execution_disabled_in_this_phase",),
-        "cli_command": "launch-blockers-plan",
-        "http_route": "/internal/launch-blockers-plan",
+        "gate_codes": ("no_execution", "no_go_live"),
+        "cli_command": "owner-launch-dossier",
+        "http_route": "/internal/owner-launch-dossier",
         "source_index_command": "go-live-readiness-index",
         "source_index_route": "/internal/go-live-readiness-index",
         "source_index_overall_status": "blocked",
-        "related_commands": ("go-live-readiness-index", "launch-blockers-plan"),
+        "source_blockers_plan_command": "launch-blockers-plan",
+        "source_blockers_plan_route": "/internal/launch-blockers-plan",
+        "source_blockers_plan_overall_status": "blocked",
+        "source_staged_rollout_command": "staged-rollout-plan",
+        "source_staged_rollout_route": "/internal/staged-rollout-plan",
+        "source_staged_rollout_overall_status": "blocked",
+        "source_handoff_command": "owner-handoff-packet",
+        "source_handoff_route": "/internal/owner-handoff-packet",
+        "source_handoff_overall_status": "blocked",
+        "source_binder_command": "compliance-evidence-binder",
+        "source_binder_route": "/internal/compliance-evidence-binder",
+        "source_binder_overall_status": "blocked",
+        "source_runbook_command": "release-candidate-runbook",
+        "source_runbook_route": "/internal/release-candidate-runbook",
+        "source_runbook_overall_status": "blocked",
+        "source_manifest_command": "release-artifact-manifest",
+        "source_manifest_route": "/internal/release-artifact-manifest",
+        "source_manifest_overall_status": "blocked",
+        "source_preflight_command": "settings-execution-preflight",
+        "source_preflight_route": "/internal/settings-execution-preflight",
+        "source_preflight_overall_status": "blocked",
+        "source_audit_route": "/internal/operator-audit-timeline",
+        "source_audit_matching_count": 0,
+        "related_commands": ("go-live-readiness-index", "owner-launch-dossier"),
         "related_routes": LINKED_SURFACES,
         "local_git": LocalGitMetadata(
             available=True,
@@ -187,11 +270,13 @@ def _empty_plan(**overrides: object) -> LaunchBlockersPlan:
             git_provider_called=False,
             github_actions_called=False,
         ),
-        "groups": (),
-        "steps": (),
+        "sources": (),
+        "settings_preflight": _preflight(),
+        "operator_audit": _audit(),
+        "next_actions": (),
     }
     payload.update(overrides)
-    return LaunchBlockersPlan(**payload)  # type: ignore[arg-type]
+    return OwnerLaunchDossier(**payload)  # type: ignore[arg-type]
 
 
 def _strip_volatile(html: str) -> str:
@@ -201,20 +286,22 @@ def _strip_volatile(html: str) -> str:
 
 
 def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None:
-    html = render_launch_blockers_plan(_empty_plan())
+    html = render_owner_launch_dossier(_empty_dossier())
 
-    assert 'id="operator-launch-blockers-plan"' in html
-    assert OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH == "/internal/operator-launch-blockers-plan"
+    assert 'id="operator-owner-launch-dossier"' in html
+    assert OPERATOR_OWNER_LAUNCH_DOSSIER_PATH == "/internal/operator-owner-launch-dossier"
     for section_id in SECTION_IDS:
         assert f'id="{section_id}"' in html
-    assert "No grouped remediation steps" in html
+    assert "No included source surfaces" in html
+    assert "No owner next actions" in html
     assert "go_live_permitted=false" in html
     assert "execution_allowed=false" in html
     assert "deployment_allowed=false" in html
     assert "build_allowed=false" in html
     assert "artifact_publish_allowed=false" in html
     assert "OUTBOUND_ENABLED=false" in html
-    assert "remediation planning view" in html
+    assert "owner_launch_dossier_is_not_go_live=true" in html
+    assert "launch dossier review view" in html
     assert "not permission to go live" in html
     assert "There are no apply, execute, lift-halt" in html
     assert 'data-execution-allowed="false"' in html
@@ -222,10 +309,15 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
     assert 'data-deployment-allowed="false"' in html
     assert 'data-build-allowed="false"' in html
     assert 'data-artifact-publish-allowed="false"' in html
-    assert 'data-plan-is-not-permission-to-go-live="true"' in html
-    assert 'data-plan-is-not-execution="true"' in html
+    assert 'data-owner-launch-dossier-is-not-go-live="true"' in html
+    assert 'data-dossier-is-not-permission-to-go-live="true"' in html
+    assert 'data-dossier-is-not-execution="true"' in html
     assert "go-live-readiness-index" in html
+    assert "launch-blockers-plan" in html
+    assert "staged-rollout-plan" in html
     assert "/internal/go-live-readiness-index" in html
+    assert "/internal/launch-blockers-plan" in html
+    assert "/internal/staged-rollout-plan" in html
     for href in LINKED_SURFACES:
         assert href in html
     for marker in ACTION_MARKERS + FORM_MARKERS:
@@ -233,54 +325,50 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
 
 
 def test_renderer_populated_sections_and_xss_escape() -> None:
-    html = render_launch_blockers_plan(
-        _empty_plan(
+    html = render_owner_launch_dossier(
+        _empty_dossier(
             blocker_codes=["execution_disabled_in_this_phase", XSS_LABEL],
+            gate_codes=["no_execution", XSS_LABEL],
             missing_credential_names=["EXAMPLE_API_KEY", XSS_LABEL],
             closed_provider_flag_names=["EXAMPLE_LIVE_ENABLED", XSS_LABEL],
-            groups=(
-                _group(
-                    group_key="launch-blockers-plan",
-                    group_label=XSS_LABEL,
-                    steps=(
-                        _step(
-                            blocker_code=XSS_LABEL,
-                            recommended_step=XSS_LABEL,
-                            config_name=XSS_LABEL,
-                        ),
-                    ),
-                ),
-                _group(
-                    group_key="go-live-readiness-index",
-                    group_label="Go-live readiness index",
-                    steps=(
-                        _step(
-                            blocker_code="execution_disabled_in_this_phase",
-                            surface_key="go-live-readiness-index",
-                            html_route="/internal/operator-go-live-readiness-index",
-                            json_route="/internal/go-live-readiness-index",
-                            command_name="go-live-readiness-index",
-                        ),
-                    ),
+            sources=(
+                _source(key="go-live-readiness-index", label=XSS_LABEL),
+                _source(
+                    key="settings-execution-preflight",
+                    label="Settings execution preflight",
+                    command_name="settings-execution-preflight",
+                    json_route="/internal/settings-execution-preflight",
+                    html_route="/internal/operator-settings-execution-preflight",
+                    missing_credential_names=(XSS_LABEL,),
                 ),
             ),
-            steps=(
-                _step(blocker_code=XSS_LABEL, recommended_step=XSS_LABEL),
-                _step(blocker_code="execution_disabled_in_this_phase"),
+            settings_preflight=_preflight(
+                blocker_codes=(XSS_LABEL,),
+                missing_credential_names=("EXAMPLE_API_KEY",),
+            ),
+            operator_audit=_audit(available_event_types=(XSS_LABEL,)),
+            next_actions=(
+                _action(code=XSS_LABEL, label=XSS_LABEL, config_name=XSS_LABEL),
+                _action(
+                    code=NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE.value,
+                    html_route=OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
+                    json_route="/internal/owner-launch-dossier",
+                    command_name="owner-launch-dossier",
+                ),
             ),
         )
     )
-    error = render_launch_blockers_plan_error()
+    error = render_owner_launch_dossier_error()
 
     assert XSS_LABEL not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     assert "EXAMPLE_API_KEY" in html
     assert "EXAMPLE_LIVE_ENABLED" in html
     assert "execution_disabled_in_this_phase" in html
-    assert 'id="group-launch-blockers-plan"' in html
-    assert 'id="group-go-live-readiness-index"' in html
-    assert "Launch blockers" in html
-    assert 'id="operator-launch-blockers-plan-error"' in error
+    assert 'id="surface-go-live-readiness-index"' in html
+    assert 'id="surface-settings-execution-preflight"' in html
+    assert "Owner launch dossier" in html
+    assert 'id="operator-owner-launch-dossier-error"' in error
     assert "sk-testsecret" not in error
     for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
@@ -288,15 +376,15 @@ def test_renderer_populated_sections_and_xss_escape() -> None:
 
 
 def test_renderer_is_deterministic_aside_from_timestamps_and_git_metadata() -> None:
-    first = render_launch_blockers_plan(_empty_plan())
-    second = render_launch_blockers_plan(
-        _empty_plan(generated_at=datetime(2026, 9, 1, 8, 30, tzinfo=UTC))
+    first = render_owner_launch_dossier(_empty_dossier())
+    second = render_owner_launch_dossier(
+        _empty_dossier(generated_at=datetime(2026, 9, 1, 8, 30, tzinfo=UTC))
     )
-    git_variant = render_launch_blockers_plan(
-        _empty_plan(
+    git_variant = render_owner_launch_dossier(
+        _empty_dossier(
             local_git=LocalGitMetadata(
                 available=True,
-                current_branch="cursor/phase-44-launch-blockers-plan-ui-2830",
+                current_branch="cursor/phase-48-owner-launch-dossier-ui-bcb7",
                 current_sha="cccccccccccccccccccccccccccccccccccccccc",
                 working_tree_status="not_inspected",
                 git_provider_called=False,
@@ -307,12 +395,12 @@ def test_renderer_is_deterministic_aside_from_timestamps_and_git_metadata() -> N
 
     assert _strip_volatile(first) == _strip_volatile(second)
     assert "cccccccccccccccccccccccccccccccccccccccc" in git_variant
-    assert "cursor/phase-44-launch-blockers-plan-ui-2830" in git_variant
+    assert "cursor/phase-48-owner-launch-dossier-ui-bcb7" in git_variant
     assert TIMESTAMP_RE.search(first)
     assert TIMESTAMP_RE.search(second)
 
 
-def test_operator_launch_blockers_plan_open_in_development(
+def test_operator_owner_launch_dossier_open_in_development(
     api_client: TestClient,
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -320,15 +408,17 @@ def test_operator_launch_blockers_plan_open_in_development(
     _patch_settings(monkeypatch, Settings(environment="development", internal_api_key=""))
     set_operator_halt(db_session, halted=True, reason="keep-halted")
 
-    response = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
+    response = api_client.get(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
+    assert response.headers["cache-control"] == "no-store"
     body = response.text
-    assert "Launch blockers remediation plan" in body
-    assert "Launch blockers" in body
+    assert "Owner launch dossier" in body
     for section_id in SECTION_IDS:
         assert f'id="{section_id}"' in body
+    for source_id in SOURCE_SECTION_IDS:
+        assert f'id="{source_id}"' in body
     for href in LINKED_SURFACES:
         assert href in body
     assert "go_live_permitted=false" in body
@@ -337,44 +427,48 @@ def test_operator_launch_blockers_plan_open_in_development(
     assert "build_allowed=false" in body
     assert "artifact_publish_allowed=false" in body
     assert "OUTBOUND_ENABLED=false" in body
+    assert "owner_launch_dossier_is_not_go_live=true" in body
     assert "not permission to go live" in body
+    assert "Settings execution preflight summary" in body
+    assert "Operator audit summary" in body
+    assert "Non-executable owner next-action summary" in body
     assert PHI_SNIPPET not in body
     assert db_session.scalar(select(func.count()).select_from(Activity)) == 0
     for marker in FORM_MARKERS:
         assert marker not in body.lower()
 
 
-def test_operator_launch_blockers_plan_requires_internal_access(
+def test_operator_owner_launch_dossier_requires_internal_access(
     api_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_settings(monkeypatch, Settings(environment="production", internal_api_key=""))
-    denied = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
+    denied = api_client.get(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
     assert denied.status_code == 403
 
     _patch_settings(
         monkeypatch,
         Settings(environment="production", internal_api_key="internal-secret"),
     )
-    missing = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
+    missing = api_client.get(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
     invalid = api_client.get(
-        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         headers={"X-Internal-Api-Key": "wrong-secret"},
     )
     post = api_client.post(
-        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     put = api_client.put(
-        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     delete = api_client.delete(
-        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     patch = api_client.patch(
-        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     assert missing.status_code == 401
@@ -385,7 +479,7 @@ def test_operator_launch_blockers_plan_requires_internal_access(
     assert patch.status_code == 405
 
 
-def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
+def test_operator_owner_launch_dossier_populated_sections_and_no_side_effects(
     api_client: TestClient,
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -403,7 +497,7 @@ def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
         settings,
         request_type=SettingsChangeRequestType.REQUEST_OUTBOUND_ENABLEMENT_REVIEW.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
-        idempotency_key="ui-plan-main",
+        idempotency_key="ui-owner-launch-dossier-main",
         reviewer_notes=PHI_SNIPPET,
     )
     SettingsChangeRequestService().record_decision(
@@ -418,7 +512,7 @@ def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
         settings,
         request_type=SettingsChangeRequestType.KEEP_OUTBOUND_DISABLED.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
-        idempotency_key="ui-plan-pending",
+        idempotency_key="ui-owner-launch-dossier-pending",
     )
     before_activities = int(db_session.scalar(select(func.count()).select_from(Activity)) or 0)
     before_meetings = int(db_session.scalar(select(func.count()).select_from(Meeting)) or 0)
@@ -432,23 +526,28 @@ def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
     before_halt = read_operator_halt(db_session)
 
     first = api_client.get(
-        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     second = api_client.get(
-        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
 
     assert first.status_code == 200
     assert second.status_code == 200
+    assert first.headers["cache-control"] == "no-store"
     body = first.text
     for section_id in SECTION_IDS:
         assert f'id="{section_id}"' in body
+    for source_id in SOURCE_SECTION_IDS:
+        assert f'id="{source_id}"' in body
     for href in LINKED_SURFACES:
         assert href in body
     assert "OUTBOUND_ENABLED" in body
     assert "execution_disabled_in_this_phase" in body
+    assert NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE.value in body
+    assert NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE.value in body
     assert NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION.value in body
     assert NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION.value in body
     assert "go_live_permitted=false" in body
@@ -456,9 +555,20 @@ def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
     assert "deployment_allowed=false" in body
     assert "build_allowed=false" in body
     assert "artifact_publish_allowed=false" in body
-    assert "launch-blockers-plan" in body
+    assert "owner_launch_dossier_is_not_go_live=true" in body
+    assert "owner-launch-dossier" in body
     assert "go-live-readiness-index" in body
-    assert 'id="group-launch-blockers-plan"' in body
+    assert "launch-blockers-plan" in body
+    assert "staged-rollout-plan" in body
+    assert "Go-live readiness index" in body
+    assert "Launch blockers remediation plan" in body
+    assert "Staged go-live rollout plan" in body
+    assert "Owner go-live handoff packet" in body
+    assert "Compliance evidence binder" in body
+    assert "Release-candidate runbook" in body
+    assert "Release artifact manifest" in body
+    assert "Settings execution preflight" in body
+    assert "Operator audit timeline" in body
     _assert_no_leakage(body, SECRET_VALUE)
     assert PHI_SNIPPET not in body
     assert PROSPECT_EMAIL not in body
@@ -483,7 +593,7 @@ def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
     assert settings.voice_live_enabled is False
 
 
-def test_operator_launch_blockers_plan_failure_state_redacts_errors(
+def test_operator_owner_launch_dossier_failure_state_redacts_errors(
     api_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -493,14 +603,14 @@ def test_operator_launch_blockers_plan_failure_state_redacts_errors(
         raise RuntimeError("patient diagnosis sk-testsecret12345")
 
     monkeypatch.setattr(
-        "vyro_growth.api.operator_launch_blockers_plan.LaunchBlockersPlanService.build",
+        "vyro_growth.api.operator_owner_launch_dossier.OwnerLaunchDossierService.build",
         _boom,
     )
-    response = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
+    response = api_client.get(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
 
     assert response.status_code == 500
     assert "patient diagnosis" not in response.text.lower()
     assert "sk-testsecret12345" not in response.text
-    assert "Unable to load the launch blockers remediation plan" in response.text
+    assert "Unable to load the owner launch dossier" in response.text
     for marker in FORM_MARKERS:
         assert marker not in response.text.lower()

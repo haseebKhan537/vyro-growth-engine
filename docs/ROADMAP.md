@@ -556,7 +556,7 @@ Internal operator HTML shell of the Phase 45 staged go-live rollout plan. Read-o
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 47 — Owner launch dossier export (current)
+## Phase 47 — Owner launch dossier export
 Sanitized read-only CLI and internal JSON export that consolidates the go-live readiness index, launch blockers remediation plan, staged go-live rollout plan, owner go-live handoff packet, compliance evidence binder, release-candidate runbook, release artifact manifest, settings execution preflight summary, and operator audit summary into one owner/operator review packet. Export/review only, no execution.
 - CLI `vyro-growth owner-launch-dossier` with Markdown output and `--json` output
 - Internal JSON `GET /internal/owner-launch-dossier`
@@ -568,6 +568,17 @@ Sanitized read-only CLI and internal JSON export that consolidates the go-live r
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - HTTP responses return `Cache-Control: no-store`
 - This is a review export only, not permission to go live and not an execution surface
+
+## Phase 48 — Operator owner launch dossier UI (current)
+Internal operator HTML shell of the Phase 47 owner launch dossier. Read-only, no execution.
+- `GET /internal/operator-owner-launch-dossier`
+- Reuses existing Phase 47 `OwnerLaunchDossierService` / payload and does not duplicate readiness calculations
+- Linked from the operator dashboard, go-live readiness index UI, launch blockers plan UI, staged rollout plan UI, and related readiness surfaces
+- Renders overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-deployment flags, operator halt before/after and unchanged proof, outbound/live-provider/deployment/build/publish permission flags, source references for each included readiness/export surface, blocker and gate code rollups, missing credential/config names only, related safe routes and CLI commands, safe local git metadata, settings execution preflight summary, operator audit summary, and a non-executable owner next-action summary
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names/states, missing credential variable names, sanitized timestamps, and counts
+- Page states this is a launch dossier review view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
