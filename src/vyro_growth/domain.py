@@ -446,6 +446,9 @@ class NextActionCode(StrEnum):
     PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE = (
         "provider_setup_checklist_is_not_permission_to_go_live"
     )
+    GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE = (
+        "go_live_rehearsal_checklist_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

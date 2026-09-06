@@ -77,6 +77,10 @@ from vyro_growth.services.go_live_readiness_index import (
     GoLiveReadinessIndexService,
     format_go_live_readiness_index,
 )
+from vyro_growth.services.go_live_rehearsal_checklist import (
+    GoLiveRehearsalChecklistService,
+    format_go_live_rehearsal_checklist,
+)
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
 from vyro_growth.services.launch_blockers_plan import (
     LaunchBlockersPlanService,
@@ -718,6 +722,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized provider setup checklist as JSON",
     )
+    rehearsal = subparsers.add_parser(
+        "go-live-rehearsal-checklist",
+        help=(
+            "Export a sanitized manual go-live rehearsal checklist "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    rehearsal.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized go-live rehearsal checklist as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -894,6 +910,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "provider-setup-checklist":
         return _run_provider_setup_checklist(args)
+
+    if args.command == "go-live-rehearsal-checklist":
+        return _run_go_live_rehearsal_checklist(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2148,6 +2167,14 @@ def _run_provider_setup_checklist(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         checklist = ProviderSetupChecklistService().build(db, settings)
     print(format_provider_setup_checklist(checklist, as_json=args.json))
+    return 0
+
+
+def _run_go_live_rehearsal_checklist(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        checklist = GoLiveRehearsalChecklistService().build(db, settings)
+    print(format_go_live_rehearsal_checklist(checklist, as_json=args.json))
     return 0
 
 

@@ -77,6 +77,7 @@ vyro-growth launch-blockers-plan --json
 vyro-growth staged-rollout-plan --json
 vyro-growth owner-launch-dossier --json
 vyro-growth provider-setup-checklist --json
+vyro-growth go-live-rehearsal-checklist --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -1238,6 +1239,27 @@ curl http://localhost:8000/internal/operator-provider-setup-checklist \
 The Phase 20 dashboard, owner launch dossier UI, go-live readiness index UI, launch blockers remediation plan UI, staged go-live rollout plan UI, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, release-candidate runbook UI, and release artifact manifest UI link to this page. The page shows overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-deployment flags, operator halt before/after, missing credential variable names only, closed provider/live flag names only, provider setup categories (email/outreach, enrichment, calendar, voice, ads/analytics, deployment, and database/storage), required owner approval type per category, blocker and gate code rollups, related safe routes and CLI commands, safe local git metadata, local verification gates, and non-executable owner preparation steps. Fields are statuses, codes, route names, command names, config names, flag names/states, missing credential variable names, sanitized timestamps, and counts. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `OUTBOUND_ENABLED=false`, `provider_setup_checklist_is_not_go_live=true`, and that this is a provider setup review view only. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, or spend controls.
 
 Rendered HTML is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 51 — Manual go-live rehearsal checklist export (read-only)
+
+Export a sanitized manual go-live rehearsal checklist that consolidates existing launch readiness, go-live readiness index, launch blockers plan, staged rollout plan, owner launch dossier, provider setup checklist, release-candidate runbook, release artifact manifest, and settings execution preflight surfaces. This layer reuses those services as source material and does not recalculate readiness. It does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a checklist/export only, not a script runner, not permission to go live, and not an execution surface.
+
+CLI:
+```bash
+vyro-growth go-live-rehearsal-checklist
+vyro-growth go-live-rehearsal-checklist --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/go-live-rehearsal-checklist \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet with generated timestamp, packet kind and purpose, overall status rollup, explicit `read_only` / `no_execution` / `no_go_live` / `no_deployment` flags, operator halt before/after and unchanged proof, rehearsal steps as manual instructions only, command names and routes as references only, expected safe assertions such as `executed=0`, `OUTBOUND_ENABLED=false`, `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `owner_approved=false`, and halt unchanged, required owner approval type per rehearsal gate, blocker/gate code rollups, missing credential/config names only, closed provider/live flag names only, rollback/abort guidance as review text only, safe local git metadata, and non-executable owner next steps. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, `settings_applied`, `halt_changed`, and `owner_approved` remain false. `OUTBOUND_ENABLED=false`. The export states `go_live_rehearsal_checklist_is_not_go_live=true` and `rehearsal_is_not_a_script_runner=true`. There is no apply/execute/deploy/build/publish endpoint or button.
+
+JSON is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 

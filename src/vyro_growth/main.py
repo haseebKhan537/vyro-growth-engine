@@ -56,6 +56,10 @@ from vyro_growth.api.go_live_readiness_index import (
     GoLiveReadinessIndexResponse,
     build_go_live_readiness_index_response,
 )
+from vyro_growth.api.go_live_rehearsal_checklist import (
+    GoLiveRehearsalChecklistResponse,
+    build_go_live_rehearsal_checklist_response,
+)
 from vyro_growth.api.internal_auth import (
     evaluate_internal_http_trigger,
     internal_trigger_http_error,
@@ -911,6 +915,18 @@ def provider_setup_checklist(
     _require_internal_key(active_settings, x_internal_api_key)
     response.headers["Cache-Control"] = "no-store"
     return build_provider_setup_checklist_response(db, active_settings)
+
+
+@app.get("/internal/go-live-rehearsal-checklist", tags=["internal"])
+def go_live_rehearsal_checklist(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> GoLiveRehearsalChecklistResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_go_live_rehearsal_checklist_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

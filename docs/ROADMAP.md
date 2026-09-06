@@ -593,7 +593,7 @@ Sanitized read-only CLI and internal JSON export that consolidates launch readin
 - HTTP responses return `Cache-Control: no-store`
 - This is a planning/export layer only, not permission to go live and not an execution surface
 
-## Phase 50 — Operator provider setup checklist UI (current)
+## Phase 50 — Operator provider setup checklist UI
 Internal operator HTML shell of the Phase 49 provider credential/setup checklist. Read-only, no execution.
 - `GET /internal/operator-provider-setup-checklist`
 - Reuses existing Phase 49 `ProviderSetupChecklistService` / payload and does not duplicate readiness calculations
@@ -603,6 +603,20 @@ Internal operator HTML shell of the Phase 49 provider credential/setup checklist
 - Page states this is a provider setup review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 51 — Manual go-live rehearsal checklist export (current)
+Sanitized read-only CLI and internal JSON export that consolidates launch readiness, go-live readiness index, launch blockers plan, staged rollout plan, owner launch dossier, provider setup checklist, release-candidate runbook, release artifact manifest, and settings execution preflight into one manual go-live rehearsal checklist. Checklist/export only, no execution.
+- CLI `vyro-growth go-live-rehearsal-checklist` with Markdown output and `--json` output
+- Internal JSON `GET /internal/go-live-rehearsal-checklist`
+- Reuses existing readiness/blocker/staged-rollout/dossier/provider-setup/runbook/manifest/preflight services as source material and does not duplicate source-of-truth readiness logic
+- Rehearsal steps are manual instructions only, not runnable automation; command names and routes are references only
+- Expected safe assertions such as `executed=0`, `OUTBOUND_ENABLED=false`, `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `owner_approved=false`, and halt unchanged
+- Required owner approval type per rehearsal gate, blocker/gate code rollups, missing credential/config names only, closed provider/live flag names only, rollback/abort guidance as review text only, safe local git metadata, and non-executable owner next steps
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_deployment=true`, `manual_review_only=true`, `rehearsal_is_not_a_script_runner=true`, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, and `go_live_rehearsal_checklist_is_not_go_live=true`
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is a checklist/export only, not a script runner, not permission to go live, and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

@@ -156,9 +156,12 @@ def test_empty_index_is_read_only_and_not_permission_to_go_live(db_session: Sess
     assert NextActionCode.HANDOFF_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.MANIFEST_IS_NOT_BUILD_OR_DEPLOY.value in codes
     assert NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE.value in codes
+    assert NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE.value in codes
     assert "provider-setup-checklist" in index.related_commands
+    assert "go-live-rehearsal-checklist" in index.related_commands
     assert "/internal/operator-provider-setup-checklist" in index.related_routes
     assert "/internal/provider-setup-checklist" in index.related_routes
+    assert "/internal/go-live-rehearsal-checklist" in index.related_routes
     assert payload["go_live_permitted"] is False
     assert payload["execution_allowed"] is False
     _assert_no_execution(payload)
