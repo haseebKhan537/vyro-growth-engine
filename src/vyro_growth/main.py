@@ -116,6 +116,9 @@ from vyro_growth.api.operator_settings_change_requests import (
 from vyro_growth.api.operator_settings_execution_preflight import (
     build_operator_settings_execution_preflight_response,
 )
+from vyro_growth.api.operator_staged_rollout_plan import (
+    build_operator_staged_rollout_plan_response,
+)
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
     build_latest_optimizer_response,
@@ -542,6 +545,20 @@ def operator_launch_blockers_plan(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_launch_blockers_plan_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-staged-rollout-plan",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_staged_rollout_plan(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_staged_rollout_plan_response(db, active_settings)
 
 
 @app.get(

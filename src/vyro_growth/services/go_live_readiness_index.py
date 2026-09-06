@@ -579,8 +579,9 @@ def _remaining_checklist(
         command_name="staged-rollout-plan",
         label=(
             "Inspect the staged go-live rollout plan at "
+            "/internal/operator-staged-rollout-plan or "
             "/internal/staged-rollout-plan or via `vyro-growth "
-            "staged-rollout-plan`. Read-only staged planning export; it "
+            "staged-rollout-plan`. Read-only staged planning view; it "
             "is not permission to go live and is not an execution surface."
         ),
     )

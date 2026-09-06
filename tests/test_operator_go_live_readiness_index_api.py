@@ -73,6 +73,7 @@ LINKED_SURFACES = (
     "/internal/release-artifact-manifest",
     "/internal/go-live-readiness-index",
     "/internal/operator-launch-blockers-plan",
+    "/internal/operator-staged-rollout-plan",
     "/internal/operator-audit-timeline",
 )
 

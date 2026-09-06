@@ -28,6 +28,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
+    OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     OPERATOR_UI_STYLES,
     RELEASE_ARTIFACT_MANIFEST_JSON_PATH,
     format_dt,
@@ -164,6 +165,7 @@ def _render_related_links() -> str:
     timeline_href = escape(OPERATOR_AUDIT_TIMELINE_PATH)
     index_href = escape(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)
     plan_href = escape(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
+    staged_href = escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON manifest</a>\n'
@@ -176,6 +178,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{timeline_href}">Audit timeline</a>\n'
         f'      <a class="nav-link" href="{index_href}">Go-live index</a>\n'
         f'      <a class="nav-link" href="{plan_href}">Launch blockers</a>\n'
+        f'      <a class="nav-link" href="{staged_href}">Staged rollout</a>\n'
         "    </nav>"
     )
 

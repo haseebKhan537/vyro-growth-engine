@@ -47,6 +47,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_REVIEW_QUEUE_PATH,
     OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
+    OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
 )
 from vyro_growth.config import Settings
 from vyro_growth.observability import sanitize_operator_text
@@ -272,7 +273,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)}">'
         "Go-live index</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)}">'
-        "Launch blockers</a>\n"
+        "Launch blockers</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)}">'
+        "Staged rollout</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -346,6 +349,9 @@ def _render_safety(
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)}">'
         "Open launch blockers remediation plan</a> — read-only planning view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)}">'
+        "Open staged go-live rollout plan</a> — read-only planning view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
@@ -543,6 +549,9 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)}">'
         "Open launch blockers remediation plan</a> — read-only planning view. "
+        "No execute controls. Not permission to go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)}">'
+        "Open staged go-live rollout plan</a> — read-only planning view. "
         "No execute controls. Not permission to go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"
