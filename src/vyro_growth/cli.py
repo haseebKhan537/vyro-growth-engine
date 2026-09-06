@@ -93,6 +93,10 @@ from vyro_growth.services.owner_handoff import (
     OwnerHandoffPacketService,
     format_owner_handoff,
 )
+from vyro_growth.services.owner_launch_dossier import (
+    OwnerLaunchDossierService,
+    format_owner_launch_dossier,
+)
 from vyro_growth.services.personalization import PersonalizationService
 from vyro_growth.services.release_artifact_manifest import (
     ReleaseArtifactManifestService,
@@ -686,6 +690,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized staged go-live rollout plan as JSON",
     )
+    dossier = subparsers.add_parser(
+        "owner-launch-dossier",
+        help=(
+            "Export a sanitized owner launch dossier "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    dossier.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized owner launch dossier as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -856,6 +872,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "staged-rollout-plan":
         return _run_staged_rollout_plan(args)
+
+    if args.command == "owner-launch-dossier":
+        return _run_owner_launch_dossier(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2094,6 +2113,14 @@ def _run_staged_rollout_plan(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         plan = StagedRolloutPlanService().build(db, settings)
     print(format_staged_rollout_plan(plan, as_json=args.json))
+    return 0
+
+
+def _run_owner_launch_dossier(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        dossier = OwnerLaunchDossierService().build(db, settings)
+    print(format_owner_launch_dossier(dossier, as_json=args.json))
     return 0
 
 

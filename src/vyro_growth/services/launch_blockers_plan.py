@@ -79,6 +79,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "release-artifact-manifest",
     CLI_COMMAND,
     "staged-rollout-plan",
+    "owner-launch-dossier",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -102,6 +103,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-staged-rollout-plan",
     "/internal/staged-rollout-plan",
+    "/internal/owner-launch-dossier",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -116,6 +118,7 @@ _SURFACE_BY_SECTION = {
     "go_live_readiness_index": "go-live-readiness-index",
     "launch_blockers_plan": "launch-blockers-plan",
     "staged_rollout_plan": "staged-rollout-plan",
+    "owner_launch_dossier": "owner-launch-dossier",
     "owner_handoff": "owner-handoff-packet",
     "owner_handoff_packet": "owner-handoff-packet",
     "launch_readiness": "launch-readiness",
@@ -503,6 +506,7 @@ def _group_steps(
             "launch-blockers-plan": "Launch blockers remediation plan",
             "go-live-readiness-index": "Go-live readiness index",
             "staged-rollout-plan": "Staged go-live rollout plan",
+            "owner-launch-dossier": "Owner launch dossier",
             "credentials": "Required credentials",
             "provider_setup": "Provider setup",
         }
@@ -557,6 +561,7 @@ def _surface_label_for_section(source_section: str) -> str:
         "launch-blockers-plan": "Launch blockers remediation plan",
         "go-live-readiness-index": "Go-live readiness index",
         "staged-rollout-plan": "Staged go-live rollout plan",
+        "owner-launch-dossier": "Owner launch dossier",
         "owner-handoff-packet": "Owner handoff packet",
         "launch-readiness": "Launch readiness",
         "settings-execution-preflight": "Settings execution preflight",

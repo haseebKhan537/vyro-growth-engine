@@ -440,6 +440,9 @@ class NextActionCode(StrEnum):
     STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE = (
         "staged_rollout_plan_is_not_permission_to_go_live"
     )
+    OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE = (
+        "owner_launch_dossier_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

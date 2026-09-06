@@ -74,6 +74,8 @@ vyro-growth release-candidate-runbook --json
 vyro-growth release-artifact-manifest --json
 vyro-growth go-live-readiness-index --json
 vyro-growth launch-blockers-plan --json
+vyro-growth staged-rollout-plan --json
+vyro-growth owner-launch-dossier --json
 ```
 
 CI runs those checks on every pull request. After install it also runs a dedicated dry-run smoke gate: `vyro-growth smoke-dry-run --local-only --json` with `OUTBOUND_ENABLED=false` and every live-provider flag disabled, then `vyro-growth check-smoke-output` to fail the build if the sanitized JSON reports live side effects or contains forbidden sensitive values. The smoke gate does not use `DATABASE_URL` or provider credentials.
@@ -1163,6 +1165,27 @@ curl http://localhost:8000/internal/operator-staged-rollout-plan \
 The Phase 20 dashboard, go-live readiness index UI, launch blockers remediation plan UI, command-center next-action labels, launch-readiness next-action labels, owner handoff packet UI, operator audit timeline UI, compliance evidence binder UI, release-candidate runbook UI, and release artifact manifest UI link to this page. The page shows overall status, generated timestamp, read-only / no-execution / no-go-live flags, operator halt before/after, outbound/live-provider/deployment/build/publish permission flags, source references for the readiness index, launch blockers plan, launch readiness, compliance binder, runbook, and manifest, related safe routes and CLI commands, stages 0-5 with stage labels, status, blocker/gate codes, required approval type, checklist items, related routes/commands/config names, missing credential names, closed provider flag names, and safe local git metadata. Fields are statuses, codes, route names, command names, config names, flag names/states, missing credential variable names, sanitized timestamps, and checklist labels. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `OUTBOUND_ENABLED=false`, `staged_rollout_plan_is_not_go_live=true`, and that this is a staged rollout planning view only. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, or spend controls.
 
 Rendered HTML is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 47 — Owner launch dossier export (read-only)
+
+Export a sanitized owner launch dossier that consolidates the existing go-live readiness index, launch blockers remediation plan, staged go-live rollout plan, owner go-live handoff packet, compliance evidence binder, release-candidate runbook, release artifact manifest, settings execution preflight summary, and operator audit summary. This layer reuses those services as source material and does not recalculate readiness. It does not build containers, publish artifacts, deploy, apply settings, lift operator halt, enable outbound, execute requests, packets, or approved items, set live `owner_approved`, send email, enroll campaigns, generate sendable replies, place calls, book meetings, create Meet links, publish content, launch ads, spend money, or call live providers. It is a review export only, not permission to go live and not an execution surface.
+
+CLI:
+```bash
+vyro-growth owner-launch-dossier
+vyro-growth owner-launch-dossier --json
+```
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/owner-launch-dossier \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+Output is a sanitized Markdown or JSON packet with generated timestamp, packet kind and purpose, overall status rollup, explicit `read_only` / `no_execution` / `no_go_live` / `no_deployment` flags, operator halt before/after, outbound/live-provider/deployment/build/publish permission flags, source references for each included surface, blocker and gate code rollups, missing credential/config names only, safe route and CLI inventory, safe local git metadata, settings-preflight and operator-audit summaries, and a concise owner-facing next-action list that stays non-executable. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, `settings_applied`, `halt_changed`, and `owner_approved` remain false. `OUTBOUND_ENABLED=false`. The export states `owner_launch_dossier_is_not_go_live=true`. There is no apply/execute/deploy/build/publish endpoint or button.
+
+JSON is statuses, setting names, codes, timestamps, counts, route names, command names, and flags only: no PHI, emails, phones, message bodies, draft copy, evidence snippets, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 1
 

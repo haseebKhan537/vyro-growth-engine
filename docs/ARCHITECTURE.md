@@ -453,6 +453,15 @@ The staged go-live rollout plan HTML page is a sanitized read-only shell over th
 4. Rendered HTML never includes secret values, environment values, API keys, tokens, provider secrets, message bodies, draft copy, emails, phones, evidence snippets, PHI, or raw error text. There is no apply, execute, enable outbound, lift-halt, build, publish, or deploy control.
 5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default. The page states `go_live_permitted=false`, `execution_allowed=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `owner_approved=false`, `staged_rollout_plan_is_not_go_live=true`, and that this is a staged rollout planning view only, not permission to go live and not an execution surface.
 
+### Phase 47: owner launch dossier export
+The owner launch dossier CLI and JSON route are a sanitized read-only review export over existing readiness, blocker, staged-rollout, handoff, binder, runbook, manifest, settings-preflight, and audit surfaces. They do not build containers, publish artifacts, deploy, apply settings, lift halt, enable outbound, execute requests, packets, or approved items, send email, enroll campaigns, generate sendable replies, book meetings, create Meet links, place calls, publish content, launch ads, spend money, or set live owner-approved state.
+
+1. Operator runs `vyro-growth owner-launch-dossier` or `GET /internal/owner-launch-dossier`. HTTP uses the same `INTERNAL_API_KEY` gate as other internal operator routes. CLI does not. HTTP responses return `Cache-Control: no-store`.
+2. The export reuses `StagedRolloutPlanService`, `OwnerHandoffPacketService`, `SettingsExecutionPreflightService`, and `OperatorAuditTimelineService` as source material and does not duplicate readiness calculations. It never writes pipeline rows, changes operator halt state, builds containers, publishes artifacts, deploys, or executes.
+3. Output is a deterministic owner packet: generated timestamp, packet kind/purpose, overall status rollup, live-blocking flags, operator halt before/after, source references, blocker/gate code rollups, missing credential names, safe route/CLI inventory, safe local git metadata, settings-preflight and operator-audit summaries, and a concise non-executable next-action list.
+4. Secret values, PHI, emails, phones, message bodies, draft copy, evidence snippets, and unsafe error text are never included. `execution_allowed`, `go_live_permitted`, `deployment_allowed`, `settings_applied`, `halt_changed`, and `owner_approved` remain false.
+5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called. This export is a review export only, not permission to go live and not an execution surface.
+
 ### Event flow
 1. Practice discovered.
 2. Practice normalized/deduplicated.

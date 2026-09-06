@@ -1866,6 +1866,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     staged = parser.parse_args(["staged-rollout-plan", "--json"])
     assert staged.command == "staged-rollout-plan"
     assert staged.json is True
+    dossier = parser.parse_args(["owner-launch-dossier", "--json"])
+    assert dossier.command == "owner-launch-dossier"
+    assert dossier.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:
