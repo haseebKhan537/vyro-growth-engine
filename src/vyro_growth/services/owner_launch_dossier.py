@@ -119,6 +119,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "check-config",
     "smoke-dry-run",
     CLI_COMMAND,
+    "provider-setup-checklist",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -141,6 +142,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     AUDIT_HTML_ROUTE,
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/provider-setup-checklist",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,

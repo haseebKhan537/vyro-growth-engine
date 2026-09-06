@@ -75,6 +75,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "launch_readiness.py",
         "settings_change_requests.py",
         "settings_execution_preflight.py",
+        "provider_setup_checklist.py",
     }
     calendar_boundary = {
         "config.py",
@@ -95,6 +96,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "launch_readiness.py",
         "settings_change_requests.py",
         "settings_execution_preflight.py",
+        "provider_setup_checklist.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -115,6 +117,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "launch_readiness.py",
         "settings_change_requests.py",
         "settings_execution_preflight.py",
+        "provider_setup_checklist.py",
     }
     forbidden = (
         "apollo",
@@ -492,6 +495,29 @@ def test_staged_rollout_plan_does_not_call_live_providers() -> None:
         Path("tests/test_staged_rollout_plan_service.py"),
         Path("tests/test_staged_rollout_plan_api.py"),
         Path("tests/test_operator_staged_rollout_plan_api.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "api.github.com" not in source
+    assert "docker build" not in source
+    assert "docker push" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
+def test_provider_setup_checklist_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/provider_setup_checklist.py"),
+        Path("src/vyro_growth/api/provider_setup_checklist.py"),
+        Path("tests/test_provider_setup_checklist_service.py"),
+        Path("tests/test_provider_setup_checklist_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

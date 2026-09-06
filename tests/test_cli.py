@@ -1869,6 +1869,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     dossier = parser.parse_args(["owner-launch-dossier", "--json"])
     assert dossier.command == "owner-launch-dossier"
     assert dossier.json is True
+    checklist = parser.parse_args(["provider-setup-checklist", "--json"])
+    assert checklist.command == "provider-setup-checklist"
+    assert checklist.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

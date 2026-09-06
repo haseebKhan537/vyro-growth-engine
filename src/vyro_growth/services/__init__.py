@@ -137,6 +137,11 @@ from vyro_growth.services.personalization import (
     PersonalizationJobResult,
     PersonalizationService,
 )
+from vyro_growth.services.provider_setup_checklist import (
+    ProviderSetupChecklist,
+    ProviderSetupChecklistService,
+    format_provider_setup_checklist,
+)
 from vyro_growth.services.readiness import (
     HealthPayload,
     ReadinessPayload,
@@ -272,6 +277,8 @@ __all__ = [
     "OwnerHandoffPacketService",
     "OwnerLaunchDossier",
     "OwnerLaunchDossierService",
+    "ProviderSetupChecklist",
+    "ProviderSetupChecklistService",
     "OutboundAction",
     "OutboundBlockedError",
     "OutboundDecision",
@@ -327,6 +334,7 @@ __all__ = [
     "format_release_candidate_runbook",
     "format_owner_handoff",
     "format_owner_launch_dossier",
+    "format_provider_setup_checklist",
     "format_settings_change_list",
     "format_settings_change_propose",
     "format_settings_change_request",

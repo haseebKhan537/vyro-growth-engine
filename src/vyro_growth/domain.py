@@ -443,6 +443,9 @@ class NextActionCode(StrEnum):
     OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE = (
         "owner_launch_dossier_is_not_permission_to_go_live"
     )
+    PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE = (
+        "provider_setup_checklist_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

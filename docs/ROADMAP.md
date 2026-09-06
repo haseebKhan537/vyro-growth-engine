@@ -569,7 +569,7 @@ Sanitized read-only CLI and internal JSON export that consolidates the go-live r
 - HTTP responses return `Cache-Control: no-store`
 - This is a review export only, not permission to go live and not an execution surface
 
-## Phase 48 — Operator owner launch dossier UI (current)
+## Phase 48 — Operator owner launch dossier UI
 Internal operator HTML shell of the Phase 47 owner launch dossier. Read-only, no execution.
 - `GET /internal/operator-owner-launch-dossier`
 - Reuses existing Phase 47 `OwnerLaunchDossierService` / payload and does not duplicate readiness calculations
@@ -579,6 +579,19 @@ Internal operator HTML shell of the Phase 47 owner launch dossier. Read-only, no
 - Page states this is a launch dossier review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 49 — Provider credential/setup checklist export (current)
+Sanitized read-only CLI and internal JSON export that consolidates launch readiness, go-live readiness index, launch blockers plan, staged rollout plan, owner launch dossier, settings execution preflight, and release-candidate runbook surfaces into one provider credential/setup checklist. Planning/export only, no execution.
+- CLI `vyro-growth provider-setup-checklist` with Markdown output and `--json` output
+- Internal JSON `GET /internal/provider-setup-checklist`
+- Reuses existing readiness/blocker/staged-rollout/dossier/preflight/runbook services as source material and does not duplicate source-of-truth readiness logic
+- Deterministic provider setup categories: email/outreach, enrichment, calendar, voice, ads/analytics, deployment, and database/storage, using config names only
+- Safe metadata only: category key/label, status, required owner approval type, missing credential variable names, closed provider/live flag names, blocker/gate codes, and safe route/CLI/config-name references
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_deployment=true`, `manual_review_only=true`, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, and `provider_setup_checklist_is_not_go_live=true`
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is a planning/export layer only, not permission to go live and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
