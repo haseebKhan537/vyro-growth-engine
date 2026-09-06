@@ -75,6 +75,7 @@ LINKED_SURFACES = (
     "/internal/operator-launch-blockers-plan",
     "/internal/operator-staged-rollout-plan",
     "/internal/operator-owner-launch-dossier",
+    "/internal/operator-provider-setup-checklist",
     "/internal/operator-audit-timeline",
 )
 

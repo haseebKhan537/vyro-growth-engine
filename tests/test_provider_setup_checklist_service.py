@@ -43,6 +43,7 @@ from vyro_growth.services.owner_launch_dossier import OwnerLaunchDossierService
 from vyro_growth.services.provider_setup_checklist import (
     CATEGORY_KEYS,
     CLI_COMMAND,
+    HTML_ROUTE,
     HTTP_ROUTE,
     ProviderSetupChecklistService,
     checklist_payload,
@@ -201,6 +202,7 @@ def test_empty_checklist_reuses_sources_and_is_not_permission_to_go_live(
     assert BLOCKERS_HTTP_ROUTE in checklist.related_routes
     assert STAGED_HTTP_ROUTE in checklist.related_routes
     assert DOSSIER_HTTP_ROUTE in checklist.related_routes
+    assert HTML_ROUTE in checklist.related_routes
     assert HTTP_ROUTE in checklist.related_routes
     assert CLI_COMMAND in checklist.related_commands
     assert tuple(category.key for category in checklist.categories) == CATEGORY_KEYS

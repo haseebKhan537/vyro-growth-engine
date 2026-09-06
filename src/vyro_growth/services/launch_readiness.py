@@ -168,9 +168,10 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE: (
         "Inspect the provider setup checklist at "
+        "/internal/operator-provider-setup-checklist or "
         "/internal/provider-setup-checklist or via `vyro-growth "
         "provider-setup-checklist`. Read-only credential/setup review "
-        "export; it is not permission to go live and is not an "
+        "view; it is not permission to go live and is not an "
         "execution surface."
     ),
 }

@@ -113,6 +113,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "operator-owner-launch-dossier" in runbook
     assert "vyro-growth owner-launch-dossier" in runbook
     assert "/internal/provider-setup-checklist" in runbook
+    assert "operator-provider-setup-checklist" in runbook
     assert "vyro-growth provider-setup-checklist" in runbook
     assert "018_live_settings_change_requests" in runbook
 

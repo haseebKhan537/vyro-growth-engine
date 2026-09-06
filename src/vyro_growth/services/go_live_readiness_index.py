@@ -85,6 +85,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/staged-rollout-plan",
     "/internal/operator-owner-launch-dossier",
     "/internal/owner-launch-dossier",
+    "/internal/operator-provider-setup-checklist",
     "/internal/provider-setup-checklist",
 )
 _SEVERITY_RANK = {
@@ -609,14 +610,15 @@ def _remaining_checklist(
         NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE.value,
         FindingSeverity.INFO.value,
         "provider_setup_checklist",
-        html_route=None,
+        html_route="/internal/operator-provider-setup-checklist",
         json_route="/internal/provider-setup-checklist",
         command_name="provider-setup-checklist",
         label=(
             "Inspect the provider setup checklist at "
+            "/internal/operator-provider-setup-checklist or "
             "/internal/provider-setup-checklist or via `vyro-growth "
             "provider-setup-checklist`. Read-only credential/setup "
-            "review export; it is not permission to go live and is "
+            "review view; it is not permission to go live and is "
             "not an execution surface."
         ),
     )
@@ -673,7 +675,7 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
             )
         case "provider_setup_checklist":
             return (
-                None,
+                "/internal/operator-provider-setup-checklist",
                 "/internal/provider-setup-checklist",
                 "provider-setup-checklist",
             )

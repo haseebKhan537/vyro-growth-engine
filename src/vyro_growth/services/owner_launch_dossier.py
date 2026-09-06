@@ -142,6 +142,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     AUDIT_HTML_ROUTE,
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-provider-setup-checklist",
     "/internal/provider-setup-checklist",
 )
 _STATUS_RANK = {

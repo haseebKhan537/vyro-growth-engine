@@ -100,6 +100,9 @@ from vyro_growth.api.operator_owner_handoff import (
 from vyro_growth.api.operator_owner_launch_dossier import (
     build_operator_owner_launch_dossier_response,
 )
+from vyro_growth.api.operator_provider_setup_checklist import (
+    build_operator_provider_setup_checklist_response,
+)
 from vyro_growth.api.operator_release_artifact_manifest import (
     build_operator_release_artifact_manifest_response,
 )
@@ -584,6 +587,20 @@ def operator_owner_launch_dossier(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_owner_launch_dossier_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-provider-setup-checklist",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_provider_setup_checklist(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_provider_setup_checklist_response(db, active_settings)
 
 
 @app.get(

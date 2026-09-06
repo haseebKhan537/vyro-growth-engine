@@ -28,6 +28,7 @@ OPERATOR_GO_LIVE_READINESS_INDEX_PATH = "/internal/operator-go-live-readiness-in
 OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH = "/internal/operator-launch-blockers-plan"
 OPERATOR_STAGED_ROLLOUT_PLAN_PATH = "/internal/operator-staged-rollout-plan"
 OPERATOR_OWNER_LAUNCH_DOSSIER_PATH = "/internal/operator-owner-launch-dossier"
+OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH = "/internal/operator-provider-setup-checklist"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -43,6 +44,7 @@ GO_LIVE_READINESS_INDEX_JSON_PATH = "/internal/go-live-readiness-index"
 LAUNCH_BLOCKERS_PLAN_JSON_PATH = "/internal/launch-blockers-plan"
 STAGED_ROLLOUT_PLAN_JSON_PATH = "/internal/staged-rollout-plan"
 OWNER_LAUNCH_DOSSIER_JSON_PATH = "/internal/owner-launch-dossier"
+PROVIDER_SETUP_CHECKLIST_JSON_PATH = "/internal/provider-setup-checklist"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -61,6 +63,7 @@ OperatorSurface = Literal[
     "launch-blockers-plan",
     "staged-rollout-plan",
     "owner-launch-dossier",
+    "provider-setup-checklist",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -79,6 +82,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "launch-blockers-plan": "Launch blockers",
     "staged-rollout-plan": "Staged rollout",
     "owner-launch-dossier": "Owner launch dossier",
+    "provider-setup-checklist": "Provider setup",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -96,6 +100,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "launch-blockers-plan": OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     "staged-rollout-plan": OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     "owner-launch-dossier": OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
+    "provider-setup-checklist": OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
 }
 
 
@@ -163,6 +168,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "launch-blockers-plan",
         "staged-rollout-plan",
         "owner-launch-dossier",
+        "provider-setup-checklist",
     )
     links = []
     for name in surfaces:

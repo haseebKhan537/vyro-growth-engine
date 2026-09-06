@@ -70,6 +70,8 @@ LINKED_SURFACES = (
     "/internal/staged-rollout-plan",
     "/internal/operator-owner-launch-dossier",
     "/internal/owner-launch-dossier",
+    "/internal/operator-provider-setup-checklist",
+    "/internal/provider-setup-checklist",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",
     "/internal/settings-execution-preflight",

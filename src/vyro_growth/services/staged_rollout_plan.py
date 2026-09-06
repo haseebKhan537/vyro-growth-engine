@@ -140,6 +140,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-owner-launch-dossier",
     "/internal/owner-launch-dossier",
+    "/internal/operator-provider-setup-checklist",
     "/internal/provider-setup-checklist",
 )
 _STATUS_RANK = {
