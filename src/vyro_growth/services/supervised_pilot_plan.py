@@ -118,6 +118,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/settings-execution-preflight",
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
 )
 _STATUS_RANK = {

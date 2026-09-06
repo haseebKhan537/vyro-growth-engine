@@ -118,6 +118,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/rehearsal-outcome-report",
     "/internal/operator-supervised-pilot-plan",
     "/internal/supervised-pilot-plan",
+    "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
 )
 _STATUS_RANK = {
@@ -970,6 +971,7 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         "manual_review",
         "none",
         "Inspect the supervised pilot candidate readiness export at "
+        "/internal/operator-supervised-pilot-candidates or "
         "/internal/supervised-pilot-candidates or via `vyro-growth "
         "supervised-pilot-candidates`. Candidate readiness review "
         "only; it is not permission to go live and is not an "

@@ -80,6 +80,7 @@ LINKED_SURFACES = (
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/operator-rehearsal-outcome-report",
     "/internal/operator-supervised-pilot-plan",
+    "/internal/operator-supervised-pilot-candidates",
 )
 
 

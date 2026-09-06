@@ -34,6 +34,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SETTINGS_CHANGE_REQUESTS_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
+    OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
     OPERATOR_UI_STYLES,
     OWNER_HANDOFF_JSON_PATH,
@@ -173,6 +174,7 @@ def _render_related_links() -> str:
     rehearsal_href = escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)
     outcome_href = escape(OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH)
     pilot_href = escape(OPERATOR_SUPERVISED_PILOT_PLAN_PATH)
+    candidates_href = escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON packet</a>\n'
@@ -195,6 +197,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{rehearsal_href}">Go-live rehearsal</a>\n'
         f'      <a class="nav-link" href="{outcome_href}">Rehearsal outcome</a>\n'
         f'      <a class="nav-link" href="{pilot_href}">Supervised pilot</a>\n'
+        f'      <a class="nav-link" href="{candidates_href}">Pilot candidates</a>\n'
         "    </nav>"
     )
 

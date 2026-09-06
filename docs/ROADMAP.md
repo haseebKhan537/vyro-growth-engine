@@ -682,7 +682,7 @@ Internal operator HTML shell of the Phase 55 supervised pilot launch plan. Read-
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 57 — Supervised pilot candidate readiness export (current)
+## Phase 57 — Supervised pilot candidate readiness export
 Sanitized read-only CLI and internal JSON export that summarizes whether the current system has a safe small-pilot candidate pool ready for owner review. Review/export only, no execution.
 - CLI `vyro-growth supervised-pilot-candidates` with Markdown output and `--json` output
 - Internal JSON `GET /internal/supervised-pilot-candidates`
@@ -694,6 +694,17 @@ Sanitized read-only CLI and internal JSON export that summarizes whether the cur
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - HTTP responses return `Cache-Control: no-store`
 - This is a candidate readiness review export only, not permission to go live and not an execution surface
+
+## Phase 58 — Operator supervised pilot candidate readiness UI (current)
+Internal operator HTML shell of the Phase 57 supervised pilot candidate readiness export. Read-only, no execution.
+- `GET /internal/operator-supervised-pilot-candidates`
+- Reuses existing Phase 57 `SupervisedPilotCandidateService` / payload and does not duplicate candidate readiness calculations
+- Linked from the operator dashboard, go-live readiness index, supervised pilot plan UI, launch blockers UI, staged rollout UI, owner launch dossier UI, provider setup checklist UI, rehearsal outcome UI, release/readiness pages, and related readiness surfaces
+- Renders overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-outbound / no-provider-calls / no-deployment / no-spend / dry-run-only / manual-review-only flags, operator halt before/status/after and unchanged proof, a safe count-only candidate scope recommendation, candidate counts by readiness/status/stage/source/specialty/state, scoring distribution counts, website match counts, outreach status counts, suppression/kill-switch rollups, blocked counts by generic reason, missing prerequisite/blocker/gate codes, missing credential/config names only, closed provider/live flag names only, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names, missing credential variable names, specialty categories, state abbreviations, generic source names, sanitized timestamps, and counts
+- Page states this is a candidate readiness review view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/contact controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
