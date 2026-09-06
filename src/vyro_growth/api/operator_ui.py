@@ -25,6 +25,7 @@ OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH = "/internal/operator-compliance-eviden
 OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH = "/internal/operator-release-artifact-manifest"
 OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH = "/internal/operator-release-candidate-runbook"
 OPERATOR_GO_LIVE_READINESS_INDEX_PATH = "/internal/operator-go-live-readiness-index"
+OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH = "/internal/operator-launch-blockers-plan"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -53,6 +54,7 @@ OperatorSurface = Literal[
     "release-candidate-runbook",
     "release-artifact-manifest",
     "go-live-readiness-index",
+    "launch-blockers-plan",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -68,6 +70,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "release-candidate-runbook": "Release runbook",
     "release-artifact-manifest": "Release manifest",
     "go-live-readiness-index": "Go-live index",
+    "launch-blockers-plan": "Launch blockers",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -82,6 +85,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "release-candidate-runbook": OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     "release-artifact-manifest": OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     "go-live-readiness-index": OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+    "launch-blockers-plan": OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
 }
 
 
@@ -146,6 +150,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "release-candidate-runbook",
         "release-artifact-manifest",
         "go-live-readiness-index",
+        "launch-blockers-plan",
     )
     links = []
     for name in surfaces:

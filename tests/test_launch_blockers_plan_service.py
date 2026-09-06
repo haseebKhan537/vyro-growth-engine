@@ -29,6 +29,7 @@ from vyro_growth.services.go_live_readiness_index import (
 from vyro_growth.services.go_live_readiness_index import GoLiveReadinessIndexService
 from vyro_growth.services.launch_blockers_plan import (
     CLI_COMMAND,
+    HTML_ROUTE,
     HTTP_ROUTE,
     LaunchBlockersPlanService,
     format_launch_blockers_plan,
@@ -146,6 +147,7 @@ def test_empty_plan_reuses_index_and_is_not_permission_to_go_live(db_session: Se
     assert plan.source_index_command == INDEX_CLI_COMMAND
     assert plan.source_index_route == INDEX_HTTP_ROUTE
     assert INDEX_HTTP_ROUTE in plan.related_routes
+    assert HTML_ROUTE in plan.related_routes
     assert HTTP_ROUTE in plan.related_routes
     assert CLI_COMMAND in plan.related_commands
     codes = {step.blocker_code for step in plan.steps}

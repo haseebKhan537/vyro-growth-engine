@@ -12,11 +12,11 @@ from sqlalchemy.orm import Session
 from tests.test_action_readiness_service import _seed_plans_and_packets
 from tests.test_dashboard_service import PHI_SNIPPET, PROSPECT_EMAIL
 from tests.test_launch_readiness_service import SECRET_VALUE, _assert_no_leakage
-from vyro_growth.api.operator_go_live_readiness_index import (
-    render_go_live_readiness_index,
-    render_go_live_readiness_index_error,
+from vyro_growth.api.operator_launch_blockers_plan import (
+    render_launch_blockers_plan,
+    render_launch_blockers_plan_error,
 )
-from vyro_growth.api.operator_ui import OPERATOR_GO_LIVE_READINESS_INDEX_PATH
+from vyro_growth.api.operator_ui import OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH
 from vyro_growth.config import Settings
 from vyro_growth.database import get_db
 from vyro_growth.domain import FindingSeverity, NextActionCode, SettingsChangeRequestType
@@ -28,11 +28,10 @@ from vyro_growth.models import (
     Meeting,
     OutreachMessage,
 )
-from vyro_growth.services.go_live_readiness_index import (
-    GoLiveReadinessIndex,
-    IndexChecklistItem,
-    IndexCount,
-    ReadinessSurfaceCard,
+from vyro_growth.services.launch_blockers_plan import (
+    LaunchBlockersPlan,
+    RemediationGroup,
+    RemediationStep,
 )
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
 from vyro_growth.services.release_artifact_manifest import LocalGitMetadata
@@ -46,16 +45,12 @@ GIT_SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
 GIT_BRANCH_RE = re.compile(r"cursor/[A-Za-z0-9._/\-]+")
 SECTION_IDS = (
     "live-blocking-flags",
-    "readiness-surfaces",
-    "surface-operator-dashboard",
-    "surface-launch-readiness",
-    "surface-settings-execution-preflight",
-    "surface-owner-handoff-packet",
-    "surface-compliance-evidence-binder",
-    "surface-release-candidate-runbook",
-    "surface-release-artifact-manifest",
-    "surface-operator-audit-timeline",
-    "remaining-manual-owner-checklist",
+    "plan-gates",
+    "source-index",
+    "related-routes",
+    "related-commands",
+    "remediation-groups",
+    "side-effects",
 )
 LINKED_SURFACES = (
     "/internal/operator-dashboard",
@@ -71,9 +66,10 @@ LINKED_SURFACES = (
     "/internal/release-candidate-runbook",
     "/internal/operator-release-artifact-manifest",
     "/internal/release-artifact-manifest",
+    "/internal/operator-go-live-readiness-index",
     "/internal/go-live-readiness-index",
-    "/internal/operator-launch-blockers-plan",
     "/internal/operator-audit-timeline",
+    "/internal/launch-blockers-plan",
 )
 
 
@@ -94,42 +90,42 @@ def _patch_settings(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> None
     monkeypatch.setattr("vyro_growth.main.get_settings", lambda: settings)
 
 
-def _card(**overrides: object) -> ReadinessSurfaceCard:
+def _step(**overrides: object) -> RemediationStep:
     payload: dict[str, object] = {
-        "key": "launch-readiness",
-        "label": "Launch readiness",
-        "html_route": "/internal/launch-readiness",
-        "json_route": "/internal/launch-readiness",
-        "command_name": "launch-readiness",
-        "overall_status": "blocked",
-        "counts": (IndexCount("Pending packets", "0"),),
-        "blocker_codes": ("outbound_disabled",),
-        "flag_states": ("go_live_permitted=false",),
+        "blocker_code": NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION.value,
+        "surface_key": "launch-blockers-plan",
+        "surface_label": "Launch blockers remediation plan",
+        "current_status": FindingSeverity.INFO.value,
+        "recommended_step": "Inspect the read-only remediation plan.",
+        "owner_approval_type": "none",
+        "step_kind": "manual_review",
+        "html_route": OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
+        "json_route": "/internal/launch-blockers-plan",
+        "command_name": "launch-blockers-plan",
+        "config_name": None,
     }
     payload.update(overrides)
-    return ReadinessSurfaceCard(**payload)  # type: ignore[arg-type]
+    return RemediationStep(**payload)  # type: ignore[arg-type]
 
 
-def _checklist(**overrides: object) -> IndexChecklistItem:
+def _group(**overrides: object) -> RemediationGroup:
     payload: dict[str, object] = {
-        "code": NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION.value,
-        "severity": FindingSeverity.INFO.value,
-        "source_section": "go_live_readiness_index",
-        "status": "open",
-        "html_route": OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
-        "json_route": None,
-        "command_name": None,
-        "label": "Inspect the go-live readiness index",
+        "group_key": "launch-blockers-plan",
+        "group_label": "Launch blockers remediation plan",
+        "group_kind": "surface",
+        "overall_status": FindingSeverity.INFO.value,
+        "step_count": "1",
+        "steps": (_step(),),
     }
     payload.update(overrides)
-    return IndexChecklistItem(**payload)  # type: ignore[arg-type]
+    return RemediationGroup(**payload)  # type: ignore[arg-type]
 
 
-def _empty_index(**overrides: object) -> GoLiveReadinessIndex:
+def _empty_plan(**overrides: object) -> LaunchBlockersPlan:
     payload: dict[str, object] = {
         "generated_at": datetime(2026, 8, 31, 12, 0, tzinfo=UTC),
-        "packet_kind": "operator_go_live_readiness_index",
-        "purpose": "manual_owner_review_index_only",
+        "packet_kind": "launch_blockers_remediation_plan",
+        "purpose": "manual_owner_remediation_planning_only",
         "overall_status": "blocked",
         "read_only": True,
         "no_execution": True,
@@ -159,6 +155,8 @@ def _empty_index(**overrides: object) -> GoLiveReadinessIndex:
         "container_build_attempted": False,
         "artifact_publish_attempted": False,
         "manual_review_only": True,
+        "plan_is_not_permission_to_go_live": True,
+        "plan_is_not_execution": True,
         "index_is_not_permission_to_go_live": True,
         "handoff_is_not_go_live": True,
         "binder_is_not_go_live": True,
@@ -172,9 +170,12 @@ def _empty_index(**overrides: object) -> GoLiveReadinessIndex:
         "closed_provider_flag_names": ("VOICE_LIVE_ENABLED",),
         "missing_credential_names": (),
         "blocker_codes": ("execution_disabled_in_this_phase",),
-        "cli_command": "go-live-readiness-index",
-        "http_route": "/internal/go-live-readiness-index",
-        "related_commands": ("launch-readiness",),
+        "cli_command": "launch-blockers-plan",
+        "http_route": "/internal/launch-blockers-plan",
+        "source_index_command": "go-live-readiness-index",
+        "source_index_route": "/internal/go-live-readiness-index",
+        "source_index_overall_status": "blocked",
+        "related_commands": ("go-live-readiness-index", "launch-blockers-plan"),
         "related_routes": LINKED_SURFACES,
         "local_git": LocalGitMetadata(
             available=True,
@@ -184,62 +185,11 @@ def _empty_index(**overrides: object) -> GoLiveReadinessIndex:
             git_provider_called=False,
             github_actions_called=False,
         ),
-        "surfaces": (
-            _card(
-                key="operator-dashboard",
-                label="Operator dashboard / command center",
-                html_route="/internal/operator-dashboard",
-                json_route="/internal/operator-command-center",
-                command_name="operator-command-center",
-            ),
-            _card(),
-            _card(
-                key="settings-execution-preflight",
-                label="Settings execution preflight",
-                html_route="/internal/operator-settings-execution-preflight",
-                json_route="/internal/settings-execution-preflight",
-                command_name="settings-execution-preflight",
-            ),
-            _card(
-                key="owner-handoff-packet",
-                label="Owner handoff packet",
-                html_route="/internal/operator-owner-handoff-packet",
-                json_route="/internal/owner-handoff-packet",
-                command_name="owner-handoff-packet",
-            ),
-            _card(
-                key="compliance-evidence-binder",
-                label="Compliance evidence binder",
-                html_route="/internal/operator-compliance-evidence-binder",
-                json_route="/internal/compliance-evidence-binder",
-                command_name="compliance-evidence-binder",
-            ),
-            _card(
-                key="release-candidate-runbook",
-                label="Release-candidate runbook",
-                html_route="/internal/operator-release-candidate-runbook",
-                json_route="/internal/release-candidate-runbook",
-                command_name="release-candidate-runbook",
-            ),
-            _card(
-                key="release-artifact-manifest",
-                label="Release artifact manifest",
-                html_route="/internal/operator-release-artifact-manifest",
-                json_route="/internal/release-artifact-manifest",
-                command_name="release-artifact-manifest",
-            ),
-            _card(
-                key="operator-audit-timeline",
-                label="Operator audit timeline",
-                html_route="/internal/operator-audit-timeline",
-                json_route=None,
-                command_name=None,
-            ),
-        ),
-        "remaining_manual_owner_checklist": (),
+        "groups": (),
+        "steps": (),
     }
     payload.update(overrides)
-    return GoLiveReadinessIndex(**payload)  # type: ignore[arg-type]
+    return LaunchBlockersPlan(**payload)  # type: ignore[arg-type]
 
 
 def _strip_volatile(html: str) -> str:
@@ -249,20 +199,20 @@ def _strip_volatile(html: str) -> str:
 
 
 def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None:
-    html = render_go_live_readiness_index(_empty_index())
+    html = render_launch_blockers_plan(_empty_plan())
 
-    assert 'id="operator-go-live-readiness-index"' in html
-    assert OPERATOR_GO_LIVE_READINESS_INDEX_PATH == "/internal/operator-go-live-readiness-index"
+    assert 'id="operator-launch-blockers-plan"' in html
+    assert OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH == "/internal/operator-launch-blockers-plan"
     for section_id in SECTION_IDS:
         assert f'id="{section_id}"' in html
-    assert "No remaining checklist items" in html
+    assert "No grouped remediation steps" in html
     assert "go_live_permitted=false" in html
     assert "execution_allowed=false" in html
     assert "deployment_allowed=false" in html
     assert "build_allowed=false" in html
     assert "artifact_publish_allowed=false" in html
     assert "OUTBOUND_ENABLED=false" in html
-    assert "index/review view" in html
+    assert "remediation planning view" in html
     assert "not permission to go live" in html
     assert "There are no apply, execute, lift-halt" in html
     assert 'data-execution-allowed="false"' in html
@@ -270,7 +220,10 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
     assert 'data-deployment-allowed="false"' in html
     assert 'data-build-allowed="false"' in html
     assert 'data-artifact-publish-allowed="false"' in html
-    assert 'data-index-is-not-permission-to-go-live="true"' in html
+    assert 'data-plan-is-not-permission-to-go-live="true"' in html
+    assert 'data-plan-is-not-execution="true"' in html
+    assert "go-live-readiness-index" in html
+    assert "/internal/go-live-readiness-index" in html
     for href in LINKED_SURFACES:
         assert href in html
     for marker in ACTION_MARKERS + FORM_MARKERS:
@@ -278,62 +231,54 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
 
 
 def test_renderer_populated_sections_and_xss_escape() -> None:
-    html = render_go_live_readiness_index(
-        _empty_index(
+    html = render_launch_blockers_plan(
+        _empty_plan(
             blocker_codes=["execution_disabled_in_this_phase", XSS_LABEL],
             missing_credential_names=["EXAMPLE_API_KEY", XSS_LABEL],
             closed_provider_flag_names=["EXAMPLE_LIVE_ENABLED", XSS_LABEL],
-            surfaces=(
-                _card(label=XSS_LABEL, blocker_codes=(XSS_LABEL,), flag_states=(XSS_LABEL,)),
-                _card(key="operator-dashboard", label="Operator dashboard / command center"),
-                _card(
-                    key="settings-execution-preflight",
-                    label="Settings execution preflight",
-                    html_route="/internal/operator-settings-execution-preflight",
+            groups=(
+                _group(
+                    group_key="launch-blockers-plan",
+                    group_label=XSS_LABEL,
+                    steps=(
+                        _step(
+                            blocker_code=XSS_LABEL,
+                            recommended_step=XSS_LABEL,
+                            config_name=XSS_LABEL,
+                        ),
+                    ),
                 ),
-                _card(
-                    key="owner-handoff-packet",
-                    label="Owner handoff packet",
-                    html_route="/internal/operator-owner-handoff-packet",
-                ),
-                _card(
-                    key="compliance-evidence-binder",
-                    label="Compliance evidence binder",
-                    html_route="/internal/operator-compliance-evidence-binder",
-                ),
-                _card(
-                    key="release-candidate-runbook",
-                    label="Release-candidate runbook",
-                    html_route="/internal/operator-release-candidate-runbook",
-                ),
-                _card(
-                    key="release-artifact-manifest",
-                    label="Release artifact manifest",
-                    html_route="/internal/operator-release-artifact-manifest",
-                ),
-                _card(
-                    key="operator-audit-timeline",
-                    label="Operator audit timeline",
-                    html_route="/internal/operator-audit-timeline",
-                    json_route=None,
-                    command_name=None,
+                _group(
+                    group_key="go-live-readiness-index",
+                    group_label="Go-live readiness index",
+                    steps=(
+                        _step(
+                            blocker_code="execution_disabled_in_this_phase",
+                            surface_key="go-live-readiness-index",
+                            html_route="/internal/operator-go-live-readiness-index",
+                            json_route="/internal/go-live-readiness-index",
+                            command_name="go-live-readiness-index",
+                        ),
+                    ),
                 ),
             ),
-            remaining_manual_owner_checklist=(
-                _checklist(code=XSS_LABEL, label=XSS_LABEL),
-                _checklist(code="execution_disabled_in_this_phase"),
+            steps=(
+                _step(blocker_code=XSS_LABEL, recommended_step=XSS_LABEL),
+                _step(blocker_code="execution_disabled_in_this_phase"),
             ),
         )
     )
-    error = render_go_live_readiness_index_error()
+    error = render_launch_blockers_plan_error()
 
     assert XSS_LABEL not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     assert "EXAMPLE_API_KEY" in html
     assert "EXAMPLE_LIVE_ENABLED" in html
     assert "execution_disabled_in_this_phase" in html
-    assert "Go-live index" in html
-    assert 'id="operator-go-live-readiness-index-error"' in error
+    assert 'id="group-launch-blockers-plan"' in html
+    assert 'id="group-go-live-readiness-index"' in html
+    assert "Launch blockers" in html
+    assert 'id="operator-launch-blockers-plan-error"' in error
     assert "sk-testsecret" not in error
     for marker in ACTION_MARKERS + FORM_MARKERS:
         assert marker not in html.lower()
@@ -341,15 +286,15 @@ def test_renderer_populated_sections_and_xss_escape() -> None:
 
 
 def test_renderer_is_deterministic_aside_from_timestamps_and_git_metadata() -> None:
-    first = render_go_live_readiness_index(_empty_index())
-    second = render_go_live_readiness_index(
-        _empty_index(generated_at=datetime(2026, 9, 1, 8, 30, tzinfo=UTC))
+    first = render_launch_blockers_plan(_empty_plan())
+    second = render_launch_blockers_plan(
+        _empty_plan(generated_at=datetime(2026, 9, 1, 8, 30, tzinfo=UTC))
     )
-    git_variant = render_go_live_readiness_index(
-        _empty_index(
+    git_variant = render_launch_blockers_plan(
+        _empty_plan(
             local_git=LocalGitMetadata(
                 available=True,
-                current_branch="cursor/phase-41-go-live-readiness-index-7a60",
+                current_branch="cursor/phase-44-launch-blockers-plan-ui-2830",
                 current_sha="cccccccccccccccccccccccccccccccccccccccc",
                 working_tree_status="not_inspected",
                 git_provider_called=False,
@@ -360,12 +305,12 @@ def test_renderer_is_deterministic_aside_from_timestamps_and_git_metadata() -> N
 
     assert _strip_volatile(first) == _strip_volatile(second)
     assert "cccccccccccccccccccccccccccccccccccccccc" in git_variant
-    assert "cursor/phase-41-go-live-readiness-index-7a60" in git_variant
+    assert "cursor/phase-44-launch-blockers-plan-ui-2830" in git_variant
     assert TIMESTAMP_RE.search(first)
     assert TIMESTAMP_RE.search(second)
 
 
-def test_operator_go_live_readiness_index_open_in_development(
+def test_operator_launch_blockers_plan_open_in_development(
     api_client: TestClient,
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -373,13 +318,13 @@ def test_operator_go_live_readiness_index_open_in_development(
     _patch_settings(monkeypatch, Settings(environment="development", internal_api_key=""))
     set_operator_halt(db_session, halted=True, reason="keep-halted")
 
-    response = api_client.get(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)
+    response = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     body = response.text
-    assert "Go-live readiness index" in body
-    assert "Go-live index" in body
+    assert "Launch blockers remediation plan" in body
+    assert "Launch blockers" in body
     for section_id in SECTION_IDS:
         assert f'id="{section_id}"' in body
     for href in LINKED_SURFACES:
@@ -397,37 +342,37 @@ def test_operator_go_live_readiness_index_open_in_development(
         assert marker not in body.lower()
 
 
-def test_operator_go_live_readiness_index_requires_internal_access(
+def test_operator_launch_blockers_plan_requires_internal_access(
     api_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_settings(monkeypatch, Settings(environment="production", internal_api_key=""))
-    denied = api_client.get(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)
+    denied = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
     assert denied.status_code == 403
 
     _patch_settings(
         monkeypatch,
         Settings(environment="production", internal_api_key="internal-secret"),
     )
-    missing = api_client.get(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)
+    missing = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
     invalid = api_client.get(
-        OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
         headers={"X-Internal-Api-Key": "wrong-secret"},
     )
     post = api_client.post(
-        OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     put = api_client.put(
-        OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     delete = api_client.delete(
-        OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     patch = api_client.patch(
-        OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     assert missing.status_code == 401
@@ -438,7 +383,7 @@ def test_operator_go_live_readiness_index_requires_internal_access(
     assert patch.status_code == 405
 
 
-def test_operator_go_live_readiness_index_populated_sections_and_no_side_effects(
+def test_operator_launch_blockers_plan_populated_sections_and_no_side_effects(
     api_client: TestClient,
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -456,7 +401,7 @@ def test_operator_go_live_readiness_index_populated_sections_and_no_side_effects
         settings,
         request_type=SettingsChangeRequestType.REQUEST_OUTBOUND_ENABLEMENT_REVIEW.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
-        idempotency_key="ui-index",
+        idempotency_key="ui-plan",
         reviewer_notes=PHI_SNIPPET,
     )
     SettingsChangeRequestService().record_decision(
@@ -471,7 +416,7 @@ def test_operator_go_live_readiness_index_populated_sections_and_no_side_effects
         settings,
         request_type=SettingsChangeRequestType.KEEP_OUTBOUND_DISABLED.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
-        idempotency_key="ui-index-pending",
+        idempotency_key="ui-plan-pending",
     )
     before_activities = int(db_session.scalar(select(func.count()).select_from(Activity)) or 0)
     before_meetings = int(db_session.scalar(select(func.count()).select_from(Meeting)) or 0)
@@ -485,11 +430,11 @@ def test_operator_go_live_readiness_index_populated_sections_and_no_side_effects
     before_halt = read_operator_halt(db_session)
 
     first = api_client.get(
-        OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     second = api_client.get(
-        OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+        OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
 
@@ -502,16 +447,16 @@ def test_operator_go_live_readiness_index_populated_sections_and_no_side_effects
         assert href in body
     assert "OUTBOUND_ENABLED" in body
     assert "execution_disabled_in_this_phase" in body
+    assert NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION.value in body
     assert NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION.value in body
-    assert NextActionCode.HANDOFF_IS_NOT_GO_LIVE.value in body
     assert "go_live_permitted=false" in body
     assert "execution_allowed=false" in body
     assert "deployment_allowed=false" in body
     assert "build_allowed=false" in body
     assert "artifact_publish_allowed=false" in body
-    assert "launch-readiness" in body
-    assert "operator-command-center" in body
-    assert "release-artifact-manifest" in body
+    assert "launch-blockers-plan" in body
+    assert "go-live-readiness-index" in body
+    assert 'id="group-launch-blockers-plan"' in body
     _assert_no_leakage(body, SECRET_VALUE)
     assert PHI_SNIPPET not in body
     assert PROSPECT_EMAIL not in body
@@ -536,7 +481,7 @@ def test_operator_go_live_readiness_index_populated_sections_and_no_side_effects
     assert settings.voice_live_enabled is False
 
 
-def test_operator_go_live_readiness_index_failure_state_redacts_errors(
+def test_operator_launch_blockers_plan_failure_state_redacts_errors(
     api_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -546,14 +491,14 @@ def test_operator_go_live_readiness_index_failure_state_redacts_errors(
         raise RuntimeError("patient diagnosis sk-testsecret12345")
 
     monkeypatch.setattr(
-        "vyro_growth.api.operator_go_live_readiness_index.GoLiveReadinessIndexService.build",
+        "vyro_growth.api.operator_launch_blockers_plan.LaunchBlockersPlanService.build",
         _boom,
     )
-    response = api_client.get(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)
+    response = api_client.get(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
 
     assert response.status_code == 500
     assert "patient diagnosis" not in response.text.lower()
     assert "sk-testsecret12345" not in response.text
-    assert "Unable to load the go-live readiness index" in response.text
+    assert "Unable to load the launch blockers remediation plan" in response.text
     for marker in FORM_MARKERS:
         assert marker not in response.text.lower()

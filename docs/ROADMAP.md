@@ -510,7 +510,7 @@ Sanitized read-only CLI and internal JSON export of the Phase 41 go-live readine
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - This is a review export only, not permission to go live and not an execution surface
 
-## Phase 43 — Launch blockers remediation plan export (current)
+## Phase 43 — Launch blockers remediation plan export
 Sanitized read-only CLI and internal JSON export that turns Phase 42 go-live readiness index blockers into operator-friendly manual remediation steps. Planning/export only, no execution.
 - CLI `vyro-growth launch-blockers-plan` with Markdown output and `--json` output
 - Internal JSON `GET /internal/launch-blockers-plan`
@@ -521,6 +521,17 @@ Sanitized read-only CLI and internal JSON export that turns Phase 42 go-live rea
 - Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - This is a remediation planning export only, not permission to go live and not an execution surface
+
+## Phase 44 — Operator launch blockers remediation plan UI (current)
+Internal operator HTML shell of the Phase 43 launch blockers remediation plan. Read-only, no execution.
+- `GET /internal/operator-launch-blockers-plan`
+- Reuses existing Phase 43 `LaunchBlockersPlanService` / payload and does not duplicate readiness calculations
+- Linked from the operator dashboard, go-live readiness index UI, and related readiness surfaces
+- Renders overall status, generated timestamp, read-only / no-execution / no-go-live flags, operator halt before/after, outbound/live-provider/deployment/build/publish permission flags, source go-live readiness index references, related safe routes and CLI commands, grouped remediation steps, blocker codes, missing credential names, closed provider flag names, and safe local git metadata
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names/states, missing credential variable names, sanitized timestamps, and recommended manual remediation steps
+- Page states this is a remediation planning view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

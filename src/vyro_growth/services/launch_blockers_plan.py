@@ -50,6 +50,7 @@ PLAN_NOT_PERMISSION_CODE = NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION
 EXECUTION_DISABLED_CODE = "execution_disabled_in_this_phase"
 CLI_COMMAND = "launch-blockers-plan"
 HTTP_ROUTE = "/internal/launch-blockers-plan"
+HTML_ROUTE = "/internal/operator-launch-blockers-plan"
 INDEX_HTML_ROUTE = "/internal/operator-go-live-readiness-index"
 SECTION_PLAN = "launch_blockers_plan"
 STEP_KINDS: tuple[str, ...] = (
@@ -96,6 +97,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-release-artifact-manifest",
     "/internal/release-artifact-manifest",
     "/internal/operator-audit-timeline",
+    HTML_ROUTE,
     HTTP_ROUTE,
 )
 _STATUS_RANK = {
@@ -377,7 +379,7 @@ def _steps_from_index(index: GoLiveReadinessIndex) -> tuple[RemediationStep, ...
         surface_key="launch-blockers-plan",
         surface_label="Launch blockers remediation plan",
         current_status=FindingSeverity.INFO.value,
-        html_route=None,
+        html_route=HTML_ROUTE,
         json_route=HTTP_ROUTE,
         command_name=CLI_COMMAND,
         advice=RemediationAdvice(
@@ -385,8 +387,8 @@ def _steps_from_index(index: GoLiveReadinessIndex) -> tuple[RemediationStep, ...
             owner_approval_type="none",
             recommended_step=(
                 "Inspect this launch blockers remediation plan at "
-                f"{HTTP_ROUTE} or via `vyro-growth {CLI_COMMAND}`. "
-                "Read-only planning export; it is not permission to go live "
+                f"{HTML_ROUTE} or {HTTP_ROUTE} or via `vyro-growth {CLI_COMMAND}`. "
+                "Read-only planning view; it is not permission to go live "
                 "and is not an execution surface."
             ),
         ),
@@ -396,7 +398,7 @@ def _steps_from_index(index: GoLiveReadinessIndex) -> tuple[RemediationStep, ...
         surface_key="launch-blockers-plan",
         surface_label="Launch blockers remediation plan",
         current_status=FindingSeverity.INFO.value,
-        html_route=None,
+        html_route=HTML_ROUTE,
         json_route=HTTP_ROUTE,
         command_name=CLI_COMMAND,
     )
@@ -900,8 +902,8 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         "manual_review",
         "none",
         "Inspect this launch blockers remediation plan at "
-        f"{HTTP_ROUTE} or via `vyro-growth {CLI_COMMAND}`. "
-        "Read-only planning export; it is not permission to go live and is "
+        f"{HTML_ROUTE} or {HTTP_ROUTE} or via `vyro-growth {CLI_COMMAND}`. "
+        "Read-only planning view; it is not permission to go live and is "
         "not an execution surface.",
     ),
     EXECUTION_DISABLED_CODE: RemediationAdvice(
