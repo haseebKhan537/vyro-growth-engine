@@ -128,6 +128,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "operator-supervised-pilot-candidates" in runbook
     assert "vyro-growth supervised-pilot-candidates" in runbook
     assert "/internal/supervised-pilot-go-no-go" in runbook
+    assert "operator-supervised-pilot-go-no-go" in runbook
     assert "vyro-growth supervised-pilot-go-no-go" in runbook
     assert "018_live_settings_change_requests" in runbook
 

@@ -153,6 +153,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-plan",
     "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
+    "/internal/operator-supervised-pilot-go-no-go",
+    "/internal/supervised-pilot-go-no-go",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,

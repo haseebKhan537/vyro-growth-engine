@@ -541,8 +541,10 @@ def test_supervised_pilot_go_no_go_does_not_execute_or_call_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/supervised_pilot_go_no_go.py"),
         Path("src/vyro_growth/api/supervised_pilot_go_no_go.py"),
+        Path("src/vyro_growth/api/operator_supervised_pilot_go_no_go.py"),
         Path("tests/test_supervised_pilot_go_no_go_service.py"),
         Path("tests/test_supervised_pilot_go_no_go_api.py"),
+        Path("tests/test_operator_supervised_pilot_go_no_go_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

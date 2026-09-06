@@ -100,6 +100,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-plan",
     "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
+    "/internal/operator-supervised-pilot-go-no-go",
     "/internal/supervised-pilot-go-no-go",
 )
 _SEVERITY_RANK = {
@@ -704,12 +705,14 @@ def _remaining_checklist(
         NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE.value,
         FindingSeverity.INFO.value,
         "supervised_pilot_go_no_go",
+        html_route="/internal/operator-supervised-pilot-go-no-go",
         json_route="/internal/supervised-pilot-go-no-go",
         command_name="supervised-pilot-go-no-go",
         label=(
             "Inspect the supervised pilot go/no-go packet at "
+            "/internal/operator-supervised-pilot-go-no-go or "
             "/internal/supervised-pilot-go-no-go or via `vyro-growth "
-            "supervised-pilot-go-no-go`. Go/no-go review export only; "
+            "supervised-pilot-go-no-go`. Go/no-go review view only; "
             "it is not permission to go live and is not an execution "
             "surface."
         ),
@@ -797,7 +800,7 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
             )
         case "supervised_pilot_go_no_go":
             return (
-                None,
+                "/internal/operator-supervised-pilot-go-no-go",
                 "/internal/supervised-pilot-go-no-go",
                 "supervised-pilot-go-no-go",
             )

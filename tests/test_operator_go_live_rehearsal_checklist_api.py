@@ -93,6 +93,7 @@ LINKED_SURFACES = (
     "/internal/operator-rehearsal-outcome-report",
     "/internal/operator-supervised-pilot-plan",
     "/internal/operator-supervised-pilot-candidates",
+    "/internal/operator-supervised-pilot-go-no-go",
     "/internal/rehearsal-outcome-report",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",

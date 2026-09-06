@@ -176,6 +176,7 @@ def test_empty_index_is_read_only_and_not_permission_to_go_live(db_session: Sess
     assert "/internal/supervised-pilot-plan" in index.related_routes
     assert "/internal/operator-supervised-pilot-candidates" in index.related_routes
     assert "/internal/supervised-pilot-candidates" in index.related_routes
+    assert "/internal/operator-supervised-pilot-go-no-go" in index.related_routes
     assert "/internal/supervised-pilot-go-no-go" in index.related_routes
     assert payload["go_live_permitted"] is False
     assert payload["execution_allowed"] is False

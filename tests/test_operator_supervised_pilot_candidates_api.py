@@ -109,6 +109,8 @@ LINKED_SURFACES = (
     "/internal/supervised-pilot-plan",
     "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
+    "/internal/operator-supervised-pilot-go-no-go",
+    "/internal/supervised-pilot-go-no-go",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",
     "/internal/settings-execution-preflight",

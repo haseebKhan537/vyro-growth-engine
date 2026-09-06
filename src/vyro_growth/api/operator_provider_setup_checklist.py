@@ -38,6 +38,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+    OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
     OPERATOR_UI_STYLES,
     OWNER_HANDOFF_JSON_PATH,
@@ -193,6 +194,7 @@ def _render_related_links() -> str:
     outcome_href = escape(OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH)
     pilot_href = escape(OPERATOR_SUPERVISED_PILOT_PLAN_PATH)
     candidates_href = escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
+    go_no_go_href = escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)
     rehearsal_json_href = escape(GO_LIVE_REHEARSAL_CHECKLIST_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
@@ -222,6 +224,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{outcome_href}">Rehearsal outcome</a>\n'
         f'      <a class="nav-link" href="{pilot_href}">Supervised pilot</a>\n'
         f'      <a class="nav-link" href="{candidates_href}">Pilot candidates</a>\n'
+        f'      <a class="nav-link" href="{go_no_go_href}">Pilot go/no-go</a>\n'
         f'      <a class="nav-link" href="{rehearsal_json_href}">JSON rehearsal</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
