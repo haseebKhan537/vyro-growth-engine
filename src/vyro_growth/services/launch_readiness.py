@@ -206,6 +206,13 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "only; it is not permission to go live and is not an "
         "execution surface."
     ),
+    NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE: (
+        "Inspect the supervised pilot go/no-go packet at "
+        "/internal/supervised-pilot-go-no-go or via `vyro-growth "
+        "supervised-pilot-go-no-go`. Go/no-go review export only; "
+        "it is not permission to go live and is not an execution "
+        "surface."
+    ),
 }
 
 
@@ -903,6 +910,13 @@ def _next_actions(
             FindingSeverity.INFO,
             FindingCode.SAFE_DEFAULTS,
             NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE,
+        )
+    )
+    add(
+        _finding(
+            FindingSeverity.INFO,
+            FindingCode.SAFE_DEFAULTS,
+            NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE,
         )
     )
     return tuple(

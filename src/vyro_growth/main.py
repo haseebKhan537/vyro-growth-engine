@@ -203,6 +203,10 @@ from vyro_growth.api.supervised_pilot_candidates import (
     SupervisedPilotCandidatesResponse,
     build_supervised_pilot_candidates_response,
 )
+from vyro_growth.api.supervised_pilot_go_no_go import (
+    SupervisedPilotGoNoGoResponse,
+    build_supervised_pilot_go_no_go_response,
+)
 from vyro_growth.api.supervised_pilot_plan import (
     SupervisedPilotPlanResponse,
     build_supervised_pilot_plan_response,
@@ -1043,6 +1047,18 @@ def supervised_pilot_candidates(
     _require_internal_key(active_settings, x_internal_api_key)
     response.headers["Cache-Control"] = "no-store"
     return build_supervised_pilot_candidates_response(db, active_settings)
+
+
+@app.get("/internal/supervised-pilot-go-no-go", tags=["internal"])
+def supervised_pilot_go_no_go(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SupervisedPilotGoNoGoResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_supervised_pilot_go_no_go_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

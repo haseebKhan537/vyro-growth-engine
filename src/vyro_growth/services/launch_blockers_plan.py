@@ -977,6 +977,15 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         "only; it is not permission to go live and is not an "
         "execution surface.",
     ),
+    NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE.value: RemediationAdvice(
+        "manual_review",
+        "none",
+        "Inspect the supervised pilot go/no-go packet at "
+        "/internal/supervised-pilot-go-no-go or via `vyro-growth "
+        "supervised-pilot-go-no-go`. Go/no-go review export only; "
+        "it is not permission to go live and is not an execution "
+        "surface.",
+    ),
     EXECUTION_DISABLED_CODE: RemediationAdvice(
         "configuration",
         "none",

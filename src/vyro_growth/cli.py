@@ -151,6 +151,10 @@ from vyro_growth.services.supervised_pilot_candidates import (
     SupervisedPilotCandidateService,
     format_supervised_pilot_candidates,
 )
+from vyro_growth.services.supervised_pilot_go_no_go import (
+    SupervisedPilotGoNoGoService,
+    format_supervised_pilot_go_no_go,
+)
 from vyro_growth.services.supervised_pilot_plan import (
     SupervisedPilotPlanService,
     format_supervised_pilot_plan,
@@ -782,6 +786,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized supervised pilot candidate readiness packet as JSON",
     )
+    go_no_go = subparsers.add_parser(
+        "supervised-pilot-go-no-go",
+        help=(
+            "Export a sanitized supervised pilot go/no-go packet "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    go_no_go.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized supervised pilot go/no-go packet as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -970,6 +986,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "supervised-pilot-candidates":
         return _run_supervised_pilot_candidates(args)
+
+    if args.command == "supervised-pilot-go-no-go":
+        return _run_supervised_pilot_go_no_go(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2256,6 +2275,14 @@ def _run_supervised_pilot_candidates(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         export = SupervisedPilotCandidateService().build(db, settings)
     print(format_supervised_pilot_candidates(export, as_json=args.json))
+    return 0
+
+
+def _run_supervised_pilot_go_no_go(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        packet = SupervisedPilotGoNoGoService().build(db, settings)
+    print(format_supervised_pilot_go_no_go(packet, as_json=args.json))
     return 0
 
 

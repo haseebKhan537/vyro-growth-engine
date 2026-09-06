@@ -64,6 +64,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "rehearsal-outcome-report",
     "supervised-pilot-plan",
     "supervised-pilot-candidates",
+    "supervised-pilot-go-no-go",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -99,6 +100,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-plan",
     "/internal/operator-supervised-pilot-candidates",
     "/internal/supervised-pilot-candidates",
+    "/internal/supervised-pilot-go-no-go",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -698,6 +700,20 @@ def _remaining_checklist(
             "execution surface."
         ),
     )
+    add(
+        NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "supervised_pilot_go_no_go",
+        json_route="/internal/supervised-pilot-go-no-go",
+        command_name="supervised-pilot-go-no-go",
+        label=(
+            "Inspect the supervised pilot go/no-go packet at "
+            "/internal/supervised-pilot-go-no-go or via `vyro-growth "
+            "supervised-pilot-go-no-go`. Go/no-go review export only; "
+            "it is not permission to go live and is not an execution "
+            "surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -778,6 +794,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-supervised-pilot-candidates",
                 "/internal/supervised-pilot-candidates",
                 "supervised-pilot-candidates",
+            )
+        case "supervised_pilot_go_no_go":
+            return (
+                None,
+                "/internal/supervised-pilot-go-no-go",
+                "supervised-pilot-go-no-go",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (

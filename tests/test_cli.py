@@ -1881,6 +1881,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     pilot = parser.parse_args(["supervised-pilot-plan", "--json"])
     assert pilot.command == "supervised-pilot-plan"
     assert pilot.json is True
+    go_no_go = parser.parse_args(["supervised-pilot-go-no-go", "--json"])
+    assert go_no_go.command == "supervised-pilot-go-no-go"
+    assert go_no_go.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:
