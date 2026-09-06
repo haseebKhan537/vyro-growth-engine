@@ -57,6 +57,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "release-artifact-manifest",
     CLI_COMMAND,
     "launch-blockers-plan",
+    "staged-rollout-plan",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -78,6 +79,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-launch-blockers-plan",
     "/internal/launch-blockers-plan",
+    "/internal/operator-staged-rollout-plan",
+    "/internal/staged-rollout-plan",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -567,6 +570,20 @@ def _remaining_checklist(
             "permission to go live and is not an execution surface."
         ),
     )
+    add(
+        NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "staged_rollout_plan",
+        html_route="/internal/operator-staged-rollout-plan",
+        json_route="/internal/staged-rollout-plan",
+        command_name="staged-rollout-plan",
+        label=(
+            "Inspect the staged go-live rollout plan at "
+            "/internal/staged-rollout-plan or via `vyro-growth "
+            "staged-rollout-plan`. Read-only staged planning export; it "
+            "is not permission to go live and is not an execution surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -605,6 +622,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-launch-blockers-plan",
                 "/internal/launch-blockers-plan",
                 "launch-blockers-plan",
+            )
+        case "staged_rollout_plan":
+            return (
+                "/internal/operator-staged-rollout-plan",
+                "/internal/staged-rollout-plan",
+                "staged-rollout-plan",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (

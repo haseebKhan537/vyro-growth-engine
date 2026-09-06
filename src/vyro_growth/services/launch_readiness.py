@@ -152,6 +152,12 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "launch-blockers-plan`. Read-only planning view; it is not "
         "permission to go live and is not an execution surface."
     ),
+    NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE: (
+        "Inspect the staged go-live rollout plan at "
+        "/internal/staged-rollout-plan or via `vyro-growth "
+        "staged-rollout-plan`. Read-only staged planning export; it is "
+        "not permission to go live and is not an execution surface."
+    ),
 }
 
 
@@ -800,6 +806,13 @@ def _next_actions(
             FindingSeverity.INFO,
             FindingCode.SAFE_DEFAULTS,
             NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION,
+        )
+    )
+    add(
+        _finding(
+            FindingSeverity.INFO,
+            FindingCode.SAFE_DEFAULTS,
+            NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE,
         )
     )
     return tuple(

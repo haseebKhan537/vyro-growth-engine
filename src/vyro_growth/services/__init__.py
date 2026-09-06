@@ -180,6 +180,11 @@ from vyro_growth.services.smoke_dry_run import (
     isolated_demo_session,
     run_smoke_dry_run,
 )
+from vyro_growth.services.staged_rollout_plan import (
+    StagedRolloutPlan,
+    StagedRolloutPlanService,
+    format_staged_rollout_plan,
+)
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
     VoiceItemResult,
@@ -236,6 +241,8 @@ __all__ = [
     "GoLiveReadinessIndexService",
     "LaunchBlockersPlan",
     "LaunchBlockersPlanService",
+    "StagedRolloutPlan",
+    "StagedRolloutPlanService",
     "GrowthOptimizerService",
     "OptimizerRecommendationView",
     "OptimizerRunResult",
@@ -307,6 +314,7 @@ __all__ = [
     "format_compliance_evidence_binder",
     "format_go_live_readiness_index",
     "format_launch_blockers_plan",
+    "format_staged_rollout_plan",
     "format_launch_readiness",
     "format_release_artifact_manifest",
     "format_release_candidate_runbook",

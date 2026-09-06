@@ -1863,6 +1863,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     plan = parser.parse_args(["launch-blockers-plan", "--json"])
     assert plan.command == "launch-blockers-plan"
     assert plan.json is True
+    staged = parser.parse_args(["staged-rollout-plan", "--json"])
+    assert staged.command == "staged-rollout-plan"
+    assert staged.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

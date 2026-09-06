@@ -127,6 +127,10 @@ from vyro_growth.services.smoke_dry_run import (
     isolated_demo_session,
     run_smoke_dry_run,
 )
+from vyro_growth.services.staged_rollout_plan import (
+    StagedRolloutPlanService,
+    format_staged_rollout_plan,
+)
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
     VoiceQualificationService,
@@ -670,6 +674,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized launch blockers remediation plan as JSON",
     )
+    staged = subparsers.add_parser(
+        "staged-rollout-plan",
+        help=(
+            "Export a sanitized staged go-live rollout plan "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    staged.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized staged go-live rollout plan as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -837,6 +853,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "launch-blockers-plan":
         return _run_launch_blockers_plan(args)
+
+    if args.command == "staged-rollout-plan":
+        return _run_staged_rollout_plan(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2067,6 +2086,14 @@ def _run_launch_blockers_plan(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         plan = LaunchBlockersPlanService().build(db, settings)
     print(format_launch_blockers_plan(plan, as_json=args.json))
+    return 0
+
+
+def _run_staged_rollout_plan(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        plan = StagedRolloutPlanService().build(db, settings)
+    print(format_staged_rollout_plan(plan, as_json=args.json))
     return 0
 
 

@@ -158,6 +158,10 @@ from vyro_growth.api.settings_execution_preflight import (
     SettingsExecutionPreflightResponse,
     build_settings_execution_preflight_response,
 )
+from vyro_growth.api.staged_rollout_plan import (
+    StagedRolloutPlanResponse,
+    build_staged_rollout_plan_response,
+)
 from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
@@ -814,6 +818,16 @@ def launch_blockers_plan(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_launch_blockers_plan_response(db, active_settings)
+
+
+@app.get("/internal/staged-rollout-plan", tags=["internal"])
+def staged_rollout_plan(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> StagedRolloutPlanResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_staged_rollout_plan_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])
