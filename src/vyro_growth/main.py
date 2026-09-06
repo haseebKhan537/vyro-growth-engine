@@ -91,6 +91,9 @@ from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.operator_go_live_readiness_index import (
     build_operator_go_live_readiness_index_response,
 )
+from vyro_growth.api.operator_launch_blockers_plan import (
+    build_operator_launch_blockers_plan_response,
+)
 from vyro_growth.api.operator_owner_handoff import (
     build_operator_owner_handoff_response,
 )
@@ -521,6 +524,20 @@ def operator_go_live_readiness_index(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_go_live_readiness_index_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-launch-blockers-plan",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_launch_blockers_plan(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_launch_blockers_plan_response(db, active_settings)
 
 
 @app.get(

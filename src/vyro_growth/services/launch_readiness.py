@@ -147,8 +147,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION: (
         "Inspect the launch blockers remediation plan at "
+        "/internal/operator-launch-blockers-plan or "
         "/internal/launch-blockers-plan or via `vyro-growth "
-        "launch-blockers-plan`. Read-only planning export; it is not "
+        "launch-blockers-plan`. Read-only planning view; it is not "
         "permission to go live and is not an execution surface."
     ),
 }

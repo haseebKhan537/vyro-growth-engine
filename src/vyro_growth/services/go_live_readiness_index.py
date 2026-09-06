@@ -76,6 +76,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-audit-timeline",
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-launch-blockers-plan",
     "/internal/launch-blockers-plan",
 )
 _SEVERITY_RANK = {
@@ -555,12 +556,14 @@ def _remaining_checklist(
         NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION.value,
         FindingSeverity.INFO.value,
         "launch_blockers_plan",
+        html_route="/internal/operator-launch-blockers-plan",
         json_route="/internal/launch-blockers-plan",
         command_name="launch-blockers-plan",
         label=(
             "Inspect the launch blockers remediation plan at "
+            "/internal/operator-launch-blockers-plan or "
             "/internal/launch-blockers-plan or via `vyro-growth "
-            "launch-blockers-plan`. Read-only planning export; it is not "
+            "launch-blockers-plan`. Read-only planning view; it is not "
             "permission to go live and is not an execution surface."
         ),
     )
@@ -598,7 +601,11 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
         case "go_live_readiness_index":
             return (HTML_ROUTE, HTTP_ROUTE, CLI_COMMAND)
         case "launch_blockers_plan":
-            return (None, "/internal/launch-blockers-plan", "launch-blockers-plan")
+            return (
+                "/internal/operator-launch-blockers-plan",
+                "/internal/launch-blockers-plan",
+                "launch-blockers-plan",
+            )
         case "owner_handoff" | "owner_handoff_packet":
             return (
                 "/internal/operator-owner-handoff-packet",

@@ -104,6 +104,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "/internal/go-live-readiness-index" in runbook
     assert "vyro-growth go-live-readiness-index" in runbook
     assert "/internal/launch-blockers-plan" in runbook
+    assert "operator-launch-blockers-plan" in runbook
     assert "vyro-growth launch-blockers-plan" in runbook
     assert "018_live_settings_change_requests" in runbook
 
