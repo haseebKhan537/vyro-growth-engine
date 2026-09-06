@@ -459,6 +459,9 @@ class NextActionCode(StrEnum):
     SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE = (
         "supervised_pilot_go_no_go_is_not_permission_to_go_live"
     )
+    SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE = (
+        "supervised_pilot_first_send_preflight_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

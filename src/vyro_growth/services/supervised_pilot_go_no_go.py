@@ -98,6 +98,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "check-config",
     "smoke-dry-run",
     CLI_COMMAND,
+    "supervised-pilot-first-send-preflight",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -128,6 +129,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-settings-change-requests",
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/operator-supervised-pilot-first-send-preflight",
+    "/internal/supervised-pilot-first-send-preflight",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,

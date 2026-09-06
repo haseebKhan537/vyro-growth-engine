@@ -214,6 +214,13 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "it is not permission to go live and is not an execution "
         "surface."
     ),
+    NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE: (
+        "Inspect the supervised pilot first-send preflight at "
+        "/internal/supervised-pilot-first-send-preflight or via "
+        "`vyro-growth supervised-pilot-first-send-preflight`. "
+        "First-send preflight review only; it is not permission to "
+        "send, not permission to go live, and not an execution surface."
+    ),
 }
 
 
@@ -636,6 +643,11 @@ def _next_actions(
         NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="supervised_pilot_go_no_go",
+    )
+    add(
+        NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="supervised_pilot_first_send_preflight",
     )
 
     return tuple(

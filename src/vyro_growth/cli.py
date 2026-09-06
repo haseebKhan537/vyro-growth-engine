@@ -151,6 +151,10 @@ from vyro_growth.services.supervised_pilot_candidates import (
     SupervisedPilotCandidateService,
     format_supervised_pilot_candidates,
 )
+from vyro_growth.services.supervised_pilot_first_send_preflight import (
+    SupervisedPilotFirstSendPreflightService,
+    format_supervised_pilot_first_send_preflight,
+)
 from vyro_growth.services.supervised_pilot_go_no_go import (
     SupervisedPilotGoNoGoService,
     format_supervised_pilot_go_no_go,
@@ -798,6 +802,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized supervised pilot go/no-go packet as JSON",
     )
+    first_send = subparsers.add_parser(
+        "supervised-pilot-first-send-preflight",
+        help=(
+            "Export a sanitized supervised pilot first-send preflight "
+            "(read-only; does not execute, send, deploy, apply settings, or go live)"
+        ),
+    )
+    first_send.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized supervised pilot first-send preflight as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -989,6 +1005,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "supervised-pilot-go-no-go":
         return _run_supervised_pilot_go_no_go(args)
+
+    if args.command == "supervised-pilot-first-send-preflight":
+        return _run_supervised_pilot_first_send_preflight(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2283,6 +2302,14 @@ def _run_supervised_pilot_go_no_go(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         packet = SupervisedPilotGoNoGoService().build(db, settings)
     print(format_supervised_pilot_go_no_go(packet, as_json=args.json))
+    return 0
+
+
+def _run_supervised_pilot_first_send_preflight(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        packet = SupervisedPilotFirstSendPreflightService().build(db, settings)
+    print(format_supervised_pilot_first_send_preflight(packet, as_json=args.json))
     return 0
 
 

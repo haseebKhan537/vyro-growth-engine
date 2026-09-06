@@ -719,7 +719,7 @@ Sanitized read-only CLI and internal JSON export that combines the supervised pi
 - HTTP responses return `Cache-Control: no-store`
 - This is a go/no-go review export only, not permission to go live and not an execution surface
 
-## Phase 60 — Operator supervised pilot go/no-go UI (current)
+## Phase 60 — Operator supervised pilot go/no-go UI
 Internal operator HTML shell of the Phase 59 supervised pilot go/no-go packet. Read-only, no execution.
 - `GET /internal/operator-supervised-pilot-go-no-go`
 - Reuses existing Phase 59 `SupervisedPilotGoNoGoService` / payload and does not duplicate go/no-go readiness calculations
@@ -729,6 +729,19 @@ Internal operator HTML shell of the Phase 59 supervised pilot go/no-go packet. R
 - Page states this is a go/no-go review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/contact controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 61 — Supervised pilot first-send preflight export (current)
+Sanitized read-only CLI and internal JSON export that consolidates the supervised pilot go/no-go packet, supervised pilot plan, candidate readiness, provider setup checklist, rehearsal outcome, launch readiness / go-live index, review/action readiness queues, owner approval/settings request rollups, and operator halt state into one first-send preflight. Review/export only, no execution.
+- CLI `vyro-growth supervised-pilot-first-send-preflight` with Markdown output and `--json` output
+- Internal JSON `GET /internal/supervised-pilot-first-send-preflight`
+- Reuses existing Phase 59 `SupervisedPilotGoNoGoService` and Phase 55 `SupervisedPilotPlanService` as source material and does not recalculate readiness independently
+- Safe metadata only: generated timestamp, packet kind/purpose, overall status reused from go/no-go, explicit no-execution / no-send flags, unchanged halt proof, count-only first-send scope (`suggested_max_first_sends=0`), candidate/queue count rollups, expected safe assertion pass/fail counts and failed keys only, preflight checks with code/status/label/blocking boolean/route/command names, abort/stop conditions as review text only, owner decision type/code names only, missing credential/config names only, closed provider/live flag names only, related routes/commands, and safe local git metadata
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_outbound=true`, `no_provider_calls=true`, `no_spend=true`, `dry_run_only=true`, `manual_review_only=true`, `execution_allowed=false`, `first_send_allowed=false`, `first_send_attempted=false`, `first_send_executed=0`, `sends_executed=0`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, `supervised_pilot_first_send_preflight_is_not_go_live=true`, and `first_send_preflight_is_not_a_send=true`
+- Does not expose practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, secrets, env values, or unsafe errors
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is a first-send preflight/export only, not permission to send, not permission to go live, and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
