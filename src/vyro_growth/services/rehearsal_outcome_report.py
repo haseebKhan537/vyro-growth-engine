@@ -492,17 +492,13 @@ def _outcome_summary(
     blocked_steps = _status_count(checklist.rehearsal_steps, FindingSeverity.BLOCKED.value)
     warning_steps = _status_count(checklist.rehearsal_steps, FindingSeverity.WARNING.value)
     failed_text = ",".join(failed_keys) if failed_keys else "none"
-    approval_text = ",".join(remaining_approvals) if remaining_approvals else "none"
     return _safe_text(
-        "Manual rehearsal outcome only. "
-        f"overall_status={checklist.overall_status}. "
-        f"rehearsal_steps={len(checklist.rehearsal_steps)} "
-        f"blocked={blocked_steps} warning={warning_steps}. "
-        f"expected_safe_assertions_passed="
-        f"{sum(1 for item in checklist.expected_safe_assertions if item.passed)} "
-        f"failed={len(failed_keys)} failed_keys={failed_text}. "
-        f"remaining_owner_approval_types={approval_text}. "
-        "This report is not permission to go live and not an execution surface."
+        "Manual rehearsal outcome only, not permission to go live. "
+        f"status={checklist.overall_status} "
+        f"steps={len(checklist.rehearsal_steps)} "
+        f"blocked={blocked_steps} warning={warning_steps} "
+        f"assertions_failed={len(failed_keys)} failed_keys={failed_text} "
+        f"remaining_owner_approval_types={len(remaining_approvals)}."
     )
 
 
