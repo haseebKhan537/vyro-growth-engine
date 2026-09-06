@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import func, select
@@ -183,14 +184,21 @@ def _seed_candidate(
     score_band: str | None = "hot",
     stage: LeadStage = LeadStage.READY_FOR_OUTREACH,
 ) -> None:
-    organization = sample_organization(db)
+    suffix = uuid4().hex[:8]
+    organization = sample_organization(
+        db,
+        npi=f"1487448{suffix[:3]}",
+        website=f"https://austinfamily-{suffix}.example",
+        name=PRACTICE_NAME,
+    )
     lead = sample_lead(db, organization, stage=stage)
     sample_contact(
         db,
         organization,
-        email=PROSPECT_EMAIL,
+        email=PROSPECT_EMAIL.replace("@", f"+{suffix}@"),
         email_verified=verified_contact,
         full_name=PROVIDER_NAME,
+        dedupe_key=f"email:jordan.blake+{suffix}@austinfamily.example",
     )
     if score_band is not None:
         sample_score(db, lead, band=score_band)
