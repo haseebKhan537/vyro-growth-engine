@@ -193,6 +193,10 @@ from vyro_growth.api.staged_rollout_plan import (
     StagedRolloutPlanResponse,
     build_staged_rollout_plan_response,
 )
+from vyro_growth.api.supervised_pilot_plan import (
+    SupervisedPilotPlanResponse,
+    build_supervised_pilot_plan_response,
+)
 from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
@@ -977,6 +981,18 @@ def rehearsal_outcome_report(
     _require_internal_key(active_settings, x_internal_api_key)
     response.headers["Cache-Control"] = "no-store"
     return build_rehearsal_outcome_report_response(db, active_settings)
+
+
+@app.get("/internal/supervised-pilot-plan", tags=["internal"])
+def supervised_pilot_plan(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SupervisedPilotPlanResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_supervised_pilot_plan_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

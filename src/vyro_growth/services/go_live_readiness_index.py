@@ -62,6 +62,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "provider-setup-checklist",
     "go-live-rehearsal-checklist",
     "rehearsal-outcome-report",
+    "supervised-pilot-plan",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -93,6 +94,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/go-live-rehearsal-checklist",
     "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
+    "/internal/operator-supervised-pilot-plan",
+    "/internal/supervised-pilot-plan",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -660,6 +663,22 @@ def _remaining_checklist(
             "execution surface."
         ),
     )
+    add(
+        NextActionCode.SUPERVISED_PILOT_PLAN_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "supervised_pilot_plan",
+        html_route="/internal/operator-supervised-pilot-plan",
+        json_route="/internal/supervised-pilot-plan",
+        command_name="supervised-pilot-plan",
+        label=(
+            "Inspect the supervised pilot launch plan at "
+            "/internal/operator-supervised-pilot-plan or "
+            "/internal/supervised-pilot-plan or via `vyro-growth "
+            "supervised-pilot-plan`. Supervised pilot planning export "
+            "only; it is not permission to go live and is not an "
+            "execution surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -728,6 +747,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-rehearsal-outcome-report",
                 "/internal/rehearsal-outcome-report",
                 "rehearsal-outcome-report",
+            )
+        case "supervised_pilot_plan":
+            return (
+                "/internal/operator-supervised-pilot-plan",
+                "/internal/supervised-pilot-plan",
+                "supervised-pilot-plan",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (

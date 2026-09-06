@@ -147,6 +147,10 @@ from vyro_growth.services.staged_rollout_plan import (
     StagedRolloutPlanService,
     format_staged_rollout_plan,
 )
+from vyro_growth.services.supervised_pilot_plan import (
+    SupervisedPilotPlanService,
+    format_supervised_pilot_plan,
+)
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
     VoiceQualificationService,
@@ -750,6 +754,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized rehearsal outcome report as JSON",
     )
+    pilot = subparsers.add_parser(
+        "supervised-pilot-plan",
+        help=(
+            "Export a sanitized supervised pilot launch plan "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    pilot.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized supervised pilot launch plan as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -932,6 +948,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "rehearsal-outcome-report":
         return _run_rehearsal_outcome_report(args)
+
+    if args.command == "supervised-pilot-plan":
+        return _run_supervised_pilot_plan(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2202,6 +2221,14 @@ def _run_rehearsal_outcome_report(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         report = RehearsalOutcomeReportService().build(db, settings)
     print(format_rehearsal_outcome_report(report, as_json=args.json))
+    return 0
+
+
+def _run_supervised_pilot_plan(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        plan = SupervisedPilotPlanService().build(db, settings)
+    print(format_supervised_pilot_plan(plan, as_json=args.json))
     return 0
 
 

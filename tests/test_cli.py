@@ -1878,6 +1878,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     outcome = parser.parse_args(["rehearsal-outcome-report", "--json"])
     assert outcome.command == "rehearsal-outcome-report"
     assert outcome.json is True
+    pilot = parser.parse_args(["supervised-pilot-plan", "--json"])
+    assert pilot.command == "supervised-pilot-plan"
+    assert pilot.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

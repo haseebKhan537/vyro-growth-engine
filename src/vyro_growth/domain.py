@@ -452,6 +452,7 @@ class NextActionCode(StrEnum):
     REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE = (
         "rehearsal_outcome_report_is_not_permission_to_go_live"
     )
+    SUPERVISED_PILOT_PLAN_IS_NOT_GO_LIVE = "supervised_pilot_plan_is_not_permission_to_go_live"
 
 
 class ReviewArtifactType(StrEnum):
