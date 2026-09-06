@@ -56,6 +56,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "release-candidate-runbook",
     "release-artifact-manifest",
     CLI_COMMAND,
+    "launch-blockers-plan",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -75,6 +76,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/operator-audit-timeline",
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/launch-blockers-plan",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -549,6 +551,19 @@ def _remaining_checklist(
         FindingSeverity.INFO.value,
         "release_artifact_manifest",
     )
+    add(
+        NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION.value,
+        FindingSeverity.INFO.value,
+        "launch_blockers_plan",
+        json_route="/internal/launch-blockers-plan",
+        command_name="launch-blockers-plan",
+        label=(
+            "Inspect the launch blockers remediation plan at "
+            "/internal/launch-blockers-plan or via `vyro-growth "
+            "launch-blockers-plan`. Read-only planning export; it is not "
+            "permission to go live and is not an execution surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -582,6 +597,8 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
     match source_section:
         case "go_live_readiness_index":
             return (HTML_ROUTE, HTTP_ROUTE, CLI_COMMAND)
+        case "launch_blockers_plan":
+            return (None, "/internal/launch-blockers-plan", "launch-blockers-plan")
         case "owner_handoff" | "owner_handoff_packet":
             return (
                 "/internal/operator-owner-handoff-packet",

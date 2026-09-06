@@ -145,6 +145,12 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "Read-only owner-review view; it is not permission to go live "
         "and is not an execution surface."
     ),
+    NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION: (
+        "Inspect the launch blockers remediation plan at "
+        "/internal/launch-blockers-plan or via `vyro-growth "
+        "launch-blockers-plan`. Read-only planning export; it is not "
+        "permission to go live and is not an execution surface."
+    ),
 }
 
 
@@ -786,6 +792,13 @@ def _next_actions(
             FindingSeverity.INFO,
             FindingCode.SAFE_DEFAULTS,
             NextActionCode.GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION,
+        )
+    )
+    add(
+        _finding(
+            FindingSeverity.INFO,
+            FindingCode.SAFE_DEFAULTS,
+            NextActionCode.LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION,
         )
     )
     return tuple(

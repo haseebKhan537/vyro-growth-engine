@@ -78,6 +78,10 @@ from vyro_growth.services.go_live_readiness_index import (
     format_go_live_readiness_index,
 )
 from vyro_growth.services.growth_optimizer import GrowthOptimizerService, OptimizerRunResult
+from vyro_growth.services.launch_blockers_plan import (
+    LaunchBlockersPlanService,
+    format_launch_blockers_plan,
+)
 from vyro_growth.services.launch_readiness import (
     LaunchReadinessService,
     format_launch_readiness,
@@ -654,6 +658,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized go-live readiness index as JSON",
     )
+    plan = subparsers.add_parser(
+        "launch-blockers-plan",
+        help=(
+            "Export a sanitized launch blockers remediation plan "
+            "(read-only; does not execute, apply settings, or go live)"
+        ),
+    )
+    plan.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized launch blockers remediation plan as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -818,6 +834,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "go-live-readiness-index":
         return _run_go_live_readiness_index(args)
+
+    if args.command == "launch-blockers-plan":
+        return _run_launch_blockers_plan(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2040,6 +2059,14 @@ def _run_go_live_readiness_index(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         index = GoLiveReadinessIndexService().build(db, settings)
     print(format_go_live_readiness_index(index, as_json=args.json))
+    return 0
+
+
+def _run_launch_blockers_plan(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        plan = LaunchBlockersPlanService().build(db, settings)
+    print(format_launch_blockers_plan(plan, as_json=args.json))
     return 0
 
 

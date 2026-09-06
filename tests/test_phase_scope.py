@@ -484,6 +484,29 @@ def test_release_artifact_manifest_does_not_call_live_providers() -> None:
     assert "OUTBOUND_ENABLED=false" in env_example
 
 
+def test_launch_blockers_plan_does_not_call_live_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/launch_blockers_plan.py"),
+        Path("src/vyro_growth/api/launch_blockers_plan.py"),
+        Path("tests/test_launch_blockers_plan_service.py"),
+        Path("tests/test_launch_blockers_plan_api.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "api.github.com" not in source
+    assert "docker build" not in source
+    assert "docker push" not in source
+    assert "google.calendar" not in source
+    assert "google ads api" not in source
+    assert "search console" not in source
+    assert "apollo" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
 def test_go_live_readiness_index_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/go_live_readiness_index.py"),

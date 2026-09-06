@@ -1860,6 +1860,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     index = parser.parse_args(["go-live-readiness-index", "--json"])
     assert index.command == "go-live-readiness-index"
     assert index.json is True
+    plan = parser.parse_args(["launch-blockers-plan", "--json"])
+    assert plan.command == "launch-blockers-plan"
+    assert plan.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

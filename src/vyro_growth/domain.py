@@ -434,6 +434,9 @@ class NextActionCode(StrEnum):
     GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION = (
         "go_live_readiness_index_is_not_permission_to_go_live"
     )
+    LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION = (
+        "launch_blockers_plan_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

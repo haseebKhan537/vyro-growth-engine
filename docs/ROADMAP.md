@@ -498,7 +498,7 @@ Internal operator HTML index of existing owner/operator readiness, evidence, run
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 42 — Go-live readiness index CLI and JSON export (current)
+## Phase 42 — Go-live readiness index CLI and JSON export
 Sanitized read-only CLI and internal JSON export of the Phase 41 go-live readiness index. Review export only, no execution.
 - CLI `vyro-growth go-live-readiness-index` with Markdown output and `--json` output
 - Internal JSON `GET /internal/go-live-readiness-index`
@@ -509,6 +509,18 @@ Sanitized read-only CLI and internal JSON export of the Phase 41 go-live readine
 - Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - This is a review export only, not permission to go live and not an execution surface
+
+## Phase 43 — Launch blockers remediation plan export (current)
+Sanitized read-only CLI and internal JSON export that turns Phase 42 go-live readiness index blockers into operator-friendly manual remediation steps. Planning/export only, no execution.
+- CLI `vyro-growth launch-blockers-plan` with Markdown output and `--json` output
+- Internal JSON `GET /internal/launch-blockers-plan`
+- Reuses existing Phase 42 `GoLiveReadinessIndexService` / payload as the source of truth and does not duplicate readiness calculations
+- Deterministic remediation plan grouped by readiness surface or blocker category
+- Safe metadata only: blocker code, surface key/label, current status, recommended manual remediation step, required owner approval type if any, step kind (configuration, credential, legal/compliance, deployment, provider setup, or manual review), and safe route/CLI/config-name references
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, and that this plan is not permission to go live
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- This is a remediation planning export only, not permission to go live and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
