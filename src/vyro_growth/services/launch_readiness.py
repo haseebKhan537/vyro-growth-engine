@@ -154,8 +154,9 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE: (
         "Inspect the staged go-live rollout plan at "
+        "/internal/operator-staged-rollout-plan or "
         "/internal/staged-rollout-plan or via `vyro-growth "
-        "staged-rollout-plan`. Read-only staged planning export; it is "
+        "staged-rollout-plan`. Read-only staged planning view; it is "
         "not permission to go live and is not an execution surface."
     ),
 }

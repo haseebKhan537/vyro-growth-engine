@@ -488,8 +488,10 @@ def test_staged_rollout_plan_does_not_call_live_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/staged_rollout_plan.py"),
         Path("src/vyro_growth/api/staged_rollout_plan.py"),
+        Path("src/vyro_growth/api/operator_staged_rollout_plan.py"),
         Path("tests/test_staged_rollout_plan_service.py"),
         Path("tests/test_staged_rollout_plan_api.py"),
+        Path("tests/test_operator_staged_rollout_plan_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -638,6 +640,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_compliance_evidence_binder.py"),
         Path("src/vyro_growth/api/operator_go_live_readiness_index.py"),
         Path("src/vyro_growth/api/operator_launch_blockers_plan.py"),
+        Path("src/vyro_growth/api/operator_staged_rollout_plan.py"),
         Path("tests/test_operator_dashboard_api.py"),
         Path("tests/test_operator_review_queue_api.py"),
         Path("tests/test_operator_review_decision_api.py"),
@@ -652,6 +655,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("tests/test_operator_compliance_evidence_binder_api.py"),
         Path("tests/test_operator_go_live_readiness_index_api.py"),
         Path("tests/test_operator_launch_blockers_plan_api.py"),
+        Path("tests/test_operator_staged_rollout_plan_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -683,6 +687,7 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_release_artifact_manifest.py"),
         Path("src/vyro_growth/api/operator_go_live_readiness_index.py"),
         Path("src/vyro_growth/api/operator_launch_blockers_plan.py"),
+        Path("src/vyro_growth/api/operator_staged_rollout_plan.py"),
         Path("tests/test_operator_review_decision_api.py"),
         Path("tests/test_operator_approval_packet_decision_api.py"),
         Path("tests/test_operator_action_readiness_api.py"),
@@ -694,6 +699,7 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("tests/test_operator_release_artifact_manifest_api.py"),
         Path("tests/test_operator_go_live_readiness_index_api.py"),
         Path("tests/test_operator_launch_blockers_plan_api.py"),
+        Path("tests/test_operator_staged_rollout_plan_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

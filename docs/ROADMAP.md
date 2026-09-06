@@ -533,7 +533,7 @@ Internal operator HTML shell of the Phase 43 launch blockers remediation plan. R
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 45 — Staged go-live rollout plan export (current)
+## Phase 45 — Staged go-live rollout plan export
 Sanitized read-only CLI and internal JSON export that consolidates the go-live readiness index, launch blockers remediation plan, compliance evidence binder, release-candidate runbook, release artifact manifest, and launch readiness checks into a staged manual rollout plan. Planning/export only, no execution.
 - CLI `vyro-growth staged-rollout-plan` with Markdown output and `--json` output
 - Internal JSON `GET /internal/staged-rollout-plan`
@@ -544,6 +544,17 @@ Sanitized read-only CLI and internal JSON export that consolidates the go-live r
 - Reuses existing sanitization/redaction and internal API auth
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - This is a staged rollout planning export only, not permission to go live and not an execution surface
+
+## Phase 46 — Operator staged go-live rollout plan UI (current)
+Internal operator HTML shell of the Phase 45 staged go-live rollout plan. Read-only, no execution.
+- `GET /internal/operator-staged-rollout-plan`
+- Reuses existing Phase 45 `StagedRolloutPlanService` / payload and does not duplicate readiness calculations
+- Linked from the operator dashboard, go-live readiness index UI, launch blockers plan UI, and related readiness surfaces
+- Renders overall status, generated timestamp, read-only / no-execution / no-go-live flags, operator halt before/after, outbound/live-provider/deployment/build/publish permission flags, source references for readiness index, launch blockers plan, launch readiness, compliance binder, runbook, and manifest, related safe routes and CLI commands, stages 0-5 with stage labels, status, blocker/gate codes, required approval type, checklist items, related routes/commands/config names, missing credential names, closed provider flag names, and safe local git metadata
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names/states, missing credential variable names, sanitized timestamps, and checklist labels
+- Page states this is a staged rollout planning view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
