@@ -135,6 +135,10 @@ from vyro_growth.api.owner_launch_dossier import (
     OwnerLaunchDossierResponse,
     build_owner_launch_dossier_response,
 )
+from vyro_growth.api.provider_setup_checklist import (
+    ProviderSetupChecklistResponse,
+    build_provider_setup_checklist_response,
+)
 from vyro_growth.api.release_artifact_manifest import (
     ReleaseArtifactManifestResponse,
     build_release_artifact_manifest_response,
@@ -878,6 +882,18 @@ def owner_launch_dossier(
     _require_internal_key(active_settings, x_internal_api_key)
     response.headers["Cache-Control"] = "no-store"
     return build_owner_launch_dossier_response(db, active_settings)
+
+
+@app.get("/internal/provider-setup-checklist", tags=["internal"])
+def provider_setup_checklist(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ProviderSetupChecklistResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_provider_setup_checklist_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

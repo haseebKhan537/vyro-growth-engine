@@ -166,6 +166,13 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "owner-launch-dossier`. Read-only owner-review view; it is "
         "not permission to go live and is not an execution surface."
     ),
+    NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE: (
+        "Inspect the provider setup checklist at "
+        "/internal/provider-setup-checklist or via `vyro-growth "
+        "provider-setup-checklist`. Read-only credential/setup review "
+        "export; it is not permission to go live and is not an "
+        "execution surface."
+    ),
 }
 
 
@@ -558,6 +565,11 @@ def _next_actions(
         NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="owner_launch_dossier",
+    )
+    add(
+        NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="provider_setup_checklist",
     )
 
     return tuple(

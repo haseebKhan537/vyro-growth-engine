@@ -98,6 +98,10 @@ from vyro_growth.services.owner_launch_dossier import (
     format_owner_launch_dossier,
 )
 from vyro_growth.services.personalization import PersonalizationService
+from vyro_growth.services.provider_setup_checklist import (
+    ProviderSetupChecklistService,
+    format_provider_setup_checklist,
+)
 from vyro_growth.services.release_artifact_manifest import (
     ReleaseArtifactManifestService,
     format_release_artifact_manifest,
@@ -702,6 +706,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized owner launch dossier as JSON",
     )
+    checklist = subparsers.add_parser(
+        "provider-setup-checklist",
+        help=(
+            "Export a sanitized provider credential/setup checklist "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    checklist.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized provider setup checklist as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -875,6 +891,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "owner-launch-dossier":
         return _run_owner_launch_dossier(args)
+
+    if args.command == "provider-setup-checklist":
+        return _run_provider_setup_checklist(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2121,6 +2140,14 @@ def _run_owner_launch_dossier(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         dossier = OwnerLaunchDossierService().build(db, settings)
     print(format_owner_launch_dossier(dossier, as_json=args.json))
+    return 0
+
+
+def _run_provider_setup_checklist(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        checklist = ProviderSetupChecklistService().build(db, settings)
+    print(format_provider_setup_checklist(checklist, as_json=args.json))
     return 0
 
 
