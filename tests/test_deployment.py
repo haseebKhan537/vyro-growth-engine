@@ -118,6 +118,8 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "/internal/go-live-rehearsal-checklist" in runbook
     assert "operator-go-live-rehearsal-checklist" in runbook
     assert "vyro-growth go-live-rehearsal-checklist" in runbook
+    assert "/internal/rehearsal-outcome-report" in runbook
+    assert "vyro-growth rehearsal-outcome-report" in runbook
     assert "018_live_settings_change_requests" in runbook
 
 

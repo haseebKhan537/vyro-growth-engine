@@ -106,6 +106,10 @@ from vyro_growth.services.provider_setup_checklist import (
     ProviderSetupChecklistService,
     format_provider_setup_checklist,
 )
+from vyro_growth.services.rehearsal_outcome_report import (
+    RehearsalOutcomeReportService,
+    format_rehearsal_outcome_report,
+)
 from vyro_growth.services.release_artifact_manifest import (
     ReleaseArtifactManifestService,
     format_release_artifact_manifest,
@@ -734,6 +738,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized go-live rehearsal checklist as JSON",
     )
+    outcome = subparsers.add_parser(
+        "rehearsal-outcome-report",
+        help=(
+            "Export a sanitized rehearsal outcome report "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    outcome.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized rehearsal outcome report as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -913,6 +929,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "go-live-rehearsal-checklist":
         return _run_go_live_rehearsal_checklist(args)
+
+    if args.command == "rehearsal-outcome-report":
+        return _run_rehearsal_outcome_report(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2175,6 +2194,14 @@ def _run_go_live_rehearsal_checklist(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         checklist = GoLiveRehearsalChecklistService().build(db, settings)
     print(format_go_live_rehearsal_checklist(checklist, as_json=args.json))
+    return 0
+
+
+def _run_rehearsal_outcome_report(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        report = RehearsalOutcomeReportService().build(db, settings)
+    print(format_rehearsal_outcome_report(report, as_json=args.json))
     return 0
 
 

@@ -111,6 +111,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "smoke-dry-run",
     CLI_COMMAND,
     "go-live-rehearsal-checklist",
+    "rehearsal-outcome-report",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -131,6 +132,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/go-live-rehearsal-checklist",
+    "/internal/rehearsal-outcome-report",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,

@@ -149,6 +149,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "check-config",
     "smoke-dry-run",
     CLI_COMMAND,
+    "rehearsal-outcome-report",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -171,6 +172,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     MANIFEST_HTTP_ROUTE,
     HTML_ROUTE,
     HTTP_ROUTE,
+    "/internal/rehearsal-outcome-report",
 )
 EXPECTED_SAFE_ASSERTION_KEYS: tuple[str, ...] = (
     "executed",

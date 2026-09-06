@@ -449,6 +449,9 @@ class NextActionCode(StrEnum):
     GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE = (
         "go_live_rehearsal_checklist_is_not_permission_to_go_live"
     )
+    REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE = (
+        "rehearsal_outcome_report_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

@@ -618,7 +618,7 @@ Sanitized read-only CLI and internal JSON export that consolidates launch readin
 - HTTP responses return `Cache-Control: no-store`
 - This is a checklist/export only, not a script runner, not permission to go live, and not an execution surface
 
-## Phase 52 — Operator go-live rehearsal checklist UI (current)
+## Phase 52 — Operator go-live rehearsal checklist UI
 Internal operator HTML shell of the Phase 51 manual go-live rehearsal checklist. Read-only, no execution.
 - `GET /internal/operator-go-live-rehearsal-checklist`
 - Reuses existing Phase 51 `GoLiveRehearsalChecklistService` / payload and does not duplicate readiness calculations
@@ -628,6 +628,20 @@ Internal operator HTML shell of the Phase 51 manual go-live rehearsal checklist.
 - Page states this is a manual rehearsal review view only, not permission to go live and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 53 — Rehearsal outcome report export (current)
+Sanitized read-only CLI and internal JSON export that summarizes the current Phase 51 manual go-live rehearsal checklist into a compact outcome packet. Report/export only, no execution.
+- CLI `vyro-growth rehearsal-outcome-report` with Markdown output and `--json` output
+- Internal JSON `GET /internal/rehearsal-outcome-report`
+- Reuses existing Phase 51 `GoLiveRehearsalChecklistService` as the source of truth and does not recalculate rehearsal state independently
+- Compact counts of rehearsal steps by status, kind, and required owner approval type
+- Count of expected safe assertions passed/failed and a safe list of failed assertion keys only
+- Blocker/gate code rollups, missing credential/config names only, closed provider/live flag names only, manual-only outcome summary, related safe route/CLI references, safe local git metadata, and non-executable owner next steps
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_deployment=true`, `manual_review_only=true`, `execution_allowed=false`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, and `rehearsal_outcome_report_is_not_go_live=true`
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is an outcome report/export only, not permission to go live and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
