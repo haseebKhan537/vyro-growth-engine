@@ -117,6 +117,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     CLI_COMMAND,
     "owner-launch-dossier",
     "provider-setup-checklist",
+    "go-live-rehearsal-checklist",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -142,6 +143,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/owner-launch-dossier",
     "/internal/operator-provider-setup-checklist",
     "/internal/provider-setup-checklist",
+    "/internal/go-live-rehearsal-checklist",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,

@@ -67,6 +67,11 @@ from vyro_growth.services.go_live_readiness_index import (
     GoLiveReadinessIndexService,
     format_go_live_readiness_index,
 )
+from vyro_growth.services.go_live_rehearsal_checklist import (
+    GoLiveRehearsalChecklist,
+    GoLiveRehearsalChecklistService,
+    format_go_live_rehearsal_checklist,
+)
 from vyro_growth.services.growth_optimizer import (
     GrowthOptimizerService,
     OptimizerRecommendationView,
@@ -249,6 +254,8 @@ __all__ = [
     "DashboardSummary",
     "GoLiveReadinessIndex",
     "GoLiveReadinessIndexService",
+    "GoLiveRehearsalChecklist",
+    "GoLiveRehearsalChecklistService",
     "LaunchBlockersPlan",
     "LaunchBlockersPlanService",
     "StagedRolloutPlan",
@@ -327,6 +334,7 @@ __all__ = [
     "domain_from_email",
     "format_compliance_evidence_binder",
     "format_go_live_readiness_index",
+    "format_go_live_rehearsal_checklist",
     "format_launch_blockers_plan",
     "format_staged_rollout_plan",
     "format_launch_readiness",
