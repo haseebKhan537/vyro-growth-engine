@@ -75,6 +75,7 @@ LINKED_SURFACES = (
     "/internal/operator-provider-setup-checklist",
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/operator-rehearsal-outcome-report",
+    "/internal/operator-supervised-pilot-plan",
 )
 
 

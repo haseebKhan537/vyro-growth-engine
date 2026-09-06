@@ -74,6 +74,7 @@ LINKED_SURFACES = (
     "/internal/provider-setup-checklist",
     "/internal/operator-go-live-rehearsal-checklist",
     "/internal/operator-rehearsal-outcome-report",
+    "/internal/operator-supervised-pilot-plan",
     "/internal/go-live-rehearsal-checklist",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",

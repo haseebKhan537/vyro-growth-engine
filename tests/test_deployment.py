@@ -122,6 +122,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "operator-rehearsal-outcome-report" in runbook
     assert "vyro-growth rehearsal-outcome-report" in runbook
     assert "/internal/supervised-pilot-plan" in runbook
+    assert "operator-supervised-pilot-plan" in runbook
     assert "vyro-growth supervised-pilot-plan" in runbook
     assert "018_live_settings_change_requests" in runbook
 
