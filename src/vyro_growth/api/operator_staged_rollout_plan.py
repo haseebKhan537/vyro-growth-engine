@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.operator_ui import (
+    COMMAND_CENTER_JSON_PATH,
     COMPLIANCE_EVIDENCE_BINDER_JSON_PATH,
     GO_LIVE_READINESS_INDEX_JSON_PATH,
     LAUNCH_BLOCKERS_PLAN_JSON_PATH,
@@ -163,6 +164,7 @@ def _render_header(plan: StagedRolloutPlan, generated: str) -> str:
 
 def _render_related_links() -> str:
     dashboard_href = escape(OPERATOR_DASHBOARD_PATH)
+    command_center_href = escape(COMMAND_CENTER_JSON_PATH)
     index_href = escape(OPERATOR_GO_LIVE_READINESS_INDEX_PATH)
     index_json_href = escape(GO_LIVE_READINESS_INDEX_JSON_PATH)
     blockers_href = escape(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
@@ -183,6 +185,7 @@ def _render_related_links() -> str:
     return (
         '    <nav class="filter-nav" aria-label="Linked readiness surfaces">\n'
         f'      <a class="nav-link" href="{dashboard_href}">Dashboard</a>\n'
+        f'      <a class="nav-link" href="{command_center_href}">JSON command center</a>\n'
         f'      <a class="nav-link" href="{index_href}">Go-live index</a>\n'
         f'      <a class="nav-link" href="{index_json_href}">JSON index</a>\n'
         f'      <a class="nav-link" href="{blockers_href}">Launch blockers</a>\n'
