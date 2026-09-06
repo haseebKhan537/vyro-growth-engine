@@ -580,7 +580,7 @@ Internal operator HTML shell of the Phase 47 owner launch dossier. Read-only, no
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 49 — Provider credential/setup checklist export (current)
+## Phase 49 — Provider credential/setup checklist export
 Sanitized read-only CLI and internal JSON export that consolidates launch readiness, go-live readiness index, launch blockers plan, staged rollout plan, owner launch dossier, settings execution preflight, and release-candidate runbook surfaces into one provider credential/setup checklist. Planning/export only, no execution.
 - CLI `vyro-growth provider-setup-checklist` with Markdown output and `--json` output
 - Internal JSON `GET /internal/provider-setup-checklist`
@@ -592,6 +592,17 @@ Sanitized read-only CLI and internal JSON export that consolidates launch readin
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - HTTP responses return `Cache-Control: no-store`
 - This is a planning/export layer only, not permission to go live and not an execution surface
+
+## Phase 50 — Operator provider setup checklist UI (current)
+Internal operator HTML shell of the Phase 49 provider credential/setup checklist. Read-only, no execution.
+- `GET /internal/operator-provider-setup-checklist`
+- Reuses existing Phase 49 `ProviderSetupChecklistService` / payload and does not duplicate readiness calculations
+- Linked from the operator dashboard, owner launch dossier UI, go-live readiness index UI, launch blockers plan UI, staged rollout plan UI, and related readiness surfaces
+- Renders overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-deployment flags, operator halt before/after and unchanged proof, missing credential variable names only, closed provider/live flag names only, provider setup categories (email/outreach, enrichment, calendar, voice, ads/analytics, deployment, database/storage), required owner approval type per category, blocker and gate code rollups, related safe routes and CLI commands, safe local git metadata, local verification gates, and non-executable owner preparation steps
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names/states, missing credential variable names, sanitized timestamps, and counts
+- Page states this is a provider setup review view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

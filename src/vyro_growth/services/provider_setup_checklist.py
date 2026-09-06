@@ -74,6 +74,7 @@ CHECKLIST_NOT_GO_LIVE_CODE = NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_L
 EXECUTION_DISABLED_CODE = "execution_disabled_in_this_phase"
 CLI_COMMAND = "provider-setup-checklist"
 HTTP_ROUTE = "/internal/provider-setup-checklist"
+HTML_ROUTE = "/internal/operator-provider-setup-checklist"
 PREFLIGHT_CLI_COMMAND = "settings-execution-preflight"
 PREFLIGHT_HTTP_ROUTE = "/internal/settings-execution-preflight"
 DOSSIER_HTML_ROUTE = "/internal/operator-owner-launch-dossier"
@@ -125,6 +126,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     PREFLIGHT_HTTP_ROUTE,
     RUNBOOK_HTML_ROUTE,
     RUNBOOK_HTTP_ROUTE,
+    HTML_ROUTE,
     HTTP_ROUTE,
 )
 _STATUS_RANK = {
@@ -758,6 +760,7 @@ def _next_actions(
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             EXECUTION_DISABLED_CODE,
@@ -768,6 +771,7 @@ def _next_actions(
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             NextActionCode.KEEP_OUTBOUND_DISABLED.value,

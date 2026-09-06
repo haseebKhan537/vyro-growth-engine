@@ -42,6 +42,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
+    OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
@@ -163,6 +164,7 @@ def _render_related_links() -> str:
     plan_href = escape(OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH)
     staged_href = escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)
     dossier_href = escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
+    checklist_href = escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON binder</a>\n'
@@ -176,6 +178,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{plan_href}">Launch blockers</a>\n'
         f'      <a class="nav-link" href="{staged_href}">Staged rollout</a>\n'
         f'      <a class="nav-link" href="{dossier_href}">Owner launch dossier</a>\n'
+        f'      <a class="nav-link" href="{checklist_href}">Provider setup</a>\n'
         "    </nav>"
     )
 

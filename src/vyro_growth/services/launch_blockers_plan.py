@@ -106,6 +106,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/staged-rollout-plan",
     "/internal/operator-owner-launch-dossier",
     "/internal/owner-launch-dossier",
+    "/internal/operator-provider-setup-checklist",
     "/internal/provider-setup-checklist",
 )
 _STATUS_RANK = {

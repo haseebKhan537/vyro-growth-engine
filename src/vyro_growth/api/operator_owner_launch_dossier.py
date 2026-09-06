@@ -29,6 +29,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
+    OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
     OPERATOR_RELEASE_ARTIFACT_MANIFEST_PATH,
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
@@ -36,6 +37,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_UI_STYLES,
     OWNER_HANDOFF_JSON_PATH,
     OWNER_LAUNCH_DOSSIER_JSON_PATH,
+    PROVIDER_SETUP_CHECKLIST_JSON_PATH,
     RELEASE_ARTIFACT_MANIFEST_JSON_PATH,
     RELEASE_CANDIDATE_RUNBOOK_JSON_PATH,
     SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH,
@@ -180,6 +182,8 @@ def _render_related_links() -> str:
     staged_href = escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)
     staged_json_href = escape(STAGED_ROLLOUT_PLAN_JSON_PATH)
     dossier_json_href = escape(OWNER_LAUNCH_DOSSIER_JSON_PATH)
+    checklist_href = escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)
+    checklist_json_href = escape(PROVIDER_SETUP_CHECKLIST_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
     preflight_json_href = escape(SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH)
@@ -202,6 +206,8 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{staged_href}">Staged rollout</a>\n'
         f'      <a class="nav-link" href="{staged_json_href}">JSON staged plan</a>\n'
         f'      <a class="nav-link" href="{dossier_json_href}">JSON dossier</a>\n'
+        f'      <a class="nav-link" href="{checklist_href}">Provider setup</a>\n'
+        f'      <a class="nav-link" href="{checklist_json_href}">JSON checklist</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
         f'      <a class="nav-link" href="{preflight_json_href}">JSON preflight</a>\n'
