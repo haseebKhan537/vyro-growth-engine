@@ -96,6 +96,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-supervised-pilot-plan",
     "/internal/supervised-pilot-plan",
+    "/internal/operator-supervised-pilot-candidates",
+    "/internal/supervised-pilot-candidates",
 )
 
 

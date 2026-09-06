@@ -32,6 +32,7 @@ OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH = "/internal/operator-provider-setup-chec
 OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH = "/internal/operator-go-live-rehearsal-checklist"
 OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH = "/internal/operator-rehearsal-outcome-report"
 OPERATOR_SUPERVISED_PILOT_PLAN_PATH = "/internal/operator-supervised-pilot-plan"
+OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH = "/internal/operator-supervised-pilot-candidates"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -51,6 +52,7 @@ PROVIDER_SETUP_CHECKLIST_JSON_PATH = "/internal/provider-setup-checklist"
 GO_LIVE_REHEARSAL_CHECKLIST_JSON_PATH = "/internal/go-live-rehearsal-checklist"
 REHEARSAL_OUTCOME_REPORT_JSON_PATH = "/internal/rehearsal-outcome-report"
 SUPERVISED_PILOT_PLAN_JSON_PATH = "/internal/supervised-pilot-plan"
+SUPERVISED_PILOT_CANDIDATES_JSON_PATH = "/internal/supervised-pilot-candidates"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -73,6 +75,7 @@ OperatorSurface = Literal[
     "go-live-rehearsal-checklist",
     "rehearsal-outcome-report",
     "supervised-pilot-plan",
+    "supervised-pilot-candidates",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -95,6 +98,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "go-live-rehearsal-checklist": "Go-live rehearsal",
     "rehearsal-outcome-report": "Rehearsal outcome",
     "supervised-pilot-plan": "Supervised pilot",
+    "supervised-pilot-candidates": "Pilot candidates",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -116,6 +120,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "go-live-rehearsal-checklist": OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH,
     "rehearsal-outcome-report": OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH,
     "supervised-pilot-plan": OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
+    "supervised-pilot-candidates": OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
 }
 
 
@@ -187,6 +192,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "go-live-rehearsal-checklist",
         "rehearsal-outcome-report",
         "supervised-pilot-plan",
+        "supervised-pilot-candidates",
     )
     links = []
     for name in surfaces:

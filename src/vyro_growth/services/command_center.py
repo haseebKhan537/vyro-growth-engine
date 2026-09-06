@@ -200,6 +200,7 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE: (
         "Inspect the supervised pilot candidate readiness export at "
+        "/internal/operator-supervised-pilot-candidates or "
         "/internal/supervised-pilot-candidates or via `vyro-growth "
         "supervised-pilot-candidates`. Candidate readiness review "
         "only; it is not permission to go live and is not an "
