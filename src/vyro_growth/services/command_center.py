@@ -176,10 +176,11 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE: (
         "Inspect the go-live rehearsal checklist at "
+        "/internal/operator-go-live-rehearsal-checklist or "
         "/internal/go-live-rehearsal-checklist or via `vyro-growth "
-        "go-live-rehearsal-checklist`. Manual rehearsal export only; "
-        "it is not a script runner, not permission to go live, and is "
-        "not an execution surface."
+        "go-live-rehearsal-checklist`. Manual rehearsal review view "
+        "only; it is not a script runner, not permission to go live, "
+        "and is not an execution surface."
     ),
 }
 

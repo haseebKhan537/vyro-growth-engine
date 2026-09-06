@@ -86,6 +86,7 @@ REHEARSAL_NOT_GO_LIVE_CODE = NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_G
 EXECUTION_DISABLED_CODE = "execution_disabled_in_this_phase"
 CLI_COMMAND = "go-live-rehearsal-checklist"
 HTTP_ROUTE = "/internal/go-live-rehearsal-checklist"
+HTML_ROUTE = "/internal/operator-go-live-rehearsal-checklist"
 PREFLIGHT_CLI_COMMAND = "settings-execution-preflight"
 PREFLIGHT_HTTP_ROUTE = "/internal/settings-execution-preflight"
 INDEX_HTML_ROUTE = "/internal/operator-go-live-readiness-index"
@@ -168,6 +169,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     RUNBOOK_HTTP_ROUTE,
     MANIFEST_HTML_ROUTE,
     MANIFEST_HTTP_ROUTE,
+    HTML_ROUTE,
     HTTP_ROUTE,
 )
 EXPECTED_SAFE_ASSERTION_KEYS: tuple[str, ...] = (
@@ -1111,6 +1113,7 @@ def _next_actions(
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             EXECUTION_DISABLED_CODE,
@@ -1122,6 +1125,7 @@ def _next_actions(
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
         _action(
             NextActionCode.KEEP_OUTBOUND_DISABLED.value,
@@ -1201,6 +1205,7 @@ def _next_actions(
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
+            html_route=HTML_ROUTE,
         ),
     )
 

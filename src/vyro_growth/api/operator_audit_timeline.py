@@ -19,6 +19,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_AUDIT_TIMELINE_PATH,
     OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
     OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+    OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH,
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
@@ -160,6 +161,7 @@ def _render_related_links() -> str:
     staged_href = escape(OPERATOR_STAGED_ROLLOUT_PLAN_PATH)
     dossier_href = escape(OPERATOR_OWNER_LAUNCH_DOSSIER_PATH)
     checklist_href = escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)
+    rehearsal_href = escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link" href="{handoff_href}">Owner handoff</a>\n'
@@ -171,6 +173,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{staged_href}">Staged rollout</a>\n'
         f'      <a class="nav-link" href="{dossier_href}">Owner launch dossier</a>\n'
         f'      <a class="nav-link" href="{checklist_href}">Provider setup</a>\n'
+        f'      <a class="nav-link" href="{rehearsal_href}">Go-live rehearsal</a>\n'
         "    </nav>"
     )
 

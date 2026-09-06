@@ -26,6 +26,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
     OPERATOR_DASHBOARD_PATH,
     OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
+    OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH,
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
     OPERATOR_OWNER_HANDOFF_PACKET_PATH,
     OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
@@ -183,6 +184,7 @@ def _render_related_links() -> str:
     staged_json_href = escape(STAGED_ROLLOUT_PLAN_JSON_PATH)
     dossier_json_href = escape(OWNER_LAUNCH_DOSSIER_JSON_PATH)
     checklist_href = escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)
+    rehearsal_href = escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)
     checklist_json_href = escape(PROVIDER_SETUP_CHECKLIST_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
@@ -207,6 +209,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{staged_json_href}">JSON staged plan</a>\n'
         f'      <a class="nav-link" href="{dossier_json_href}">JSON dossier</a>\n'
         f'      <a class="nav-link" href="{checklist_href}">Provider setup</a>\n'
+        f'      <a class="nav-link" href="{rehearsal_href}">Go-live rehearsal</a>\n'
         f'      <a class="nav-link" href="{checklist_json_href}">JSON checklist</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'

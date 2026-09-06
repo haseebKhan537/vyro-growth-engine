@@ -541,8 +541,10 @@ def test_go_live_rehearsal_checklist_does_not_execute_or_call_providers() -> Non
     paths = [
         Path("src/vyro_growth/services/go_live_rehearsal_checklist.py"),
         Path("src/vyro_growth/api/go_live_rehearsal_checklist.py"),
+        Path("src/vyro_growth/api/operator_go_live_rehearsal_checklist.py"),
         Path("tests/test_go_live_rehearsal_checklist_service.py"),
         Path("tests/test_go_live_rehearsal_checklist_api.py"),
+        Path("tests/test_operator_go_live_rehearsal_checklist_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -722,6 +724,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_staged_rollout_plan.py"),
         Path("src/vyro_growth/api/operator_owner_launch_dossier.py"),
         Path("src/vyro_growth/api/operator_provider_setup_checklist.py"),
+        Path("src/vyro_growth/api/operator_go_live_rehearsal_checklist.py"),
         Path("tests/test_operator_dashboard_api.py"),
         Path("tests/test_operator_review_queue_api.py"),
         Path("tests/test_operator_review_decision_api.py"),
@@ -739,6 +742,7 @@ def test_operator_dashboard_does_not_call_live_providers() -> None:
         Path("tests/test_operator_staged_rollout_plan_api.py"),
         Path("tests/test_operator_owner_launch_dossier_api.py"),
         Path("tests/test_operator_provider_setup_checklist_api.py"),
+        Path("tests/test_operator_go_live_rehearsal_checklist_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -773,6 +777,7 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("src/vyro_growth/api/operator_staged_rollout_plan.py"),
         Path("src/vyro_growth/api/operator_owner_launch_dossier.py"),
         Path("src/vyro_growth/api/operator_provider_setup_checklist.py"),
+        Path("src/vyro_growth/api/operator_go_live_rehearsal_checklist.py"),
         Path("tests/test_operator_review_decision_api.py"),
         Path("tests/test_operator_approval_packet_decision_api.py"),
         Path("tests/test_operator_action_readiness_api.py"),
@@ -787,6 +792,7 @@ def test_operator_review_and_approval_ui_do_not_call_live_providers() -> None:
         Path("tests/test_operator_staged_rollout_plan_api.py"),
         Path("tests/test_operator_owner_launch_dossier_api.py"),
         Path("tests/test_operator_provider_setup_checklist_api.py"),
+        Path("tests/test_operator_go_live_rehearsal_checklist_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

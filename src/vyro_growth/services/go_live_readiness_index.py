@@ -88,6 +88,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/owner-launch-dossier",
     "/internal/operator-provider-setup-checklist",
     "/internal/provider-setup-checklist",
+    "/internal/operator-go-live-rehearsal-checklist",
     "/internal/go-live-rehearsal-checklist",
 )
 _SEVERITY_RANK = {
@@ -628,14 +629,16 @@ def _remaining_checklist(
         NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE.value,
         FindingSeverity.INFO.value,
         "go_live_rehearsal_checklist",
+        html_route="/internal/operator-go-live-rehearsal-checklist",
         json_route="/internal/go-live-rehearsal-checklist",
         command_name="go-live-rehearsal-checklist",
         label=(
             "Inspect the go-live rehearsal checklist at "
+            "/internal/operator-go-live-rehearsal-checklist or "
             "/internal/go-live-rehearsal-checklist or via `vyro-growth "
-            "go-live-rehearsal-checklist`. Manual rehearsal export only; "
-            "it is not a script runner, not permission to go live, and "
-            "is not an execution surface."
+            "go-live-rehearsal-checklist`. Manual rehearsal review view "
+            "only; it is not a script runner, not permission to go live, "
+            "and is not an execution surface."
         ),
     )
     for handoff_item in handoff.remaining_manual_owner_checklist:
@@ -697,7 +700,7 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
             )
         case "go_live_rehearsal_checklist":
             return (
-                None,
+                "/internal/operator-go-live-rehearsal-checklist",
                 "/internal/go-live-rehearsal-checklist",
                 "go-live-rehearsal-checklist",
             )

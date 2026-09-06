@@ -29,6 +29,7 @@ OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH = "/internal/operator-launch-blockers-plan"
 OPERATOR_STAGED_ROLLOUT_PLAN_PATH = "/internal/operator-staged-rollout-plan"
 OPERATOR_OWNER_LAUNCH_DOSSIER_PATH = "/internal/operator-owner-launch-dossier"
 OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH = "/internal/operator-provider-setup-checklist"
+OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH = "/internal/operator-go-live-rehearsal-checklist"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -45,6 +46,7 @@ LAUNCH_BLOCKERS_PLAN_JSON_PATH = "/internal/launch-blockers-plan"
 STAGED_ROLLOUT_PLAN_JSON_PATH = "/internal/staged-rollout-plan"
 OWNER_LAUNCH_DOSSIER_JSON_PATH = "/internal/owner-launch-dossier"
 PROVIDER_SETUP_CHECKLIST_JSON_PATH = "/internal/provider-setup-checklist"
+GO_LIVE_REHEARSAL_CHECKLIST_JSON_PATH = "/internal/go-live-rehearsal-checklist"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -64,6 +66,7 @@ OperatorSurface = Literal[
     "staged-rollout-plan",
     "owner-launch-dossier",
     "provider-setup-checklist",
+    "go-live-rehearsal-checklist",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -83,6 +86,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "staged-rollout-plan": "Staged rollout",
     "owner-launch-dossier": "Owner launch dossier",
     "provider-setup-checklist": "Provider setup",
+    "go-live-rehearsal-checklist": "Go-live rehearsal",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -101,6 +105,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "staged-rollout-plan": OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     "owner-launch-dossier": OPERATOR_OWNER_LAUNCH_DOSSIER_PATH,
     "provider-setup-checklist": OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH,
+    "go-live-rehearsal-checklist": OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH,
 }
 
 
@@ -169,6 +174,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "staged-rollout-plan",
         "owner-launch-dossier",
         "provider-setup-checklist",
+        "go-live-rehearsal-checklist",
     )
     links = []
     for name in surfaces:

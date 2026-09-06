@@ -95,6 +95,9 @@ from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.operator_go_live_readiness_index import (
     build_operator_go_live_readiness_index_response,
 )
+from vyro_growth.api.operator_go_live_rehearsal_checklist import (
+    build_operator_go_live_rehearsal_checklist_response,
+)
 from vyro_growth.api.operator_launch_blockers_plan import (
     build_operator_launch_blockers_plan_response,
 )
@@ -605,6 +608,20 @@ def operator_provider_setup_checklist(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_provider_setup_checklist_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-go-live-rehearsal-checklist",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_go_live_rehearsal_checklist(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_go_live_rehearsal_checklist_response(db, active_settings)
 
 
 @app.get(
