@@ -147,6 +147,10 @@ from vyro_growth.services.staged_rollout_plan import (
     StagedRolloutPlanService,
     format_staged_rollout_plan,
 )
+from vyro_growth.services.supervised_pilot_candidates import (
+    SupervisedPilotCandidateService,
+    format_supervised_pilot_candidates,
+)
 from vyro_growth.services.supervised_pilot_plan import (
     SupervisedPilotPlanService,
     format_supervised_pilot_plan,
@@ -766,6 +770,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized supervised pilot launch plan as JSON",
     )
+    candidates = subparsers.add_parser(
+        "supervised-pilot-candidates",
+        help=(
+            "Export a sanitized supervised pilot candidate readiness packet "
+            "(read-only; does not execute, deploy, apply settings, or go live)"
+        ),
+    )
+    candidates.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized supervised pilot candidate readiness packet as JSON",
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -951,6 +967,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "supervised-pilot-plan":
         return _run_supervised_pilot_plan(args)
+
+    if args.command == "supervised-pilot-candidates":
+        return _run_supervised_pilot_candidates(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2229,6 +2248,14 @@ def _run_supervised_pilot_plan(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         plan = SupervisedPilotPlanService().build(db, settings)
     print(format_supervised_pilot_plan(plan, as_json=args.json))
+    return 0
+
+
+def _run_supervised_pilot_candidates(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        export = SupervisedPilotCandidateService().build(db, settings)
+    print(format_supervised_pilot_candidates(export, as_json=args.json))
     return 0
 
 

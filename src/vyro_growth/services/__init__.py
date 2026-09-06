@@ -205,6 +205,11 @@ from vyro_growth.services.staged_rollout_plan import (
     StagedRolloutPlanService,
     format_staged_rollout_plan,
 )
+from vyro_growth.services.supervised_pilot_candidates import (
+    SupervisedPilotCandidates,
+    SupervisedPilotCandidateService,
+    format_supervised_pilot_candidates,
+)
 from vyro_growth.services.supervised_pilot_plan import (
     SupervisedPilotPlan,
     SupervisedPilotPlanService,
@@ -268,6 +273,8 @@ __all__ = [
     "GoLiveRehearsalChecklistService",
     "RehearsalOutcomeReport",
     "RehearsalOutcomeReportService",
+    "SupervisedPilotCandidates",
+    "SupervisedPilotCandidateService",
     "SupervisedPilotPlan",
     "SupervisedPilotPlanService",
     "LaunchBlockersPlan",
@@ -350,6 +357,7 @@ __all__ = [
     "format_go_live_readiness_index",
     "format_go_live_rehearsal_checklist",
     "format_rehearsal_outcome_report",
+    "format_supervised_pilot_candidates",
     "format_supervised_pilot_plan",
     "format_launch_blockers_plan",
     "format_staged_rollout_plan",

@@ -196,6 +196,10 @@ from vyro_growth.api.staged_rollout_plan import (
     StagedRolloutPlanResponse,
     build_staged_rollout_plan_response,
 )
+from vyro_growth.api.supervised_pilot_candidates import (
+    SupervisedPilotCandidatesResponse,
+    build_supervised_pilot_candidates_response,
+)
 from vyro_growth.api.supervised_pilot_plan import (
     SupervisedPilotPlanResponse,
     build_supervised_pilot_plan_response,
@@ -1010,6 +1014,18 @@ def supervised_pilot_plan(
     _require_internal_key(active_settings, x_internal_api_key)
     response.headers["Cache-Control"] = "no-store"
     return build_supervised_pilot_plan_response(db, active_settings)
+
+
+@app.get("/internal/supervised-pilot-candidates", tags=["internal"])
+def supervised_pilot_candidates(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SupervisedPilotCandidatesResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_supervised_pilot_candidates_response(db, active_settings)
 
 
 @app.get("/internal/settings-execution-preflight", tags=["internal"])

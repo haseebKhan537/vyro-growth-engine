@@ -84,6 +84,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "go-live-rehearsal-checklist",
     "rehearsal-outcome-report",
     "supervised-pilot-plan",
+    "supervised-pilot-candidates",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -117,6 +118,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/rehearsal-outcome-report",
     "/internal/operator-supervised-pilot-plan",
     "/internal/supervised-pilot-plan",
+    "/internal/supervised-pilot-candidates",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -136,6 +138,7 @@ _SURFACE_BY_SECTION = {
     "go_live_rehearsal_checklist": "go-live-rehearsal-checklist",
     "rehearsal_outcome_report": "rehearsal-outcome-report",
     "supervised_pilot_plan": "supervised-pilot-plan",
+    "supervised_pilot_candidates": "supervised-pilot-candidates",
     "owner_handoff": "owner-handoff-packet",
     "owner_handoff_packet": "owner-handoff-packet",
     "launch_readiness": "launch-readiness",
@@ -528,6 +531,7 @@ def _group_steps(
             "go-live-rehearsal-checklist": "Go-live rehearsal checklist",
             "rehearsal-outcome-report": "Rehearsal outcome report",
             "supervised-pilot-plan": "Supervised pilot launch plan",
+            "supervised-pilot-candidates": "Supervised pilot candidate readiness",
             "credentials": "Required credentials",
             "provider_setup": "Provider setup",
         }
@@ -587,6 +591,7 @@ def _surface_label_for_section(source_section: str) -> str:
         "go-live-rehearsal-checklist": "Go-live rehearsal checklist",
         "rehearsal-outcome-report": "Rehearsal outcome report",
         "supervised-pilot-plan": "Supervised pilot launch plan",
+        "supervised-pilot-candidates": "Supervised pilot candidate readiness",
         "owner-handoff-packet": "Owner handoff packet",
         "launch-readiness": "Launch readiness",
         "settings-execution-preflight": "Settings execution preflight",
@@ -958,6 +963,15 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         "/internal/operator-supervised-pilot-plan or "
         "/internal/supervised-pilot-plan or via `vyro-growth "
         "supervised-pilot-plan`. Supervised pilot planning export "
+        "only; it is not permission to go live and is not an "
+        "execution surface.",
+    ),
+    NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE.value: RemediationAdvice(
+        "manual_review",
+        "none",
+        "Inspect the supervised pilot candidate readiness export at "
+        "/internal/supervised-pilot-candidates or via `vyro-growth "
+        "supervised-pilot-candidates`. Candidate readiness review "
         "only; it is not permission to go live and is not an "
         "execution surface.",
     ),
