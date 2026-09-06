@@ -155,6 +155,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-candidates",
     "/internal/operator-supervised-pilot-go-no-go",
     "/internal/supervised-pilot-go-no-go",
+    "/internal/operator-supervised-pilot-first-send-preflight",
+    "/internal/supervised-pilot-first-send-preflight",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,

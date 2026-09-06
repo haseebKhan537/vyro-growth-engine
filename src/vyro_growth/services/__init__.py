@@ -210,6 +210,11 @@ from vyro_growth.services.supervised_pilot_candidates import (
     SupervisedPilotCandidateService,
     format_supervised_pilot_candidates,
 )
+from vyro_growth.services.supervised_pilot_first_send_preflight import (
+    SupervisedPilotFirstSendPreflight,
+    SupervisedPilotFirstSendPreflightService,
+    format_supervised_pilot_first_send_preflight,
+)
 from vyro_growth.services.supervised_pilot_go_no_go import (
     SupervisedPilotGoNoGo,
     SupervisedPilotGoNoGoService,
@@ -280,6 +285,8 @@ __all__ = [
     "RehearsalOutcomeReportService",
     "SupervisedPilotCandidates",
     "SupervisedPilotCandidateService",
+    "SupervisedPilotFirstSendPreflight",
+    "SupervisedPilotFirstSendPreflightService",
     "SupervisedPilotGoNoGo",
     "SupervisedPilotGoNoGoService",
     "SupervisedPilotPlan",
@@ -365,6 +372,7 @@ __all__ = [
     "format_go_live_rehearsal_checklist",
     "format_rehearsal_outcome_report",
     "format_supervised_pilot_candidates",
+    "format_supervised_pilot_first_send_preflight",
     "format_supervised_pilot_go_no_go",
     "format_supervised_pilot_plan",
     "format_launch_blockers_plan",

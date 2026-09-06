@@ -65,6 +65,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "supervised-pilot-plan",
     "supervised-pilot-candidates",
     "supervised-pilot-go-no-go",
+    "supervised-pilot-first-send-preflight",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -102,6 +103,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-candidates",
     "/internal/operator-supervised-pilot-go-no-go",
     "/internal/supervised-pilot-go-no-go",
+    "/internal/operator-supervised-pilot-first-send-preflight",
+    "/internal/supervised-pilot-first-send-preflight",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -717,6 +720,22 @@ def _remaining_checklist(
             "surface."
         ),
     )
+    add(
+        NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "supervised_pilot_first_send_preflight",
+        html_route="/internal/operator-supervised-pilot-first-send-preflight",
+        json_route="/internal/supervised-pilot-first-send-preflight",
+        command_name="supervised-pilot-first-send-preflight",
+        label=(
+            "Inspect the supervised pilot first-send preflight at "
+            "/internal/supervised-pilot-first-send-preflight or via "
+            "`vyro-growth supervised-pilot-first-send-preflight`. "
+            "First-send preflight review only; it is not permission to "
+            "send, not permission to go live, and not an execution "
+            "surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -803,6 +822,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-supervised-pilot-go-no-go",
                 "/internal/supervised-pilot-go-no-go",
                 "supervised-pilot-go-no-go",
+            )
+        case "supervised_pilot_first_send_preflight":
+            return (
+                "/internal/operator-supervised-pilot-first-send-preflight",
+                "/internal/supervised-pilot-first-send-preflight",
+                "supervised-pilot-first-send-preflight",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (
