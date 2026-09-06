@@ -421,22 +421,30 @@ def _steps_from_index(index: GoLiveReadinessIndex) -> tuple[RemediationStep, ...
                 command_name=card.command_name,
             )
     for item in index.remaining_manual_owner_checklist:
-        card = _surface_for_checklist(item, surfaces)
+        matched = _surface_for_checklist(item, surfaces)
         add(
             item.code,
             surface_key=(
-                card.key if card is not None else _surface_key_for_section(item.source_section)
+                matched.key
+                if matched is not None
+                else _surface_key_for_section(item.source_section)
             ),
             surface_label=(
-                card.label
-                if card is not None
+                matched.label
+                if matched is not None
                 else _surface_label_for_section(item.source_section)
             ),
             current_status=item.status or item.severity,
-            html_route=item.html_route if item.html_route else (card.html_route if card else None),
-            json_route=item.json_route if item.json_route else (card.json_route if card else None),
+            html_route=(
+                item.html_route if item.html_route else (matched.html_route if matched else None)
+            ),
+            json_route=(
+                item.json_route if item.json_route else (matched.json_route if matched else None)
+            ),
             command_name=(
-                item.command_name if item.command_name else (card.command_name if card else None)
+                item.command_name
+                if item.command_name
+                else (matched.command_name if matched else None)
             ),
         )
     for name in index.missing_credential_names:
