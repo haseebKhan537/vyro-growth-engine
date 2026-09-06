@@ -654,7 +654,7 @@ Internal operator HTML shell of the Phase 53 rehearsal outcome report. Read-only
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 55 — Supervised pilot launch plan export (current)
+## Phase 55 — Supervised pilot launch plan export
 Sanitized read-only CLI and internal JSON export that consolidates the go-live readiness index, launch blockers plan, staged rollout plan, owner launch dossier, provider setup checklist, manual go-live rehearsal checklist, rehearsal outcome report, and settings execution preflight into one supervised small-pilot plan. Planning/export only, no execution.
 - CLI `vyro-growth supervised-pilot-plan` with Markdown output and `--json` output
 - Internal JSON `GET /internal/supervised-pilot-plan`
@@ -670,6 +670,17 @@ Sanitized read-only CLI and internal JSON export that consolidates the go-live r
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - HTTP responses return `Cache-Control: no-store`
 - This is a supervised pilot planning export only, not permission to go live and not an execution surface
+
+## Phase 56 — Operator supervised pilot launch plan UI (current)
+Internal operator HTML shell of the Phase 55 supervised pilot launch plan. Read-only, no execution.
+- `GET /internal/operator-supervised-pilot-plan`
+- Reuses existing Phase 55 `SupervisedPilotPlanService` / payload and does not duplicate readiness calculations
+- Linked from the operator dashboard, go-live readiness index, launch blockers UI, staged rollout UI, owner launch dossier UI, provider setup checklist UI, go-live rehearsal checklist UI, rehearsal outcome report UI, release candidate runbook UI, release artifact manifest UI, and related readiness surfaces
+- Renders overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-deployment / no-spend / dry-run-only / manual-review-only flags, operator halt before/status/after and unchanged proof, a safe count-only pilot scope recommendation, grouped prerequisites for website, email/domain, outreach, enrichment credentials, calendar, compliance, owner approvals, and monitoring, safety assertions and failed assertion keys, blocker/gate rollups, missing credential/config names only, closed provider/live flag names only, manual runbook steps with `runnable=false` and `executed=0`, abort/rollback criteria as review text only, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names, missing credential variable names, sanitized timestamps, and counts
+- Page states this is a supervised pilot planning review view only, not permission to go live and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

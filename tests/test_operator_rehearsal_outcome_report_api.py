@@ -76,6 +76,8 @@ LINKED_SURFACES = (
     "/internal/go-live-rehearsal-checklist",
     "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
+    "/internal/operator-supervised-pilot-plan",
+    "/internal/supervised-pilot-plan",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",
     "/internal/settings-execution-preflight",

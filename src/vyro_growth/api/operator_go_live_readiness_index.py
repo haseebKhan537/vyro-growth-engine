@@ -35,6 +35,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
+    OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
     OPERATOR_UI_STYLES,
     OWNER_HANDOFF_JSON_PATH,
     RELEASE_ARTIFACT_MANIFEST_JSON_PATH,
@@ -178,6 +179,7 @@ def _render_related_links() -> str:
     checklist_href = escape(OPERATOR_PROVIDER_SETUP_CHECKLIST_PATH)
     rehearsal_href = escape(OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH)
     outcome_href = escape(OPERATOR_REHEARSAL_OUTCOME_REPORT_PATH)
+    pilot_href = escape(OPERATOR_SUPERVISED_PILOT_PLAN_PATH)
     timeline_href = escape(OPERATOR_AUDIT_TIMELINE_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Linked readiness surfaces">\n'
@@ -200,6 +202,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{checklist_href}">Provider setup</a>\n'
         f'      <a class="nav-link" href="{rehearsal_href}">Go-live rehearsal</a>\n'
         f'      <a class="nav-link" href="{outcome_href}">Rehearsal outcome</a>\n'
+        f'      <a class="nav-link" href="{pilot_href}">Supervised pilot</a>\n'
         f'      <a class="nav-link" href="{timeline_href}">Audit timeline</a>\n'
         "    </nav>"
     )
