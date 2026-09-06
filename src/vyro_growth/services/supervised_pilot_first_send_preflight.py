@@ -467,7 +467,11 @@ def _assertion_pairs(
     halt_ok = True if go_no_go is None else not go_no_go.halt_changed
     spend_ok = True if go_no_go is None else not go_no_go.spend_allowed
     live_ok = True if go_no_go is None else not go_no_go.live_providers_enabled
-    plan_sends_ok = True if plan is None else plan.pilot_scope.suggested_max_manually_reviewed_sends == 0
+    plan_sends_ok = (
+        True
+        if plan is None
+        else plan.pilot_scope.suggested_max_manually_reviewed_sends == 0
+    )
     return (
         ("outbound_enabled_false", outbound_ok),
         ("go_live_permitted_false", True),
@@ -793,7 +797,10 @@ def _unique_sorted(values: Iterable[str]) -> tuple[str, ...]:
 
 
 def _safe_text(value: object) -> str:
-    return sanitize_operator_text("" if value is None else str(value)).strip()
+    if value is None:
+        return ""
+    text = sanitize_operator_text(str(value))
+    return text or ""
 
 
 def _safe_optional(value: str | None) -> str | None:
