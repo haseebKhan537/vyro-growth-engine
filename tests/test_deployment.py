@@ -144,6 +144,8 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "/internal/supervised-pilot-launch-rehearsal-control-map" in runbook
     assert "operator-supervised-pilot-launch-rehearsal-control-map" in runbook
     assert "vyro-growth supervised-pilot-launch-rehearsal-control-map" in runbook
+    assert "/internal/supervised-validation-run-packet" in runbook
+    assert "vyro-growth supervised-validation-run-packet" in runbook
     assert "018_live_settings_change_requests" in runbook
     assert "019_email_verification" in runbook
     assert "020_contact_discovery_calls" in runbook

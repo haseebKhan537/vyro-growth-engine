@@ -44,7 +44,7 @@ def test_phase_72_docs_describe_read_only_operator_ui() -> None:
     deployment = Path("docs/DEPLOYMENT.md").read_text(encoding="utf-8")
     health = Path("docs/OPERATOR_HEALTH.md").read_text(encoding="utf-8")
 
-    heading = "## Phase 72 — Operator contact-validation UI shell (current)"
+    heading = "## Phase 72 — Operator contact-validation UI shell"
     assert heading in roadmap
     assert "GET /internal/operator-contact-validation" in roadmap
     assert "ContactValidationService" in roadmap

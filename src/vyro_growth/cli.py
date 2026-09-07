@@ -191,6 +191,10 @@ from vyro_growth.services.supervised_pilot_plan import (
     SupervisedPilotPlanService,
     format_supervised_pilot_plan,
 )
+from vyro_growth.services.supervised_validation_run_packet import (
+    SupervisedValidationRunPacketService,
+    format_supervised_validation_run_packet,
+)
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
     VoiceQualificationService,
@@ -338,6 +342,12 @@ def build_parser() -> argparse.ArgumentParser:
         "contact-validation-report",
         "Print a sanitized 200-practice contact-enrichment validation report "
         "(aggregate counts only; no outbound or live provider calls)",
+    )
+    _add_contact_validation_parser(
+        subparsers,
+        "supervised-validation-run-packet",
+        "Export a sanitized supervised validation owner approval/run packet "
+        "(read-only review only; does not execute the run or grant approval)",
     )
 
     phone_queue = subparsers.add_parser(
@@ -1066,6 +1076,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "contact-validation-report":
         return _run_contact_validation_report(args)
 
+    if args.command == "supervised-validation-run-packet":
+        return _run_supervised_validation_run_packet(args)
+
     if args.command == "queue-phone-verification":
         return _run_queue_phone_verification(args)
 
@@ -1405,6 +1418,22 @@ def _run_contact_validation_report(args: argparse.Namespace) -> int:
             print(f"Contact validation error: {exc.message}")
             return 1
     print(format_contact_validation_report(report, as_json=args.json))
+    return 0
+
+
+def _run_supervised_validation_run_packet(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            packet = SupervisedValidationRunPacketService().build(
+                db,
+                settings,
+                _contact_validation_filters(args),
+            )
+        except ContactValidationError as exc:
+            print(f"Supervised validation run packet error: {exc.message}")
+            return 1
+    print(format_supervised_validation_run_packet(packet, as_json=args.json))
     return 0
 
 

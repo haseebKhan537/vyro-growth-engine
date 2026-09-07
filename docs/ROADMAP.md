@@ -854,7 +854,7 @@ Dry-run / read-only measurement only. Does not send email, enroll campaigns, cal
 - CI/defaults run against empty/local fixtures with no live provider traffic
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 72 — Operator contact-validation UI shell (current)
+## Phase 72 — Operator contact-validation UI shell
 Internal operator HTML shell of the Phase 71 contact-enrichment validation plan/report. Read-only, aggregate-only, no execution.
 - `GET /internal/operator-contact-validation`
 - Reuses existing Phase 71 `ContactValidationService`, plan payload, and report payload. Does not duplicate readiness calculations.
@@ -865,6 +865,22 @@ Internal operator HTML shell of the Phase 71 contact-enrichment validation plan/
 - No forms, buttons, POST/PUT/PATCH/DELETE handlers, approval controls, or execute/apply/run/lift-halt/enable-outbound/provider/spend/deploy/send/call/book/candidate-selection/contact controls
 - Does not expose real emails, phones, websites, NPI numbers, street addresses, practice names, provider names, contact names, evidence snippets, message bodies, outreach drafts, API keys, tokens, provider secrets, raw env values, or unsafe error text
 - No LinkedIn/Sales Navigator automation, no restricted job-board scraping, and no AI voice cold calling
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
+## Phase 73 — Supervised validation owner approval/run packet (current)
+Read-only owner approval/run packet for a later supervised 200-practice contact-enrichment validation run. Export/review only. Does not execute the run or grant approval.
+- Deterministic CLI/JSON `supervised-validation-run-packet` plus `GET /internal/supervised-validation-run-packet`
+- Reuses existing Phase 71 `ContactValidationService` plan/report payloads and Phase 72 UI route names. Does not duplicate readiness calculations
+- Target-segment metadata: state, city, specialty/taxonomy, and max/planned cohort size only
+- Prerequisite checklist, required owner decisions by code/name only, and required credential/config names with present/missing booleans only
+- No-execution / no-outbound / no-provider-call / no-send / no-call / no-book / no-spend / no-deploy flags
+- Operator halt before/status/after and unchanged proof
+- Phase 71 funnel aggregate counts/rates and threshold statuses only
+- `NO_CONTACT_FOUND` and `NO_VERIFIED_EMAIL` treated as normal outcomes
+- Planned existing safe route/command names only, blocked/warning/info code counts, safe local git metadata, and non-executable owner next-step labels
+- Packet may describe what the owner would need to approve later, but keeps `owner_approved=false` and `supervised_validation_run_permitted=false`
+- Same `INTERNAL_API_KEY` gate as other internal JSON routes; `Cache-Control: no-store`
+- CI/defaults run against empty/local fixtures with no live provider traffic
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
 Future contact-enrichment work (not in this phase):
