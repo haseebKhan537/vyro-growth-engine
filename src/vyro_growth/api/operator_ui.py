@@ -37,6 +37,9 @@ OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH = "/internal/operator-supervised-pilot-g
 OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH = (
     "/internal/operator-supervised-pilot-first-send-preflight"
 )
+OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH = (
+    "/internal/operator-supervised-pilot-launch-rehearsal-control-map"
+)
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -59,6 +62,9 @@ SUPERVISED_PILOT_PLAN_JSON_PATH = "/internal/supervised-pilot-plan"
 SUPERVISED_PILOT_CANDIDATES_JSON_PATH = "/internal/supervised-pilot-candidates"
 SUPERVISED_PILOT_GO_NO_GO_JSON_PATH = "/internal/supervised-pilot-go-no-go"
 SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_JSON_PATH = "/internal/supervised-pilot-first-send-preflight"
+SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_JSON_PATH = (
+    "/internal/supervised-pilot-launch-rehearsal-control-map"
+)
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -84,6 +90,7 @@ OperatorSurface = Literal[
     "supervised-pilot-candidates",
     "supervised-pilot-go-no-go",
     "supervised-pilot-first-send-preflight",
+    "supervised-pilot-launch-rehearsal-control-map",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -109,6 +116,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "supervised-pilot-candidates": "Pilot candidates",
     "supervised-pilot-go-no-go": "Pilot go/no-go",
     "supervised-pilot-first-send-preflight": "First-send preflight",
+    "supervised-pilot-launch-rehearsal-control-map": "Rehearsal control map",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -133,6 +141,9 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "supervised-pilot-candidates": OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
     "supervised-pilot-go-no-go": OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
     "supervised-pilot-first-send-preflight": OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
+    "supervised-pilot-launch-rehearsal-control-map": (
+        OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH
+    ),
 }
 
 
@@ -207,6 +218,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "supervised-pilot-candidates",
         "supervised-pilot-go-no-go",
         "supervised-pilot-first-send-preflight",
+        "supervised-pilot-launch-rehearsal-control-map",
     )
     links = []
     for name in surfaces:

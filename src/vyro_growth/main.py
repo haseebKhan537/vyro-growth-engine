@@ -144,6 +144,9 @@ from vyro_growth.api.operator_supervised_pilot_first_send_preflight import (
 from vyro_growth.api.operator_supervised_pilot_go_no_go import (
     build_operator_supervised_pilot_go_no_go_response,
 )
+from vyro_growth.api.operator_supervised_pilot_launch_rehearsal_control_map import (
+    build_operator_supervised_pilot_launch_rehearsal_control_map_response,
+)
 from vyro_growth.api.operator_supervised_pilot_plan import (
     build_operator_supervised_pilot_plan_response,
 )
@@ -731,6 +734,22 @@ def operator_supervised_pilot_first_send_preflight(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_supervised_pilot_first_send_preflight_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_supervised_pilot_launch_rehearsal_control_map(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_supervised_pilot_launch_rehearsal_control_map_response(
+        db, active_settings
+    )
 
 
 @app.get(

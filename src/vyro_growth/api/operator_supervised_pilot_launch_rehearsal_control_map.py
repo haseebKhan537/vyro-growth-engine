@@ -1,13 +1,13 @@
-"""Read-only operator supervised pilot first-send preflight HTML shell.
+"""Read-only operator supervised pilot launch rehearsal control map HTML shell.
 
-Phase 62 renders a sanitized view of the existing Phase 61 supervised
-pilot first-send preflight packet. It reuses
-SupervisedPilotFirstSendPreflightService and never recalculates
+Phase 64 renders a sanitized view of the existing Phase 63 supervised
+pilot launch rehearsal control map. It reuses
+SupervisedPilotLaunchRehearsalControlMapService and never recalculates
 readiness. It never executes, builds, publishes, deploys, applies
 settings, lifts halt, enables outbound, calls providers, scrapes,
 selects candidates, spends, or changes live state. This page is a
-first-send preflight review view only, not permission to send, not
-permission to go live, and not an execution surface.
+control-map review view only, not a script runner, not permission to
+send, not permission to go live, and not an execution surface.
 """
 
 from __future__ import annotations
@@ -68,36 +68,35 @@ from vyro_growth.api.operator_ui import (
 from vyro_growth.config import Settings
 from vyro_growth.domain import FindingSeverity
 from vyro_growth.services.release_artifact_manifest import LocalGitMetadata
-from vyro_growth.services.supervised_pilot_first_send_preflight import (
-    FirstSendAbortCriterion,
-    FirstSendCount,
-    FirstSendNextAction,
-    FirstSendPreflightCheck,
-    SupervisedPilotFirstSendPreflight,
-    SupervisedPilotFirstSendPreflightService,
+from vyro_growth.services.supervised_pilot_launch_rehearsal_control_map import (
+    ControlCount,
+    ControlNextAction,
+    ControlNode,
+    SupervisedPilotLaunchRehearsalControlMap,
+    SupervisedPilotLaunchRehearsalControlMapService,
 )
 
 logger = structlog.get_logger(__name__)
 
 
-def render_supervised_pilot_first_send_preflight_error() -> str:
+def render_supervised_pilot_launch_rehearsal_control_map_error() -> str:
     return render_failure_page(
-        page_id="operator-supervised-pilot-first-send-preflight-error",
-        title="Supervised pilot first-send preflight unavailable",
-        heading="Read-only supervised pilot first-send preflight unavailable",
-        banner="Unable to load the supervised pilot first-send preflight packet.",
+        page_id="operator-supervised-pilot-launch-rehearsal-control-map-error",
+        title="Supervised pilot launch rehearsal control map unavailable",
+        heading="Read-only supervised pilot launch rehearsal control map unavailable",
+        banner="Unable to load the supervised pilot launch rehearsal control map.",
         detail=(
-            "The sanitized first-send preflight review view could not be "
-            "rendered. Retry after checking database connectivity and "
-            "runtime config. This page is a first-send preflight review "
-            "view only, not permission to send, not permission to go live, "
-            "and not an execution surface."
+            "The sanitized launch rehearsal control map review view could "
+            "not be rendered. Retry after checking database connectivity "
+            "and runtime config. This page is a control-map review view "
+            "only, not a script runner, not permission to send, not "
+            "permission to go live, and not an execution surface."
         ),
     )
 
 
-def render_supervised_pilot_first_send_preflight(
-    packet: SupervisedPilotFirstSendPreflight,
+def render_supervised_pilot_launch_rehearsal_control_map(
+    packet: SupervisedPilotLaunchRehearsalControlMap,
 ) -> str:
     generated = html_escape(format_dt(packet.generated_at))
     return (
@@ -106,11 +105,11 @@ def render_supervised_pilot_first_send_preflight(
         "<head>\n"
         '  <meta charset="utf-8">\n'
         '  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        "  <title>Supervised pilot first-send preflight</title>\n"
+        "  <title>Supervised pilot launch rehearsal control map</title>\n"
         f"{OPERATOR_UI_STYLES}\n"
         "</head>\n"
         "<body>\n"
-        '  <main id="operator-supervised-pilot-first-send-preflight" '
+        '  <main id="operator-supervised-pilot-launch-rehearsal-control-map" '
         'data-read-only="true" data-dry-run-only="true" '
         'data-execution-allowed="false" data-go-live-permitted="false" '
         'data-deployment-allowed="false" data-build-allowed="false" '
@@ -118,12 +117,15 @@ def render_supervised_pilot_first_send_preflight(
         'data-no-execution="true" data-no-go-live="true" '
         'data-no-outbound="true" data-no-provider-calls="true" '
         'data-no-deployment="true" data-no-spend="true" '
-        'data-manual-review-only="true" data-first-send-allowed="false" '
-        'data-first-send-attempted="false" '
-        'data-supervised-pilot-first-send-preflight-is-not-go-live="true" '
+        'data-no-first-send="true" data-manual-review-only="true" '
+        'data-first-send-allowed="false" data-first-send-attempted="false" '
+        'data-supervised-pilot-launch-rehearsal-control-map-is-not-go-live="true" '
+        'data-rehearsal-control-map-is-not-a-script-runner="true" '
+        'data-control-map-is-not-execution="true" '
         'data-first-send-preflight-is-not-a-send="true" '
         'data-export-is-not-permission-to-go-live="true" '
         'data-export-is-not-execution="true" '
+        'data-supervised-pilot-first-send-preflight-is-not-go-live="true" '
         'data-supervised-pilot-go-no-go-is-not-go-live="true" '
         'data-supervised-pilot-plan-is-not-go-live="true" '
         'data-supervised-pilot-candidates-is-not-go-live="true" '
@@ -131,16 +133,14 @@ def render_supervised_pilot_first_send_preflight(
         'data-go-live-rehearsal-checklist-is-not-go-live="true" '
         'data-provider-setup-checklist-is-not-go-live="true">\n'
         f"{_render_header(packet, generated)}\n"
-        f"{render_operator_nav('supervised-pilot-first-send-preflight')}\n"
+        f"{render_operator_nav('supervised-pilot-launch-rehearsal-control-map')}\n"
         f"{_render_related_links()}\n"
         f"{_render_live_blocking_flags(packet)}\n"
-        f"{_render_first_send_scope(packet)}\n"
+        f"{_render_source_rollups(packet)}\n"
         f"{_render_candidate_queue_counts(packet)}\n"
-        f"{_render_count_rollups(packet)}\n"
+        f"{_render_control_counts(packet)}\n"
         f"{_render_expected_safe_assertions(packet)}\n"
-        f"{_render_preflight_checks(packet)}\n"
-        f"{_render_abort_criteria(packet)}\n"
-        f"{_render_stop_conditions(packet)}\n"
+        f"{_render_control_nodes(packet)}\n"
         f"{
             _render_codes_section(
                 'owner-decision-prerequisites',
@@ -171,30 +171,32 @@ def render_supervised_pilot_first_send_preflight(
     )
 
 
-def build_operator_supervised_pilot_first_send_preflight_response(
+def build_operator_supervised_pilot_launch_rehearsal_control_map_response(
     db: Session,
     settings: Settings,
     *,
-    service: SupervisedPilotFirstSendPreflightService | None = None,
+    service: SupervisedPilotLaunchRehearsalControlMapService | None = None,
 ) -> HTMLResponse:
     try:
-        builder = service or SupervisedPilotFirstSendPreflightService()
+        builder = service or SupervisedPilotLaunchRehearsalControlMapService()
         packet = builder.build(db, settings)
-        html = render_supervised_pilot_first_send_preflight(packet)
+        html = render_supervised_pilot_launch_rehearsal_control_map(packet)
         return HTMLResponse(content=html, status_code=200, headers=NO_STORE_HEADERS)
     except Exception:
         logger.exception(
-            "operator_supervised_pilot_first_send_preflight_render_failed",
+            "operator_supervised_pilot_launch_rehearsal_control_map_render_failed",
             read_only=True,
         )
         return HTMLResponse(
-            content=render_supervised_pilot_first_send_preflight_error(),
+            content=render_supervised_pilot_launch_rehearsal_control_map_error(),
             status_code=500,
             headers=NO_STORE_HEADERS,
         )
 
 
-def _render_header(packet: SupervisedPilotFirstSendPreflight, generated: str) -> str:
+def _render_header(
+    packet: SupervisedPilotLaunchRehearsalControlMap, generated: str
+) -> str:
     git = packet.local_git
     git_meta = (
         f" · git {html_escape(git.current_branch)}@{html_escape(git.current_sha)}"
@@ -204,9 +206,9 @@ def _render_header(packet: SupervisedPilotFirstSendPreflight, generated: str) ->
     return (
         '    <header class="page-header">\n'
         "      <div>\n"
-        "        <h1>Supervised pilot first-send preflight</h1>\n"
+        "        <h1>Supervised pilot launch rehearsal control map</h1>\n"
         '        <p class="lede">Read-only owner/operator review view of the '
-        "existing supervised pilot first-send preflight packet. Execution "
+        "existing supervised pilot launch rehearsal control map. Execution "
         "remains disabled. This page does not scrape, select candidates, "
         "contact, send, call, book, enroll, build, publish, deploy, apply "
         "settings, spend, or lift halt. OUTBOUND_ENABLED=false. "
@@ -216,12 +218,14 @@ def _render_header(packet: SupervisedPilotFirstSendPreflight, generated: str) ->
         "deployment_allowed=false. build_allowed=false. "
         "artifact_publish_allowed=false. spend_allowed=false. "
         "owner_approved=false. no_outbound=true. no_provider_calls=true. "
-        "supervised_pilot_first_send_preflight_is_not_go_live=true. "
-        "first_send_preflight_is_not_a_send=true. "
+        "no_first_send=true. "
+        "supervised_pilot_launch_rehearsal_control_map_is_not_go_live=true. "
+        "rehearsal_control_map_is_not_a_script_runner=true. "
+        "control_map_is_not_execution=true. "
         "export_is_not_permission_to_go_live=true. "
-        "export_is_not_execution=true. This page is a first-send "
-        "preflight review view only, not permission to send, not "
-        "permission to go live, and not an execution surface.</p>\n"
+        "export_is_not_execution=true. This page is a control-map "
+        "review view only, not a script runner, not permission to send, "
+        "not permission to go live, and not an execution surface.</p>\n"
         "      </div>\n"
         f'      <p class="meta">Generated {generated} · overall '
         f"{html_escape(packet.overall_status)} · halt "
@@ -254,8 +258,8 @@ def _render_related_links() -> str:
     candidates_json_href = escape(SUPERVISED_PILOT_CANDIDATES_JSON_PATH)
     go_no_go_href = escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)
     go_no_go_json_href = escape(SUPERVISED_PILOT_GO_NO_GO_JSON_PATH)
+    first_send_href = escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
     first_send_json_href = escape(SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_JSON_PATH)
-    control_map_href = escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)
     control_map_json_href = escape(SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
@@ -292,8 +296,8 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{candidates_json_href}">JSON candidates</a>\n'
         f'      <a class="nav-link" href="{go_no_go_href}">Pilot go/no-go</a>\n'
         f'      <a class="nav-link" href="{go_no_go_json_href}">JSON go/no-go</a>\n'
+        f'      <a class="nav-link" href="{first_send_href}">First-send preflight</a>\n'
         f'      <a class="nav-link" href="{first_send_json_href}">JSON first-send</a>\n'
-        f'      <a class="nav-link" href="{control_map_href}">Rehearsal control map</a>\n'
         f'      <a class="nav-link" href="{control_map_json_href}">JSON control map</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
@@ -311,7 +315,7 @@ def _render_related_links() -> str:
     )
 
 
-def _render_live_blocking_flags(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_live_blocking_flags(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     halt_unchanged = packet.operator_halt_before == packet.operator_halt_after
     return (
         '    <section class="status-strip" id="live-blocking-flags" '
@@ -327,20 +331,21 @@ def _render_live_blocking_flags(packet: SupervisedPilotFirstSendPreflight) -> st
         f"      {metric('Execution allowed', yes_no(packet.execution_allowed))}\n"
         f"      {metric('No outbound', yes_no(packet.no_outbound))}\n"
         f"      {metric('No provider calls', yes_no(packet.no_provider_calls))}\n"
+        f"      {metric('No first send', yes_no(packet.no_first_send))}\n"
         f"      {
             metric(
-                'First-send preflight is not a send',
-                yes_no(packet.first_send_preflight_is_not_a_send),
+                'Control map is not a script runner',
+                yes_no(packet.rehearsal_control_map_is_not_a_script_runner),
             )
         }\n"
         f"      {
             metric(
-                'First-send preflight is not go-live',
-                yes_no(packet.supervised_pilot_first_send_preflight_is_not_go_live),
+                'Control map is not go-live',
+                yes_no(packet.supervised_pilot_launch_rehearsal_control_map_is_not_go_live),
             )
         }\n"
         "    </section>\n"
-        '    <section class="panel" id="first-send-flags">\n'
+        '    <section class="panel" id="control-map-flags">\n'
         "      <h2>Read-only flags and halt proof</h2>\n"
         '      <div class="metric-grid">\n'
         f"        {metric('Packet kind', packet.packet_kind)}\n"
@@ -367,6 +372,7 @@ def _render_live_blocking_flags(packet: SupervisedPilotFirstSendPreflight) -> st
         f"        {metric('No provider calls', yes_no(packet.no_provider_calls))}\n"
         f"        {metric('No deployment', yes_no(packet.no_deployment))}\n"
         f"        {metric('No spend', yes_no(packet.no_spend))}\n"
+        f"        {metric('No first send', yes_no(packet.no_first_send))}\n"
         f"        {metric('Dry-run only', yes_no(packet.dry_run_only))}\n"
         f"        {metric('Manual review only', yes_no(packet.manual_review_only))}\n"
         f"        {metric('First send allowed', yes_no(packet.first_send_allowed))}\n"
@@ -383,40 +389,34 @@ def _render_live_blocking_flags(packet: SupervisedPilotFirstSendPreflight) -> st
         "environment values, API keys, tokens, or unsafe error text. "
         "OUTBOUND_ENABLED=false. first_send_allowed=false. "
         "go_live_permitted=false and execution_allowed=false. "
-        "spend_allowed=false. This is a read-only first-send preflight "
-        "review view, not permission to send and not permission to go "
-        "live.</p>\n"
+        "spend_allowed=false. This is a read-only control-map "
+        "review view, not a script runner, not permission to send, and "
+        "not permission to go live.</p>\n"
         "    </section>"
     )
 
 
-def _render_first_send_scope(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_source_rollups(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
-        '    <section class="panel" id="first-send-scope">\n'
-        "      <h2>First-send scope recommendation</h2>\n"
-        '      <p class="hint">Count-only recommendation copied from the '
-        "existing supervised pilot plan. This page does not select "
-        "candidates, send, or change the recommended cap.</p>\n"
+        '    <section class="panel" id="source-rollups">\n'
+        "      <h2>Source first-send, go/no-go, pilot-plan, and candidate rollups</h2>\n"
+        '      <p class="hint">Overall statuses copied from the existing '
+        "Phase 63 control map. This page does not recalculate readiness.</p>\n"
         '      <div class="metric-grid">\n'
+        f"        {metric('Source first-send', packet.source_first_send_overall_status)}\n"
+        f"        {metric('Source go/no-go', packet.source_go_no_go_overall_status)}\n"
+        f"        {metric('Source pilot plan', packet.source_pilot_plan_overall_status)}\n"
+        f"        {metric('Source candidates', packet.source_candidates_overall_status)}\n"
         f"        {metric('Suggested max first sends', packet.suggested_max_first_sends)}\n"
-        f"        {metric('Suggested max leads', packet.suggested_max_leads)}\n"
-        f"        {metric('Suggested max drafts', packet.suggested_max_drafts)}\n"
-        f"        {
-            metric(
-                'Suggested max manually reviewed sends',
-                packet.suggested_max_manually_reviewed_sends,
-            )
-        }\n"
-        f"        {metric('Suggested max daily activity', packet.suggested_max_daily_activity)}\n"
         "      </div>\n"
         "    </section>"
     )
 
 
-def _render_candidate_queue_counts(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_candidate_queue_counts(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
         '    <section class="panel" id="candidate-queue-counts">\n'
-        "      <h2>Candidate and queue counts</h2>\n"
+        "      <h2>Candidate, review, action, settings, and approval counts</h2>\n"
         '      <p class="hint">Counts only. Practice names, provider names, '
         "NPI numbers, emails, phones, and websites are never shown.</p>\n"
         '      <div class="metric-grid">\n'
@@ -443,49 +443,36 @@ def _render_candidate_queue_counts(packet: SupervisedPilotFirstSendPreflight) ->
     )
 
 
-def _render_count_rollups(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_control_counts(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
-        '    <section class="panel" id="prerequisite-status-counts">\n'
-        "      <h2>Prerequisite counts by status</h2>\n"
+        '    <section class="panel" id="control-counts">\n'
+        "      <h2>Control counts by category and status</h2>\n"
         '      <p class="hint">Counts and statuses only. This page does not '
         "recalculate readiness.</p>\n"
+        '      <div class="metric-grid">\n'
+        f"        {metric('Blocking control count', packet.blocking_control_count)}\n"
+        f"        {metric('Warning control count', packet.warning_control_count)}\n"
+        f"        {metric('Info control count', packet.info_control_count)}\n"
+        "      </div>\n"
+        "      <h3>Counts by category</h3>\n"
         f"      {
             _render_counts(
-                packet.prerequisite_counts_by_status,
-                empty='No prerequisite status counts.',
+                packet.control_counts_by_category,
+                empty='No control category counts.',
             )
         }\n"
-        "      <h3>Missing prerequisite codes</h3>\n"
-        f"      {
-            _render_codes(
-                packet.missing_prerequisite_codes,
-                empty='No missing prerequisite codes.',
-            )
-        }\n"
-        "    </section>\n"
-        '    <section class="panel" id="candidate-readiness-counts">\n'
-        "      <h2>Candidate counts by readiness</h2>\n"
+        "      <h3>Counts by status</h3>\n"
         f"      {
             _render_counts(
-                packet.candidate_counts_by_readiness,
-                empty='No candidate readiness counts.',
-            )
-        }\n"
-        "    </section>\n"
-        '    <section class="panel" id="blocked-reason-counts">\n'
-        "      <h2>Blocked reason counts</h2>\n"
-        '      <p class="hint">Generic reason codes and counts only.</p>\n'
-        f"      {
-            _render_counts(
-                packet.blocked_reason_counts,
-                empty='No blocked reason counts.',
+                packet.control_counts_by_status,
+                empty='No control status counts.',
             )
         }\n"
         "    </section>"
     )
 
 
-def _render_expected_safe_assertions(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_expected_safe_assertions(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
         '    <section class="panel" id="expected-safe-assertions">\n'
         "      <h2>Expected safe assertions</h2>\n"
@@ -507,85 +494,45 @@ def _render_expected_safe_assertions(packet: SupervisedPilotFirstSendPreflight) 
     )
 
 
-def _render_preflight_checks(packet: SupervisedPilotFirstSendPreflight) -> str:
-    if not packet.preflight_checks:
-        body = '<p class="empty-state">No first-send preflight checks.</p>'
+def _render_control_nodes(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
+    if not packet.control_nodes:
+        body = '<p class="empty-state">No control map rows.</p>'
     else:
-        rows = "".join(_check_row(check) for check in packet.preflight_checks)
+        rows = "".join(_node_row(node) for node in packet.control_nodes)
         body = (
             '<table class="dense"><thead><tr>'
-            "<th>Code</th><th>Status</th><th>Blocking</th><th>Command</th>"
-            "<th>Route</th><th>Label</th>"
+            "<th>Code</th><th>Category</th><th>Status</th><th>Blocking</th>"
+            "<th>Command</th><th>Route</th><th>Label</th>"
             f"</tr></thead><tbody>{rows}</tbody></table>"
         )
     return (
-        '    <section class="panel" id="first-send-preflight-checks">\n'
-        "      <h2>First-send preflight checks</h2>\n"
-        '      <p class="hint">Codes, statuses, labels, blocking flags, and '
-        "related route/command names only. These checks do not execute or "
-        "send.</p>\n"
+        '    <section class="panel" id="control-map-rows">\n'
+        "      <h2>Control map rows</h2>\n"
+        '      <p class="hint">Codes, categories, statuses, labels, blocking '
+        "flags, and related route/command names only. These rows do not "
+        "execute or send.</p>\n"
         f"      {body}\n"
         "    </section>"
     )
 
 
-def _check_row(check: FirstSendPreflightCheck) -> str:
-    route = check.html_route or check.json_route
+def _node_row(node: ControlNode) -> str:
+    route = node.html_route or node.json_route
     route_cell = (
         f'<a class="row-link mono" href="{escape(route)}">{html_escape(route)}</a>'
         if route
         else html_escape("—")
     )
     return (
-        f'<tr class="{_status_class(check.status)}">'
-        f'<td class="mono">{html_escape(check.code)}</td>'
-        f"<td>{html_escape(check.status)}</td>"
-        f"<td>{yes_no(check.blocking)}</td>"
-        f'<td class="mono">{html_escape(check.command_name)}</td>'
+        f'<tr class="{_status_class(node.status)}">'
+        f'<td class="mono">{html_escape(node.code)}</td>'
+        f'<td class="mono">{html_escape(node.category)}</td>'
+        f"<td>{html_escape(node.status)}</td>"
+        f"<td>{yes_no(node.blocking)}</td>"
+        f'<td class="mono">{html_escape(node.command_name)}</td>'
         f"<td>{route_cell}</td>"
-        f"<td>{html_escape(check.label)}</td>"
+        f"<td>{html_escape(node.label)}</td>"
         "</tr>"
-    )
-
-
-def _render_abort_criteria(packet: SupervisedPilotFirstSendPreflight) -> str:
-    if not packet.abort_criteria:
-        body = '<p class="empty-state">No abort criteria.</p>'
-    else:
-        rows = "".join(_abort_row(item) for item in packet.abort_criteria)
-        body = (
-            '<table class="dense"><thead><tr>'
-            "<th>Code</th><th>Label</th><th>Instruction</th>"
-            f"</tr></thead><tbody>{rows}</tbody></table>"
-        )
-    return (
-        '    <section class="panel" id="abort-criteria">\n'
-        "      <h2>Abort criteria</h2>\n"
-        '      <p class="hint">Review text only. These criteria do not halt, '
-        "send, or change settings.</p>\n"
-        f"      {body}\n"
-        "    </section>"
-    )
-
-
-def _abort_row(item: FirstSendAbortCriterion) -> str:
-    return (
-        "<tr>"
-        f'<td class="mono">{html_escape(item.code)}</td>'
-        f"<td>{html_escape(item.label)}</td>"
-        f"<td>{html_escape(item.instruction)}</td>"
-        "</tr>"
-    )
-
-
-def _render_stop_conditions(packet: SupervisedPilotFirstSendPreflight) -> str:
-    return (
-        '    <section class="panel" id="stop-conditions">\n'
-        "      <h2>Stop conditions</h2>\n"
-        '      <p class="hint">Review text only. This page does not apply '
-        "stop conditions or change halt state.</p>\n"
-        f"      {_render_codes(packet.stop_conditions, empty='No stop conditions.')}\n"
-        "    </section>"
     )
 
 
@@ -604,19 +551,26 @@ def _render_codes_section(
     )
 
 
-def _render_blocker_gate_codes(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_blocker_gate_codes(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
         '    <section class="panel" id="blocker-gate-codes">\n'
-        "      <h2>Blocker and gate code rollups</h2>\n"
+        "      <h2>Blocker, gate, and blocking control codes</h2>\n"
         "      <h3>Blocker codes</h3>\n"
         f"      {_render_codes(packet.blocker_codes, empty='No blocker codes.')}\n"
         "      <h3>Gate codes</h3>\n"
         f"      {_render_codes(packet.gate_codes, empty='No gate codes.')}\n"
+        "      <h3>Blocking control codes</h3>\n"
+        f"      {
+            _render_codes(
+                packet.blocking_control_codes,
+                empty='No blocking control codes.',
+            )
+        }\n"
         "    </section>"
     )
 
 
-def _render_missing_names(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_missing_names(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
         '    <section class="panel" id="missing-names">\n'
         "      <h2>Missing credential and config names</h2>\n"
@@ -629,7 +583,7 @@ def _render_missing_names(packet: SupervisedPilotFirstSendPreflight) -> str:
     )
 
 
-def _render_closed_flags(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_closed_flags(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
         '    <section class="panel" id="closed-provider-flags">\n'
         "      <h2>Closed provider and live flag names</h2>\n"
@@ -638,9 +592,16 @@ def _render_closed_flags(packet: SupervisedPilotFirstSendPreflight) -> str:
     )
 
 
-def _render_source_references(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_source_references(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     rows = "".join(
         (
+            _source_row(
+                "Supervised pilot first-send preflight",
+                packet.source_first_send_command,
+                packet.source_first_send_route,
+                packet.source_first_send_overall_status,
+                packet.source_first_send_html_route,
+            ),
             _source_row(
                 "Supervised pilot go/no-go",
                 packet.source_go_no_go_command,
@@ -667,9 +628,9 @@ def _render_source_references(packet: SupervisedPilotFirstSendPreflight) -> str:
     return (
         '    <section class="panel" id="source-references">\n'
         "      <h2>Source references</h2>\n"
-        '      <p class="hint">This page reuses the existing Phase 61 '
-        "supervised pilot first-send preflight payload. It does not "
-        "recalculate readiness or execute.</p>\n"
+        '      <p class="hint">This page reuses the existing Phase 63 '
+        "supervised pilot launch rehearsal control map payload. It does "
+        "not recalculate readiness or execute.</p>\n"
         '<table class="dense"><thead><tr>'
         "<th>Source</th><th>Command</th><th>JSON route</th><th>Overall status</th>"
         "<th>HTML route</th>"
@@ -706,7 +667,7 @@ def _source_row(
     )
 
 
-def _render_related_inventory(packet: SupervisedPilotFirstSendPreflight) -> str:
+def _render_related_inventory(packet: SupervisedPilotLaunchRehearsalControlMap) -> str:
     return (
         '    <section class="panel" id="related-routes">\n'
         "      <h2>Related safe routes</h2>\n"
@@ -738,7 +699,7 @@ def _render_local_git(git: LocalGitMetadata) -> str:
     )
 
 
-def _render_next_actions(actions: tuple[FirstSendNextAction, ...]) -> str:
+def _render_next_actions(actions: tuple[ControlNextAction, ...]) -> str:
     if not actions:
         body = '<p class="empty-state">No owner next steps.</p>'
     else:
@@ -760,7 +721,7 @@ def _render_next_actions(actions: tuple[FirstSendNextAction, ...]) -> str:
     )
 
 
-def _next_action_row(action: FirstSendNextAction) -> str:
+def _next_action_row(action: ControlNextAction) -> str:
     route = action.html_route or action.json_route
     route_cell = (
         f'<a class="row-link mono" href="{escape(route)}">{html_escape(route)}</a>'
@@ -779,7 +740,7 @@ def _next_action_row(action: FirstSendNextAction) -> str:
     )
 
 
-def _render_footer(packet: SupervisedPilotFirstSendPreflight, generated: str) -> str:
+def _render_footer(packet: SupervisedPilotLaunchRehearsalControlMap, generated: str) -> str:
     return (
         '    <footer class="footnote" id="side-effects">\n'
         f"      <p>Generated {generated}. Read-only={yes_no(packet.read_only)}. "
@@ -791,6 +752,7 @@ def _render_footer(packet: SupervisedPilotFirstSendPreflight, generated: str) ->
         f"No provider calls={yes_no(packet.no_provider_calls)}. "
         f"No deployment={yes_no(packet.no_deployment)}. "
         f"No spend={yes_no(packet.no_spend)}. "
+        f"No first send={yes_no(packet.no_first_send)}. "
         f"Executed={html_escape(packet.executed)}. "
         f"First send allowed={yes_no(packet.first_send_allowed)}. "
         f"First send attempted={yes_no(packet.first_send_attempted)}. "
@@ -806,13 +768,18 @@ def _render_footer(packet: SupervisedPilotFirstSendPreflight, generated: str) ->
         f"Build allowed={yes_no(packet.build_allowed)}. "
         f"Artifact publish allowed={yes_no(packet.artifact_publish_allowed)}. "
         f"Spend allowed={yes_no(packet.spend_allowed)}. "
-        f"Supervised pilot first-send preflight is not go-live="
-        f"{yes_no(packet.supervised_pilot_first_send_preflight_is_not_go_live)}. "
+        f"Supervised pilot launch rehearsal control map is not go-live="
+        f"{yes_no(packet.supervised_pilot_launch_rehearsal_control_map_is_not_go_live)}. "
+        f"Rehearsal control map is not a script runner="
+        f"{yes_no(packet.rehearsal_control_map_is_not_a_script_runner)}. "
+        f"Control map is not execution={yes_no(packet.control_map_is_not_execution)}. "
         f"First-send preflight is not a send="
         f"{yes_no(packet.first_send_preflight_is_not_a_send)}. "
         f"Export is not permission to go live="
         f"{yes_no(packet.export_is_not_permission_to_go_live)}. "
         f"Export is not execution={yes_no(packet.export_is_not_execution)}. "
+        f"Supervised pilot first-send preflight is not go-live="
+        f"{yes_no(packet.supervised_pilot_first_send_preflight_is_not_go_live)}. "
         f"Supervised pilot go/no-go is not go-live="
         f"{yes_no(packet.supervised_pilot_go_no_go_is_not_go_live)}. "
         f"Supervised pilot plan is not go-live="
@@ -822,15 +789,15 @@ def _render_footer(packet: SupervisedPilotFirstSendPreflight, generated: str) ->
         "There are no apply, execute, lift-halt, enable-outbound, provider, "
         "build, publish, deploy, campaign, booking, call, spend, candidate "
         "selection, send, or contact controls on this page. This is a "
-        "read-only first-send preflight review view, not permission to "
-        "send, not permission to go live, and not an execution surface. "
-        "Current route "
-        f"{html_escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)}.</p>\n"
+        "read-only control-map review view, not a script runner, not "
+        "permission to send, not permission to go live, and not an "
+        "execution surface. Current route "
+        f"{html_escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}.</p>\n"
         "    </footer>"
     )
 
 
-def _render_counts(items: tuple[FirstSendCount, ...], *, empty: str) -> str:
+def _render_counts(items: tuple[ControlCount, ...], *, empty: str) -> str:
     present = [item for item in items if item.key]
     if not present:
         return f'<p class="empty-state">{escape(empty)}</p>'

@@ -134,6 +134,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "operator-supervised-pilot-first-send-preflight" in runbook
     assert "vyro-growth supervised-pilot-first-send-preflight" in runbook
     assert "/internal/supervised-pilot-launch-rehearsal-control-map" in runbook
+    assert "operator-supervised-pilot-launch-rehearsal-control-map" in runbook
     assert "vyro-growth supervised-pilot-launch-rehearsal-control-map" in runbook
     assert "018_live_settings_change_requests" in runbook
 

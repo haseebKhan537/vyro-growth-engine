@@ -1008,6 +1008,7 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
             "manual_review",
             "none",
             "Inspect the supervised pilot launch rehearsal control map at "
+            "/internal/operator-supervised-pilot-launch-rehearsal-control-map or "
             "/internal/supervised-pilot-launch-rehearsal-control-map or via "
             "`vyro-growth supervised-pilot-launch-rehearsal-control-map`. "
             "Control map review only; it is not a script runner, not "

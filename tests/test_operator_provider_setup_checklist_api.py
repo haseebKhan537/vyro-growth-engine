@@ -78,6 +78,7 @@ LINKED_SURFACES = (
     "/internal/operator-supervised-pilot-candidates",
     "/internal/operator-supervised-pilot-go-no-go",
     "/internal/operator-supervised-pilot-first-send-preflight",
+    "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
     "/internal/go-live-rehearsal-checklist",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",
