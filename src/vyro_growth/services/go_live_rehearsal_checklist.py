@@ -183,6 +183,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-go-no-go",
     "/internal/operator-supervised-pilot-first-send-preflight",
     "/internal/supervised-pilot-first-send-preflight",
+    "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-launch-rehearsal-control-map",
 )
 EXPECTED_SAFE_ASSERTION_KEYS: tuple[str, ...] = (
     "executed",

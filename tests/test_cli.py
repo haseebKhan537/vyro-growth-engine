@@ -1887,6 +1887,11 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     first_send = parser.parse_args(["supervised-pilot-first-send-preflight", "--json"])
     assert first_send.command == "supervised-pilot-first-send-preflight"
     assert first_send.json is True
+    control_map = parser.parse_args(
+        ["supervised-pilot-launch-rehearsal-control-map", "--json"]
+    )
+    assert control_map.command == "supervised-pilot-launch-rehearsal-control-map"
+    assert control_map.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

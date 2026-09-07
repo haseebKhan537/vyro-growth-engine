@@ -66,6 +66,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "supervised-pilot-candidates",
     "supervised-pilot-go-no-go",
     "supervised-pilot-first-send-preflight",
+    "supervised-pilot-launch-rehearsal-control-map",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -105,6 +106,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-go-no-go",
     "/internal/operator-supervised-pilot-first-send-preflight",
     "/internal/supervised-pilot-first-send-preflight",
+    "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-launch-rehearsal-control-map",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -737,6 +740,22 @@ def _remaining_checklist(
             "surface."
         ),
     )
+    add(
+        NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "supervised_pilot_launch_rehearsal_control_map",
+        html_route="/internal/operator-supervised-pilot-launch-rehearsal-control-map",
+        json_route="/internal/supervised-pilot-launch-rehearsal-control-map",
+        command_name="supervised-pilot-launch-rehearsal-control-map",
+        label=(
+            "Inspect the supervised pilot launch rehearsal control map at "
+            "/internal/supervised-pilot-launch-rehearsal-control-map or via "
+            "`vyro-growth supervised-pilot-launch-rehearsal-control-map`. "
+            "Control map review only; it is not a script runner, not "
+            "permission to send, not permission to go live, and not an "
+            "execution surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -829,6 +848,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-supervised-pilot-first-send-preflight",
                 "/internal/supervised-pilot-first-send-preflight",
                 "supervised-pilot-first-send-preflight",
+            )
+        case "supervised_pilot_launch_rehearsal_control_map":
+            return (
+                "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
+                "/internal/supervised-pilot-launch-rehearsal-control-map",
+                "supervised-pilot-launch-rehearsal-control-map",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (

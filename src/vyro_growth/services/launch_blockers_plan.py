@@ -124,6 +124,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-go-no-go",
     "/internal/operator-supervised-pilot-first-send-preflight",
     "/internal/supervised-pilot-first-send-preflight",
+    "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-launch-rehearsal-control-map",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -1000,6 +1002,18 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
         "`vyro-growth supervised-pilot-first-send-preflight`. "
         "First-send preflight review only; it is not permission to "
         "send, not permission to go live, and not an execution surface.",
+    ),
+    NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE.value: (
+        RemediationAdvice(
+            "manual_review",
+            "none",
+            "Inspect the supervised pilot launch rehearsal control map at "
+            "/internal/supervised-pilot-launch-rehearsal-control-map or via "
+            "`vyro-growth supervised-pilot-launch-rehearsal-control-map`. "
+            "Control map review only; it is not a script runner, not "
+            "permission to send, not permission to go live, and not an "
+            "execution surface.",
+        )
     ),
     EXECUTION_DISABLED_CODE: RemediationAdvice(
         "configuration",

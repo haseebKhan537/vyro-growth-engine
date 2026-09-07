@@ -1,18 +1,18 @@
-"""Read-only supervised pilot first-send preflight export.
+"""Read-only supervised pilot launch rehearsal control map export.
 
-Phase 61 consolidates the Phase 59 go/no-go packet, Phase 55 supervised
-pilot plan, and operator halt / control flags into one sanitized first-send
-preflight. It reuses those services as source material and never
-recalculates readiness. It never executes, applies settings, lifts halt,
-enables outbound, calls providers, scrapes, builds, publishes, deploys,
-spends, or changes live state. This preflight is not permission to send,
-not permission to go live, and not an execution surface.
+Phase 63 maps existing readiness surfaces into one sanitized control map
+for a supervised-pilot launch rehearsal. It reuses the Phase 61 first-send
+preflight as source material and never recalculates readiness. It never
+executes, applies settings, lifts halt, enables outbound, calls providers,
+scrapes, builds, publishes, deploys, spends, or changes live state. This
+control map is not a script runner, not permission to send, not permission
+to go live, and not an execution surface.
 """
 
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -25,6 +25,20 @@ from vyro_growth.domain import FindingSeverity, NextActionCode
 from vyro_growth.observability import sanitize_mapping, sanitize_operator_text
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt
 from vyro_growth.services.release_artifact_manifest import LocalGitMetadata
+from vyro_growth.services.supervised_pilot_first_send_preflight import (
+    CLI_COMMAND as FIRST_SEND_CLI_COMMAND,
+)
+from vyro_growth.services.supervised_pilot_first_send_preflight import (
+    HTML_ROUTE as FIRST_SEND_HTML_ROUTE,
+)
+from vyro_growth.services.supervised_pilot_first_send_preflight import (
+    HTTP_ROUTE as FIRST_SEND_HTTP_ROUTE,
+)
+from vyro_growth.services.supervised_pilot_first_send_preflight import (
+    FirstSendPreflightCheck,
+    SupervisedPilotFirstSendPreflight,
+    SupervisedPilotFirstSendPreflightService,
+)
 from vyro_growth.services.supervised_pilot_go_no_go import (
     CLI_COMMAND as GO_NO_GO_CLI_COMMAND,
 )
@@ -33,12 +47,6 @@ from vyro_growth.services.supervised_pilot_go_no_go import (
 )
 from vyro_growth.services.supervised_pilot_go_no_go import (
     HTTP_ROUTE as GO_NO_GO_HTTP_ROUTE,
-)
-from vyro_growth.services.supervised_pilot_go_no_go import (
-    GoNoGoCount,
-    GoNoGoGate,
-    SupervisedPilotGoNoGo,
-    SupervisedPilotGoNoGoService,
 )
 from vyro_growth.services.supervised_pilot_plan import (
     CLI_COMMAND as PILOT_CLI_COMMAND,
@@ -49,29 +57,52 @@ from vyro_growth.services.supervised_pilot_plan import (
 from vyro_growth.services.supervised_pilot_plan import (
     HTTP_ROUTE as PILOT_HTTP_ROUTE,
 )
-from vyro_growth.services.supervised_pilot_plan import (
-    PilotAbortCriterion,
-    PilotScopeRecommendation,
-    SupervisedPilotPlan,
-    SupervisedPilotPlanService,
-)
 
 logger = structlog.get_logger(__name__)
 
-PACKET_KIND = "supervised_pilot_first_send_preflight"
-PACKET_PURPOSE = "manual_owner_supervised_pilot_first_send_preflight_review_only"
-PREFLIGHT_NOT_GO_LIVE_CODE = (
-    NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE.value
+PACKET_KIND = "supervised_pilot_launch_rehearsal_control_map"
+PACKET_PURPOSE = "manual_owner_supervised_pilot_launch_rehearsal_control_map_review_only"
+CONTROL_MAP_NOT_GO_LIVE_CODE = (
+    NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE.value
 )
 EXECUTION_DISABLED_CODE = "execution_disabled_in_this_phase"
-CLI_COMMAND = "supervised-pilot-first-send-preflight"
-HTTP_ROUTE = "/internal/supervised-pilot-first-send-preflight"
-HTML_ROUTE = "/internal/operator-supervised-pilot-first-send-preflight"
-SUGGESTED_MAX_FIRST_SENDS = 0
+CLI_COMMAND = "supervised-pilot-launch-rehearsal-control-map"
+HTTP_ROUTE = "/internal/supervised-pilot-launch-rehearsal-control-map"
+HTML_ROUTE = "/internal/operator-supervised-pilot-launch-rehearsal-control-map"
+CONTROL_CATEGORIES: tuple[str, ...] = (
+    "safety_gates",
+    "supervised_pilot",
+    "owner_approvals",
+    "settings",
+    "launch_readiness",
+    "compliance_release",
+)
+_CATEGORY_BY_CODE: dict[str, str] = {
+    "outbound_disabled": "safety_gates",
+    "operator_halt": "safety_gates",
+    "live_providers_closed": "safety_gates",
+    "execution_disabled": "safety_gates",
+    "safe_assertions": "safety_gates",
+    "supervised_pilot_plan": "supervised_pilot",
+    "candidate_readiness": "supervised_pilot",
+    "source_go_no_go": "supervised_pilot",
+    "source_pilot_plan": "supervised_pilot",
+    "first_send_not_permitted": "supervised_pilot",
+    "preflight_is_not_a_send": "supervised_pilot",
+    "suggested_max_first_sends": "supervised_pilot",
+    "packet_is_not_go_live": "supervised_pilot",
+    "owner_approvals": "owner_approvals",
+    "review_queue": "owner_approvals",
+    "action_readiness": "owner_approvals",
+    "settings_requests": "settings",
+    "missing_credentials": "settings",
+    "missing_config": "settings",
+    "provider_setup": "launch_readiness",
+    "rehearsal_outcome": "launch_readiness",
+    "launch_readiness": "launch_readiness",
+    "go_live_index": "launch_readiness",
+}
 RELATED_COMMANDS: tuple[str, ...] = (
-    GO_NO_GO_CLI_COMMAND,
-    PILOT_CLI_COMMAND,
-    "supervised-pilot-candidates",
     "launch-readiness",
     "go-live-readiness-index",
     "launch-blockers-plan",
@@ -80,22 +111,22 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "provider-setup-checklist",
     "go-live-rehearsal-checklist",
     "rehearsal-outcome-report",
+    PILOT_CLI_COMMAND,
+    "supervised-pilot-candidates",
+    GO_NO_GO_CLI_COMMAND,
+    FIRST_SEND_CLI_COMMAND,
     "action-readiness",
     "settings-execution-preflight",
+    "compliance-evidence-binder",
+    "release-candidate-runbook",
+    "release-artifact-manifest",
     "dashboard-summary",
     "check-config",
     "smoke-dry-run",
     CLI_COMMAND,
-    "supervised-pilot-launch-rehearsal-control-map",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
-    GO_NO_GO_HTML_ROUTE,
-    GO_NO_GO_HTTP_ROUTE,
-    PILOT_HTML_ROUTE,
-    PILOT_HTTP_ROUTE,
-    "/internal/operator-supervised-pilot-candidates",
-    "/internal/supervised-pilot-candidates",
     "/internal/launch-readiness",
     "/internal/operator-go-live-readiness-index",
     "/internal/go-live-readiness-index",
@@ -111,28 +142,50 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/go-live-rehearsal-checklist",
     "/internal/operator-rehearsal-outcome-report",
     "/internal/rehearsal-outcome-report",
+    PILOT_HTML_ROUTE,
+    PILOT_HTTP_ROUTE,
+    "/internal/operator-supervised-pilot-candidates",
+    "/internal/supervised-pilot-candidates",
+    GO_NO_GO_HTML_ROUTE,
+    GO_NO_GO_HTTP_ROUTE,
+    FIRST_SEND_HTML_ROUTE,
+    FIRST_SEND_HTTP_ROUTE,
     "/internal/operator-action-readiness",
     "/internal/action-readiness",
     "/internal/operator-review-queue",
     "/internal/review-queue",
     "/internal/operator-approval-packets",
     "/internal/operator-settings-change-requests",
+    "/internal/operator-settings-execution-preflight",
+    "/internal/settings-execution-preflight",
+    "/internal/operator-compliance-evidence-binder",
+    "/internal/compliance-evidence-binder",
+    "/internal/operator-release-candidate-runbook",
+    "/internal/release-candidate-runbook",
+    "/internal/operator-release-artifact-manifest",
+    "/internal/release-artifact-manifest",
     HTML_ROUTE,
     HTTP_ROUTE,
-    "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
-    "/internal/supervised-pilot-launch-rehearsal-control-map",
 )
+_STATUS_RANK = {
+    FindingSeverity.INFO.value: 0,
+    "ready_for_owner_review": 1,
+    "open": 1,
+    FindingSeverity.WARNING.value: 2,
+    FindingSeverity.BLOCKED.value: 3,
+}
 
 
 @dataclass(frozen=True)
-class FirstSendCount:
+class ControlCount:
     key: str
     count: int
 
 
 @dataclass(frozen=True)
-class FirstSendPreflightCheck:
+class ControlNode:
     code: str
+    category: str
     status: str
     label: str
     blocking: bool
@@ -142,14 +195,7 @@ class FirstSendPreflightCheck:
 
 
 @dataclass(frozen=True)
-class FirstSendAbortCriterion:
-    code: str
-    label: str
-    instruction: str
-
-
-@dataclass(frozen=True)
-class FirstSendNextAction:
+class ControlNextAction:
     code: str
     status: str
     label: str
@@ -160,7 +206,7 @@ class FirstSendNextAction:
 
 
 @dataclass(frozen=True)
-class SupervisedPilotFirstSendPreflight:
+class SupervisedPilotLaunchRehearsalControlMap:
     generated_at: datetime
     packet_kind: str
     purpose: str
@@ -172,6 +218,7 @@ class SupervisedPilotFirstSendPreflight:
     no_outbound: bool
     no_provider_calls: bool
     no_spend: bool
+    no_first_send: bool
     dry_run_only: bool
     executed: int
     execution_attempted: bool
@@ -206,14 +253,13 @@ class SupervisedPilotFirstSendPreflight:
     first_send_executed: int
     sends_executed: int
     suggested_max_first_sends: int
-    suggested_max_leads: int
-    suggested_max_drafts: int
-    suggested_max_manually_reviewed_sends: int
-    suggested_max_daily_activity: int
-    supervised_pilot_first_send_preflight_is_not_go_live: bool
+    supervised_pilot_launch_rehearsal_control_map_is_not_go_live: bool
+    rehearsal_control_map_is_not_a_script_runner: bool
+    control_map_is_not_execution: bool
     first_send_preflight_is_not_a_send: bool
     export_is_not_permission_to_go_live: bool
     export_is_not_execution: bool
+    supervised_pilot_first_send_preflight_is_not_go_live: bool
     supervised_pilot_go_no_go_is_not_go_live: bool
     supervised_pilot_plan_is_not_go_live: bool
     supervised_pilot_candidates_is_not_go_live: bool
@@ -223,6 +269,7 @@ class SupervisedPilotFirstSendPreflight:
     operator_halt_status: str
     operator_halt_before: str
     operator_halt_after: str
+    source_first_send_overall_status: str
     source_go_no_go_overall_status: str
     source_pilot_plan_overall_status: str
     source_candidates_overall_status: str
@@ -234,16 +281,17 @@ class SupervisedPilotFirstSendPreflight:
     approval_packet_count: int
     settings_request_count: int
     settings_request_pending_count: int
-    prerequisite_counts_by_status: tuple[FirstSendCount, ...]
-    candidate_counts_by_readiness: tuple[FirstSendCount, ...]
-    blocked_reason_counts: tuple[FirstSendCount, ...]
+    blocking_control_count: int
+    warning_control_count: int
+    info_control_count: int
+    control_counts_by_category: tuple[ControlCount, ...]
+    control_counts_by_status: tuple[ControlCount, ...]
+    blocking_control_codes: tuple[str, ...]
     expected_safe_assertion_count: int
     expected_safe_assertions_passed: int
     expected_safe_assertions_failed: int
     failed_safe_assertion_keys: tuple[str, ...]
-    preflight_checks: tuple[FirstSendPreflightCheck, ...]
-    abort_criteria: tuple[FirstSendAbortCriterion, ...]
-    stop_conditions: tuple[str, ...]
+    control_nodes: tuple[ControlNode, ...]
     owner_decision_prerequisites: tuple[str, ...]
     remaining_owner_approval_types: tuple[str, ...]
     closed_provider_flag_names: tuple[str, ...]
@@ -254,6 +302,9 @@ class SupervisedPilotFirstSendPreflight:
     gate_codes: tuple[str, ...]
     cli_command: str
     http_route: str
+    source_first_send_command: str
+    source_first_send_route: str
+    source_first_send_html_route: str
     source_go_no_go_command: str
     source_go_no_go_route: str
     source_go_no_go_html_route: str
@@ -266,44 +317,44 @@ class SupervisedPilotFirstSendPreflight:
     related_commands: tuple[str, ...]
     related_routes: tuple[str, ...]
     local_git: LocalGitMetadata
-    next_actions: tuple[FirstSendNextAction, ...]
+    next_actions: tuple[ControlNextAction, ...]
 
 
-class SupervisedPilotFirstSendPreflightService:
-    """Compose a sanitized first-send preflight from existing review surfaces."""
+class SupervisedPilotLaunchRehearsalControlMapService:
+    """Compose a sanitized control map from existing review surfaces."""
 
     def __init__(
         self,
         *,
-        go_no_go: SupervisedPilotGoNoGoService | None = None,
-        pilot_plan: SupervisedPilotPlanService | None = None,
+        first_send: SupervisedPilotFirstSendPreflightService | None = None,
     ) -> None:
-        self.go_no_go = go_no_go or SupervisedPilotGoNoGoService()
-        self.pilot_plan = pilot_plan or SupervisedPilotPlanService()
+        self.first_send = first_send or SupervisedPilotFirstSendPreflightService()
 
-    def build(self, db: Session, settings: Settings) -> SupervisedPilotFirstSendPreflight:
+    def build(
+        self, db: Session, settings: Settings
+    ) -> SupervisedPilotLaunchRehearsalControlMap:
         halt_before = read_operator_halt(db)
-        go_no_go = self.go_no_go.build(db, settings)
-        plan = self.pilot_plan.build(db, settings)
+        first_send = self.first_send.build(db, settings)
         halt_after = read_operator_halt(db)
         if halt_after != halt_before:
             raise RuntimeError(
-                "supervised pilot first-send preflight must not change operator halt status"
+                "supervised pilot launch rehearsal control map must not "
+                "change operator halt status"
             )
-        packet = _from_sources(
-            go_no_go,
-            plan,
+        packet = _from_source(
+            first_send,
             halt_before=halt_before,
             halt_after=halt_after,
         )
         logger.info(
-            "supervised_pilot_first_send_preflight_built",
+            "supervised_pilot_launch_rehearsal_control_map_built",
             read_only=True,
             no_execution=True,
             no_go_live=True,
             no_outbound=True,
             no_provider_calls=True,
             no_spend=True,
+            no_first_send=True,
             overall_status=packet.overall_status,
             operator_halt_status=packet.operator_halt_status,
             outbound_enabled=packet.outbound_enabled,
@@ -317,30 +368,35 @@ class SupervisedPilotFirstSendPreflightService:
             owner_approved=False,
             spend_allowed=False,
             executed=0,
-            supervised_pilot_first_send_preflight_is_not_go_live=True,
+            supervised_pilot_launch_rehearsal_control_map_is_not_go_live=True,
         )
         return packet
 
 
-def _from_sources(
-    go_no_go: SupervisedPilotGoNoGo,
-    plan: SupervisedPilotPlan,
+def _from_source(
+    first_send: SupervisedPilotFirstSendPreflight,
     *,
     halt_before: HaltStatus,
     halt_after: HaltStatus,
-) -> SupervisedPilotFirstSendPreflight:
-    scope = plan.pilot_scope
-    failed_keys = _failed_assertion_keys(go_no_go, plan)
-    checks = _preflight_checks(go_no_go, plan, failed_keys=failed_keys)
-    abort_criteria = _abort_criteria(plan.abort_criteria)
-    next_actions = _next_actions(go_no_go)
-    expected_count = _expected_assertion_count()
-    passed_count = expected_count - len(failed_keys)
-    return SupervisedPilotFirstSendPreflight(
+) -> SupervisedPilotLaunchRehearsalControlMap:
+    nodes = _control_nodes(first_send)
+    category_counts = _counts_by(nodes, key=lambda item: item.category)
+    status_counts = _counts_by(nodes, key=lambda item: item.status)
+    blocking_codes = _unique_sorted(item.code for item in nodes if item.blocking)
+    blocking_count = sum(1 for item in nodes if item.blocking)
+    warning_count = sum(
+        1 for item in nodes if item.status == FindingSeverity.WARNING.value
+    )
+    info_count = sum(1 for item in nodes if item.status == FindingSeverity.INFO.value)
+    overall_status = _worst_status(
+        first_send.overall_status,
+        *(item.status for item in nodes),
+    )
+    return SupervisedPilotLaunchRehearsalControlMap(
         generated_at=datetime.now(tz=UTC),
         packet_kind=PACKET_KIND,
         purpose=PACKET_PURPOSE,
-        overall_status=_safe_text(go_no_go.overall_status) or FindingSeverity.INFO.value,
+        overall_status=overall_status,
         read_only=True,
         no_execution=True,
         no_go_live=True,
@@ -348,6 +404,7 @@ def _from_sources(
         no_outbound=True,
         no_provider_calls=True,
         no_spend=True,
+        no_first_send=True,
         dry_run_only=True,
         executed=0,
         execution_attempted=False,
@@ -374,22 +431,21 @@ def _from_sources(
         artifact_publish_allowed=False,
         container_build_attempted=False,
         artifact_publish_attempted=False,
-        outbound_enabled=go_no_go.outbound_enabled,
-        live_providers_enabled=go_no_go.live_providers_enabled,
+        outbound_enabled=first_send.outbound_enabled,
+        live_providers_enabled=first_send.live_providers_enabled,
         manual_review_only=True,
         first_send_allowed=False,
         first_send_attempted=False,
         first_send_executed=0,
         sends_executed=0,
-        suggested_max_first_sends=SUGGESTED_MAX_FIRST_SENDS,
-        suggested_max_leads=scope.suggested_max_leads,
-        suggested_max_drafts=scope.suggested_max_drafts,
-        suggested_max_manually_reviewed_sends=scope.suggested_max_manually_reviewed_sends,
-        suggested_max_daily_activity=scope.suggested_max_daily_activity,
-        supervised_pilot_first_send_preflight_is_not_go_live=True,
+        suggested_max_first_sends=first_send.suggested_max_first_sends,
+        supervised_pilot_launch_rehearsal_control_map_is_not_go_live=True,
+        rehearsal_control_map_is_not_a_script_runner=True,
+        control_map_is_not_execution=True,
         first_send_preflight_is_not_a_send=True,
         export_is_not_permission_to_go_live=True,
         export_is_not_execution=True,
+        supervised_pilot_first_send_preflight_is_not_go_live=True,
         supervised_pilot_go_no_go_is_not_go_live=True,
         supervised_pilot_plan_is_not_go_live=True,
         supervised_pilot_candidates_is_not_go_live=True,
@@ -399,176 +455,169 @@ def _from_sources(
         operator_halt_status=halt_after.value,
         operator_halt_before=halt_before.value,
         operator_halt_after=halt_after.value,
-        source_go_no_go_overall_status=go_no_go.overall_status,
-        source_pilot_plan_overall_status=plan.overall_status,
-        source_candidates_overall_status=go_no_go.source_candidates_overall_status,
-        ready_for_review_count=go_no_go.ready_for_review_count,
-        blocked_candidate_count=go_no_go.blocked_candidate_count,
-        total_candidate_count=go_no_go.total_candidate_count,
-        review_queue_pending_count=go_no_go.review_queue_pending_count,
-        action_readiness_candidate_count=go_no_go.action_readiness_candidate_count,
-        approval_packet_count=go_no_go.approval_packet_count,
-        settings_request_count=go_no_go.settings_request_count,
-        settings_request_pending_count=go_no_go.settings_request_pending_count,
-        prerequisite_counts_by_status=_copy_counts(go_no_go.prerequisite_counts_by_status),
-        candidate_counts_by_readiness=_copy_counts(go_no_go.candidate_counts_by_readiness),
-        blocked_reason_counts=_copy_counts(go_no_go.blocked_reason_counts),
-        expected_safe_assertion_count=expected_count,
-        expected_safe_assertions_passed=passed_count,
-        expected_safe_assertions_failed=len(failed_keys),
-        failed_safe_assertion_keys=failed_keys,
-        preflight_checks=checks,
-        abort_criteria=abort_criteria,
-        stop_conditions=_stop_conditions(scope),
-        owner_decision_prerequisites=tuple(go_no_go.owner_decision_prerequisites),
-        remaining_owner_approval_types=tuple(go_no_go.remaining_owner_approval_types),
-        closed_provider_flag_names=tuple(go_no_go.closed_provider_flag_names),
-        missing_credential_names=tuple(go_no_go.missing_credential_names),
-        missing_config_names=tuple(go_no_go.missing_config_names),
-        missing_prerequisite_codes=tuple(go_no_go.missing_prerequisite_codes),
-        blocker_codes=_unique_sorted(
-            (
-                *go_no_go.blocker_codes,
-                *plan.blocker_codes,
-                *(item.code for item in checks if item.blocking),
-            )
-        ),
+        source_first_send_overall_status=first_send.overall_status,
+        source_go_no_go_overall_status=first_send.source_go_no_go_overall_status,
+        source_pilot_plan_overall_status=first_send.source_pilot_plan_overall_status,
+        source_candidates_overall_status=first_send.source_candidates_overall_status,
+        ready_for_review_count=first_send.ready_for_review_count,
+        blocked_candidate_count=first_send.blocked_candidate_count,
+        total_candidate_count=first_send.total_candidate_count,
+        review_queue_pending_count=first_send.review_queue_pending_count,
+        action_readiness_candidate_count=first_send.action_readiness_candidate_count,
+        approval_packet_count=first_send.approval_packet_count,
+        settings_request_count=first_send.settings_request_count,
+        settings_request_pending_count=first_send.settings_request_pending_count,
+        blocking_control_count=blocking_count,
+        warning_control_count=warning_count,
+        info_control_count=info_count,
+        control_counts_by_category=category_counts,
+        control_counts_by_status=status_counts,
+        blocking_control_codes=blocking_codes,
+        expected_safe_assertion_count=first_send.expected_safe_assertion_count,
+        expected_safe_assertions_passed=first_send.expected_safe_assertions_passed,
+        expected_safe_assertions_failed=first_send.expected_safe_assertions_failed,
+        failed_safe_assertion_keys=tuple(first_send.failed_safe_assertion_keys),
+        control_nodes=nodes,
+        owner_decision_prerequisites=tuple(first_send.owner_decision_prerequisites),
+        remaining_owner_approval_types=tuple(first_send.remaining_owner_approval_types),
+        closed_provider_flag_names=tuple(first_send.closed_provider_flag_names),
+        missing_credential_names=tuple(first_send.missing_credential_names),
+        missing_config_names=tuple(first_send.missing_config_names),
+        missing_prerequisite_codes=tuple(first_send.missing_prerequisite_codes),
+        blocker_codes=_unique_sorted((*first_send.blocker_codes, *blocking_codes)),
         gate_codes=_unique_sorted(
-            (*go_no_go.gate_codes, *plan.gate_codes, *(item.code for item in checks))
+            (*first_send.gate_codes, *(item.code for item in nodes))
         ),
         cli_command=CLI_COMMAND,
         http_route=HTTP_ROUTE,
+        source_first_send_command=FIRST_SEND_CLI_COMMAND,
+        source_first_send_route=FIRST_SEND_HTTP_ROUTE,
+        source_first_send_html_route=FIRST_SEND_HTML_ROUTE,
         source_go_no_go_command=GO_NO_GO_CLI_COMMAND,
         source_go_no_go_route=GO_NO_GO_HTTP_ROUTE,
         source_go_no_go_html_route=GO_NO_GO_HTML_ROUTE,
         source_pilot_plan_command=PILOT_CLI_COMMAND,
         source_pilot_plan_route=PILOT_HTTP_ROUTE,
         source_pilot_plan_html_route=PILOT_HTML_ROUTE,
-        source_candidates_command=go_no_go.source_candidates_command,
-        source_candidates_route=go_no_go.source_candidates_route,
-        source_candidates_html_route=go_no_go.source_candidates_html_route,
+        source_candidates_command=first_send.source_candidates_command,
+        source_candidates_route=first_send.source_candidates_route,
+        source_candidates_html_route=first_send.source_candidates_html_route,
         related_commands=RELATED_COMMANDS,
         related_routes=RELATED_ROUTES,
-        local_git=go_no_go.local_git,
-        next_actions=next_actions,
+        local_git=first_send.local_git,
+        next_actions=_next_actions(first_send),
     )
 
 
-def _copy_counts(items: Sequence[GoNoGoCount]) -> tuple[FirstSendCount, ...]:
-    return tuple(FirstSendCount(key=_safe_text(item.key), count=int(item.count)) for item in items)
-
-
-def _expected_assertion_count() -> int:
-    return len(_assertion_pairs(None, None))
-
-
-def _assertion_pairs(
-    go_no_go: SupervisedPilotGoNoGo | None,
-    plan: SupervisedPilotPlan | None,
-) -> tuple[tuple[str, bool], ...]:
-    outbound_ok = True if go_no_go is None else not go_no_go.outbound_enabled
-    halt_ok = True if go_no_go is None else not go_no_go.halt_changed
-    spend_ok = True if go_no_go is None else not go_no_go.spend_allowed
-    live_ok = True if go_no_go is None else not go_no_go.live_providers_enabled
-    plan_sends_ok = (
-        True
-        if plan is None
-        else plan.pilot_scope.suggested_max_manually_reviewed_sends == 0
-    )
-    return (
-        ("outbound_enabled_false", outbound_ok),
-        ("go_live_permitted_false", True),
-        ("execution_allowed_false", True),
-        ("first_send_allowed_false", True),
-        ("first_send_executed_zero", True),
-        ("deployment_allowed_false", True),
-        ("owner_approved_false", True),
-        ("settings_applied_false", True),
-        ("halt_changed_false", halt_ok),
-        ("spend_allowed_false", spend_ok),
-        ("live_providers_enabled_false", live_ok),
-        ("suggested_max_first_sends_zero", True),
-        ("suggested_max_manually_reviewed_sends_zero", plan_sends_ok),
-    )
-
-
-def _failed_assertion_keys(
-    go_no_go: SupervisedPilotGoNoGo,
-    plan: SupervisedPilotPlan,
-) -> tuple[str, ...]:
-    return tuple(key for key, passed in _assertion_pairs(go_no_go, plan) if not passed)
-
-
-def _preflight_checks(
-    go_no_go: SupervisedPilotGoNoGo,
-    plan: SupervisedPilotPlan,
-    *,
-    failed_keys: Sequence[str],
-) -> tuple[FirstSendPreflightCheck, ...]:
-    reused = tuple(_check_from_gate(gate) for gate in go_no_go.go_no_go_gates)
+def _control_nodes(
+    first_send: SupervisedPilotFirstSendPreflight,
+) -> tuple[ControlNode, ...]:
+    reused = tuple(_node_from_check(check) for check in first_send.preflight_checks)
     extra = (
-        _check(
-            "first_send_not_permitted",
+        _node(
+            "go_live_rehearsal_checklist",
+            "launch_readiness",
             FindingSeverity.INFO.value,
             (
-                "First send remains not permitted. This preflight does "
-                "not send, enqueue, or select a candidate."
+                "Review the go-live rehearsal checklist by name only. "
+                "This control map does not run rehearsal steps."
             ),
             blocking=False,
-            command_name=CLI_COMMAND,
-            json_route=HTTP_ROUTE,
-            html_route=HTML_ROUTE,
+            command_name="go-live-rehearsal-checklist",
+            json_route="/internal/go-live-rehearsal-checklist",
+            html_route="/internal/operator-go-live-rehearsal-checklist",
         ),
-        _check(
-            "suggested_max_first_sends",
+        _node(
+            "launch_blockers_plan",
+            "launch_readiness",
             FindingSeverity.INFO.value,
             (
-                f"Suggested max first sends remains {SUGGESTED_MAX_FIRST_SENDS}. "
-                "This is a planning count only."
+                "Review launch blocker codes by name only. This control "
+                "map does not remediate or execute blockers."
             ),
             blocking=False,
-            command_name=PILOT_CLI_COMMAND,
-            json_route=PILOT_HTTP_ROUTE,
-            html_route=PILOT_HTML_ROUTE,
+            command_name="launch-blockers-plan",
+            json_route="/internal/launch-blockers-plan",
+            html_route="/internal/operator-launch-blockers-plan",
         ),
-        _check(
-            "safe_assertions",
-            FindingSeverity.BLOCKED.value if failed_keys else FindingSeverity.INFO.value,
+        _node(
+            "owner_approval_packets",
+            "owner_approvals",
+            FindingSeverity.WARNING.value
+            if first_send.remaining_owner_approval_types
+            else FindingSeverity.INFO.value,
             (
-                "Expected safe assertions failed."
-                if failed_keys
-                else "Expected safe assertions passed using flag names only."
+                "Remaining owner approval types are names only. This "
+                "control map does not record or execute approvals."
             ),
-            blocking=bool(failed_keys),
-            command_name=CLI_COMMAND,
-            json_route=HTTP_ROUTE,
-            html_route=HTML_ROUTE,
+            blocking=False,
+            command_name="settings-execution-preflight",
+            json_route="/internal/operator-approval-packets",
+            html_route="/internal/operator-approval-packets",
         ),
-        _check(
-            "source_go_no_go",
-            go_no_go.overall_status,
-            "Reuse the supervised pilot go/no-go packet. Do not recalculate readiness.",
-            blocking=_is_blocking(go_no_go.overall_status),
-            command_name=GO_NO_GO_CLI_COMMAND,
-            json_route=GO_NO_GO_HTTP_ROUTE,
-            html_route=GO_NO_GO_HTML_ROUTE,
+        _node(
+            "settings_execution_preflight",
+            "settings",
+            FindingSeverity.WARNING.value
+            if first_send.settings_request_pending_count
+            else FindingSeverity.INFO.value,
+            (
+                "Inspect settings-execution preflight counts only. This "
+                "control map does not apply settings."
+            ),
+            blocking=False,
+            command_name="settings-execution-preflight",
+            json_route="/internal/settings-execution-preflight",
+            html_route="/internal/operator-settings-execution-preflight",
         ),
-        _check(
-            "source_pilot_plan",
-            plan.overall_status,
-            "Reuse the supervised pilot plan abort and scope counts only.",
-            blocking=_is_blocking(plan.overall_status),
-            command_name=PILOT_CLI_COMMAND,
-            json_route=PILOT_HTTP_ROUTE,
-            html_route=PILOT_HTML_ROUTE,
-        ),
-        _check(
-            "preflight_is_not_a_send",
+        _node(
+            "compliance_evidence_binder",
+            "compliance_release",
             FindingSeverity.INFO.value,
             (
-                "This first-send preflight is owner review only. It is "
-                "not a send, not permission to go live, and not an "
-                "execution surface."
+                "Review the compliance evidence binder by route and "
+                "command name only. This map does not execute."
+            ),
+            blocking=False,
+            command_name="compliance-evidence-binder",
+            json_route="/internal/compliance-evidence-binder",
+            html_route="/internal/operator-compliance-evidence-binder",
+        ),
+        _node(
+            "release_candidate_runbook",
+            "compliance_release",
+            FindingSeverity.INFO.value,
+            (
+                "Review the release-candidate runbook by name only. "
+                "This map is not a deployment mechanism."
+            ),
+            blocking=False,
+            command_name="release-candidate-runbook",
+            json_route="/internal/release-candidate-runbook",
+            html_route="/internal/operator-release-candidate-runbook",
+        ),
+        _node(
+            "release_artifact_manifest",
+            "compliance_release",
+            FindingSeverity.INFO.value,
+            (
+                "Review the release artifact manifest by name only. "
+                "This map does not build, publish, or deploy."
+            ),
+            blocking=False,
+            command_name="release-artifact-manifest",
+            json_route="/internal/release-artifact-manifest",
+            html_route="/internal/operator-release-artifact-manifest",
+        ),
+        _node(
+            "control_map_is_not_a_script_runner",
+            "safety_gates",
+            FindingSeverity.INFO.value,
+            (
+                "This supervised-pilot launch rehearsal control map is "
+                "owner review only. It is not a script runner, not "
+                "permission to send, not permission to go live, and "
+                "not an execution surface."
             ),
             blocking=False,
             command_name=CLI_COMMAND,
@@ -576,23 +625,39 @@ def _preflight_checks(
             html_route=HTML_ROUTE,
         ),
     )
-    return (*reused, *extra)
-
-
-def _check_from_gate(gate: GoNoGoGate) -> FirstSendPreflightCheck:
-    return _check(
-        gate.code,
-        gate.status,
-        gate.label,
-        blocking=gate.blocking,
-        command_name=gate.command_name,
-        json_route=gate.json_route,
-        html_route=gate.html_route,
+    selected: dict[str, ControlNode] = {}
+    for item in (*reused, *extra):
+        selected.setdefault(item.code, item)
+    return tuple(
+        sorted(
+            selected.values(),
+            key=lambda item: (
+                CONTROL_CATEGORIES.index(item.category)
+                if item.category in CONTROL_CATEGORIES
+                else len(CONTROL_CATEGORIES),
+                -_STATUS_RANK.get(item.status, 0),
+                item.code,
+            ),
+        )
     )
 
 
-def _check(
+def _node_from_check(check: FirstSendPreflightCheck) -> ControlNode:
+    return _node(
+        check.code,
+        _CATEGORY_BY_CODE.get(check.code, "supervised_pilot"),
+        check.status,
+        check.label,
+        blocking=check.blocking,
+        command_name=check.command_name,
+        json_route=check.json_route,
+        html_route=check.html_route,
+    )
+
+
+def _node(
     code: str,
+    category: str,
     status: str,
     label: str,
     *,
@@ -600,10 +665,12 @@ def _check(
     command_name: str | None = None,
     json_route: str | None = None,
     html_route: str | None = None,
-) -> FirstSendPreflightCheck:
+) -> ControlNode:
     cleaned_status = _safe_text(status) or FindingSeverity.INFO.value
-    return FirstSendPreflightCheck(
+    cleaned_category = _safe_text(category) or "supervised_pilot"
+    return ControlNode(
         code=_safe_text(code),
+        category=cleaned_category,
         status=cleaned_status,
         label=_safe_text(label),
         blocking=bool(blocking) or _is_blocking(cleaned_status),
@@ -613,53 +680,34 @@ def _check(
     )
 
 
-def _abort_criteria(
-    items: Sequence[PilotAbortCriterion],
-) -> tuple[FirstSendAbortCriterion, ...]:
-    copied = tuple(
-        FirstSendAbortCriterion(
-            code=_safe_text(item.code),
-            label=_safe_text(item.label),
-            instruction=_safe_text(item.instruction),
-        )
-        for item in items
-    )
-    extra = FirstSendAbortCriterion(
-        code="abort_before_any_first_send",
-        label="Abort before any first send",
-        instruction=(
-            "Do not send, enqueue, or contact a candidate from this "
-            "preflight. If any safe assertion fails, return to the "
-            "go/no-go packet for owner review."
-        ),
-    )
-    return (*copied, extra)
-
-
-def _stop_conditions(scope: PilotScopeRecommendation) -> tuple[str, ...]:
-    return _unique_sorted(
-        (
-            *(_safe_text(item) for item in scope.stop_conditions),
-            "first_send_not_permitted",
-            "outbound_enabled",
-            "halt_changed",
-            "owner_approved",
-            "spend_allowed",
-        )
+def _counts_by(
+    nodes: Sequence[ControlNode],
+    *,
+    key: Callable[[ControlNode], str],
+) -> tuple[ControlCount, ...]:
+    tallies: dict[str, int] = {}
+    for item in nodes:
+        label = _safe_text(key(item))
+        if not label:
+            continue
+        tallies[label] = tallies.get(label, 0) + 1
+    return tuple(
+        ControlCount(key=label, count=tallies[label]) for label in sorted(tallies)
     )
 
 
 def _next_actions(
-    go_no_go: SupervisedPilotGoNoGo,
-) -> tuple[FirstSendNextAction, ...]:
+    first_send: SupervisedPilotFirstSendPreflight,
+) -> tuple[ControlNextAction, ...]:
     return (
         _action(
-            PREFLIGHT_NOT_GO_LIVE_CODE,
+            CONTROL_MAP_NOT_GO_LIVE_CODE,
             FindingSeverity.INFO.value,
             (
-                "This supervised pilot first-send preflight is a sanitized "
-                "owner-review export. It is not permission to send, not "
-                "permission to go live, and not an execution surface."
+                "This supervised pilot launch rehearsal control map is "
+                "a sanitized owner-review export. It is not a script "
+                "runner, not permission to send, not permission to go "
+                "live, and not an execution surface."
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
@@ -669,14 +717,24 @@ def _next_actions(
             EXECUTION_DISABLED_CODE,
             FindingSeverity.INFO.value,
             (
-                "Execution remains disabled. This preflight does not "
-                "select candidates, run commands, apply settings, lift "
-                "halt, enable outbound, deploy, build, publish, send, "
-                "or spend."
+                "Execution remains disabled. This control map does not "
+                "run commands, apply settings, lift halt, enable "
+                "outbound, deploy, build, publish, send, or spend."
             ),
             command_name=CLI_COMMAND,
             json_route=HTTP_ROUTE,
             html_route=HTML_ROUTE,
+        ),
+        _action(
+            NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE.value,
+            FindingSeverity.INFO.value,
+            (
+                "Review the source first-send preflight using counts, "
+                "codes, and flag names only."
+            ),
+            command_name=FIRST_SEND_CLI_COMMAND,
+            json_route=FIRST_SEND_HTTP_ROUTE,
+            html_route=FIRST_SEND_HTML_ROUTE,
         ),
         _action(
             NextActionCode.SUPERVISED_PILOT_GO_NO_GO_IS_NOT_GO_LIVE.value,
@@ -704,29 +762,32 @@ def _next_actions(
             NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE.value,
             FindingSeverity.INFO.value,
             (
-                "Review candidate readiness counts only. This preflight "
-                "does not select or contact candidates."
+                "Review candidate readiness counts only. This control "
+                "map does not select or contact candidates."
             ),
-            command_name=go_no_go.source_candidates_command,
-            json_route=go_no_go.source_candidates_route,
-            html_route=go_no_go.source_candidates_html_route,
+            command_name=first_send.source_candidates_command,
+            json_route=first_send.source_candidates_route,
+            html_route=first_send.source_candidates_html_route,
         ),
         _action(
             NextActionCode.KEEP_OUTBOUND_DISABLED.value,
             FindingSeverity.INFO.value,
-            "Leave OUTBOUND_ENABLED=false. This preflight does not enable outbound.",
+            (
+                "Leave OUTBOUND_ENABLED=false. This control map does "
+                "not enable outbound."
+            ),
             command_name="launch-readiness",
             json_route="/internal/launch-readiness",
             config_name="OUTBOUND_ENABLED",
         ),
         _action(
             NextActionCode.KEEP_OPERATOR_HALT.value
-            if go_no_go.operator_halt_status == HaltStatus.HALTED.value
+            if first_send.operator_halt_status == HaltStatus.HALTED.value
             else NextActionCode.RECORD_OPERATOR_HALT.value,
             FindingSeverity.INFO.value,
             (
-                "Keep operator halt unchanged. This preflight reads halt "
-                "status only and never lifts it."
+                "Keep operator halt unchanged. This control map reads "
+                "halt status only and never lifts it."
             ),
             command_name="system-status",
             json_route="/internal/monitoring/status",
@@ -735,12 +796,45 @@ def _next_actions(
             NextActionCode.KEEP_LIVE_PROVIDERS_DISABLED.value,
             FindingSeverity.INFO.value,
             (
-                "Keep live provider flags closed. This preflight lists "
-                "closed flag names only."
+                "Keep live provider flags closed. This control map "
+                "lists closed flag names only."
             ),
             command_name="provider-setup-checklist",
             json_route="/internal/provider-setup-checklist",
             html_route="/internal/operator-provider-setup-checklist",
+        ),
+        _action(
+            NextActionCode.BINDER_IS_NOT_GO_LIVE.value,
+            FindingSeverity.INFO.value,
+            (
+                "Review the compliance evidence binder by name only. "
+                "This control map does not execute binder contents."
+            ),
+            command_name="compliance-evidence-binder",
+            json_route="/internal/compliance-evidence-binder",
+            html_route="/internal/operator-compliance-evidence-binder",
+        ),
+        _action(
+            NextActionCode.RUNBOOK_IS_NOT_DEPLOYMENT.value,
+            FindingSeverity.INFO.value,
+            (
+                "Review the release-candidate runbook by name only. "
+                "This control map is not a deployment mechanism."
+            ),
+            command_name="release-candidate-runbook",
+            json_route="/internal/release-candidate-runbook",
+            html_route="/internal/operator-release-candidate-runbook",
+        ),
+        _action(
+            NextActionCode.MANIFEST_IS_NOT_BUILD_OR_DEPLOY.value,
+            FindingSeverity.INFO.value,
+            (
+                "Review the release artifact manifest by name only. "
+                "This control map does not build or deploy."
+            ),
+            command_name="release-artifact-manifest",
+            json_route="/internal/release-artifact-manifest",
+            html_route="/internal/operator-release-artifact-manifest",
         ),
         _action(
             NextActionCode.INSPECT_SETTINGS_EXECUTION_PREFLIGHT.value,
@@ -754,17 +848,18 @@ def _next_actions(
             html_route="/internal/operator-settings-execution-preflight",
         ),
         _action(
-            "return_to_go_no_go_review",
+            "return_to_first_send_preflight_review",
             FindingSeverity.INFO.value
-            if not _is_blocking(go_no_go.overall_status)
-            else go_no_go.overall_status,
+            if not _is_blocking(first_send.overall_status)
+            else first_send.overall_status,
             (
-                "Return to the go/no-go packet when any gate is blocked. "
-                "Do not treat this preflight as a first send."
+                "Return to the first-send preflight and go/no-go packet "
+                "when any control node is blocked. Do not treat this "
+                "map as a send or go-live."
             ),
-            command_name=GO_NO_GO_CLI_COMMAND,
-            json_route=GO_NO_GO_HTTP_ROUTE,
-            html_route=GO_NO_GO_HTML_ROUTE,
+            command_name=FIRST_SEND_CLI_COMMAND,
+            json_route=FIRST_SEND_HTTP_ROUTE,
+            html_route=FIRST_SEND_HTML_ROUTE,
         ),
     )
 
@@ -778,8 +873,8 @@ def _action(
     json_route: str | None = None,
     html_route: str | None = None,
     config_name: str | None = None,
-) -> FirstSendNextAction:
-    return FirstSendNextAction(
+) -> ControlNextAction:
+    return ControlNextAction(
         code=_safe_text(code),
         status=_safe_text(status) or FindingSeverity.INFO.value,
         label=_safe_text(label),
@@ -788,6 +883,20 @@ def _action(
         html_route=_safe_optional(html_route),
         config_name=_safe_optional(config_name),
     )
+
+
+def _worst_status(*values: str) -> str:
+    cleaned = [_safe_text(item) for item in values if _safe_text(item)]
+    if not cleaned:
+        return FindingSeverity.INFO.value
+    worst = max(cleaned, key=lambda item: _STATUS_RANK.get(item, 0))
+    if worst == FindingSeverity.BLOCKED.value:
+        return FindingSeverity.BLOCKED.value
+    if worst == FindingSeverity.WARNING.value:
+        return FindingSeverity.WARNING.value
+    if worst == "ready_for_owner_review":
+        return "ready_for_owner_review"
+    return FindingSeverity.INFO.value
 
 
 def _is_blocking(status: str) -> bool:
@@ -815,8 +924,8 @@ def _bool_text(value: object) -> str:
     return "true" if value else "false"
 
 
-def supervised_pilot_first_send_preflight_payload(
-    packet: SupervisedPilotFirstSendPreflight,
+def supervised_pilot_launch_rehearsal_control_map_payload(
+    packet: SupervisedPilotLaunchRehearsalControlMap,
 ) -> dict[str, Any]:
     return {
         "generated_at": packet.generated_at.isoformat(),
@@ -830,6 +939,7 @@ def supervised_pilot_first_send_preflight_payload(
         "no_outbound": True,
         "no_provider_calls": True,
         "no_spend": True,
+        "no_first_send": True,
         "dry_run_only": True,
         "executed": 0,
         "execution_attempted": False,
@@ -864,14 +974,13 @@ def supervised_pilot_first_send_preflight_payload(
         "first_send_executed": 0,
         "sends_executed": 0,
         "suggested_max_first_sends": packet.suggested_max_first_sends,
-        "suggested_max_leads": packet.suggested_max_leads,
-        "suggested_max_drafts": packet.suggested_max_drafts,
-        "suggested_max_manually_reviewed_sends": packet.suggested_max_manually_reviewed_sends,
-        "suggested_max_daily_activity": packet.suggested_max_daily_activity,
-        "supervised_pilot_first_send_preflight_is_not_go_live": True,
+        "supervised_pilot_launch_rehearsal_control_map_is_not_go_live": True,
+        "rehearsal_control_map_is_not_a_script_runner": True,
+        "control_map_is_not_execution": True,
         "first_send_preflight_is_not_a_send": True,
         "export_is_not_permission_to_go_live": True,
         "export_is_not_execution": True,
+        "supervised_pilot_first_send_preflight_is_not_go_live": True,
         "supervised_pilot_go_no_go_is_not_go_live": True,
         "supervised_pilot_plan_is_not_go_live": True,
         "supervised_pilot_candidates_is_not_go_live": True,
@@ -881,6 +990,7 @@ def supervised_pilot_first_send_preflight_payload(
         "operator_halt_status": packet.operator_halt_status,
         "operator_halt_before": packet.operator_halt_before,
         "operator_halt_after": packet.operator_halt_after,
+        "source_first_send_overall_status": packet.source_first_send_overall_status,
         "source_go_no_go_overall_status": packet.source_go_no_go_overall_status,
         "source_pilot_plan_overall_status": packet.source_pilot_plan_overall_status,
         "source_candidates_overall_status": packet.source_candidates_overall_status,
@@ -892,20 +1002,21 @@ def supervised_pilot_first_send_preflight_payload(
         "approval_packet_count": packet.approval_packet_count,
         "settings_request_count": packet.settings_request_count,
         "settings_request_pending_count": packet.settings_request_pending_count,
-        "prerequisite_counts_by_status": [
-            _count_payload(item) for item in packet.prerequisite_counts_by_status
+        "blocking_control_count": packet.blocking_control_count,
+        "warning_control_count": packet.warning_control_count,
+        "info_control_count": packet.info_control_count,
+        "control_counts_by_category": [
+            _count_payload(item) for item in packet.control_counts_by_category
         ],
-        "candidate_counts_by_readiness": [
-            _count_payload(item) for item in packet.candidate_counts_by_readiness
+        "control_counts_by_status": [
+            _count_payload(item) for item in packet.control_counts_by_status
         ],
-        "blocked_reason_counts": [_count_payload(item) for item in packet.blocked_reason_counts],
+        "blocking_control_codes": list(packet.blocking_control_codes),
         "expected_safe_assertion_count": packet.expected_safe_assertion_count,
         "expected_safe_assertions_passed": packet.expected_safe_assertions_passed,
         "expected_safe_assertions_failed": packet.expected_safe_assertions_failed,
         "failed_safe_assertion_keys": list(packet.failed_safe_assertion_keys),
-        "preflight_checks": [_check_payload(item) for item in packet.preflight_checks],
-        "abort_criteria": [_abort_payload(item) for item in packet.abort_criteria],
-        "stop_conditions": list(packet.stop_conditions),
+        "control_nodes": [_node_payload(item) for item in packet.control_nodes],
         "owner_decision_prerequisites": list(packet.owner_decision_prerequisites),
         "remaining_owner_approval_types": list(packet.remaining_owner_approval_types),
         "closed_provider_flag_names": list(packet.closed_provider_flag_names),
@@ -916,6 +1027,9 @@ def supervised_pilot_first_send_preflight_payload(
         "gate_codes": list(packet.gate_codes),
         "cli_command": CLI_COMMAND,
         "http_route": HTTP_ROUTE,
+        "source_first_send_command": packet.source_first_send_command,
+        "source_first_send_route": packet.source_first_send_route,
+        "source_first_send_html_route": packet.source_first_send_html_route,
         "source_go_no_go_command": packet.source_go_no_go_command,
         "source_go_no_go_route": packet.source_go_no_go_route,
         "source_go_no_go_html_route": packet.source_go_no_go_html_route,
@@ -939,13 +1053,14 @@ def supervised_pilot_first_send_preflight_payload(
     }
 
 
-def _count_payload(item: FirstSendCount) -> dict[str, Any]:
+def _count_payload(item: ControlCount) -> dict[str, Any]:
     return {"key": item.key, "count": item.count}
 
 
-def _check_payload(item: FirstSendPreflightCheck) -> dict[str, Any]:
+def _node_payload(item: ControlNode) -> dict[str, Any]:
     return {
         "code": item.code,
+        "category": item.category,
         "status": item.status,
         "label": item.label,
         "blocking": item.blocking,
@@ -955,15 +1070,7 @@ def _check_payload(item: FirstSendPreflightCheck) -> dict[str, Any]:
     }
 
 
-def _abort_payload(item: FirstSendAbortCriterion) -> dict[str, Any]:
-    return {
-        "code": item.code,
-        "label": item.label,
-        "instruction": item.instruction,
-    }
-
-
-def _action_payload(action: FirstSendNextAction) -> dict[str, Any]:
+def _action_payload(action: ControlNextAction) -> dict[str, Any]:
     return {
         "code": action.code,
         "status": action.status,
@@ -975,34 +1082,38 @@ def _action_payload(action: FirstSendNextAction) -> dict[str, Any]:
     }
 
 
-def format_supervised_pilot_first_send_preflight(
-    packet: SupervisedPilotFirstSendPreflight,
+def format_supervised_pilot_launch_rehearsal_control_map(
+    packet: SupervisedPilotLaunchRehearsalControlMap,
     *,
     as_json: bool = False,
 ) -> str:
-    payload = sanitize_mapping(supervised_pilot_first_send_preflight_payload(packet))
+    payload = sanitize_mapping(
+        supervised_pilot_launch_rehearsal_control_map_payload(packet)
+    )
     if as_json:
         return json.dumps(payload, sort_keys=True)
     return _format_markdown(packet, payload)
 
 
 def _format_markdown(
-    packet: SupervisedPilotFirstSendPreflight,
+    packet: SupervisedPilotLaunchRehearsalControlMap,
     payload: dict[str, Any],
 ) -> str:
     lines = [
-        "# Supervised pilot first-send preflight",
+        "# Supervised pilot launch rehearsal control map",
         "",
-        "This export is a sanitized first-send preflight over the "
-        "supervised pilot go/no-go packet, supervised pilot plan, "
-        "candidate readiness, provider setup, rehearsal outcome, launch "
-        "readiness, review and action-readiness queues, owner approval "
-        "and settings-request rollups, and operator halt state. It "
-        "reuses those services as source material and never executes "
-        "commands, applies settings, lifts halt, enables outbound, "
-        "deploys, builds, publishes, sends, or spends. It is not "
-        "permission to send, not permission to go live, and not an "
-        "execution surface.",
+        "This export is a sanitized control map over operator halt, "
+        "OUTBOUND_ENABLED, the supervised pilot plan, candidate "
+        "readiness, go/no-go packet, first-send preflight, owner "
+        "approval packets, settings change request and preflight "
+        "surfaces, launch blockers, go-live readiness index, rehearsal "
+        "checklist, outcome report, provider setup checklist, "
+        "compliance evidence binder, and release runbook/manifest "
+        "surfaces. It reuses those services as source material and "
+        "never executes commands, applies settings, lifts halt, "
+        "enables outbound, deploys, builds, publishes, sends, or "
+        "spends. It is not a script runner, not permission to send, "
+        "not permission to go live, and not an execution surface.",
         "",
         f"- overall: {payload['overall_status']}",
         f"- packet_kind: {payload['packet_kind']}",
@@ -1014,13 +1125,13 @@ def _format_markdown(
         f"- no_outbound: {_bool_text(payload['no_outbound'])}",
         f"- no_provider_calls: {_bool_text(payload['no_provider_calls'])}",
         f"- no_spend: {_bool_text(payload['no_spend'])}",
+        f"- no_first_send: {_bool_text(payload['no_first_send'])}",
         f"- dry_run_only: {_bool_text(payload['dry_run_only'])}",
         f"- executed: {payload['executed']}",
         f"- first_send_allowed: {_bool_text(payload['first_send_allowed'])}",
         f"- first_send_attempted: {_bool_text(payload['first_send_attempted'])}",
         f"- first_send_executed: {payload['first_send_executed']}",
         f"- sends_executed: {payload['sends_executed']}",
-        f"- suggested_max_first_sends: {payload['suggested_max_first_sends']}",
         f"- owner_approved: {_bool_text(payload['owner_approved'])}",
         f"- settings_applied: {_bool_text(payload['settings_applied'])}",
         f"- halt_changed: {_bool_text(payload['halt_changed'])}",
@@ -1031,13 +1142,14 @@ def _format_markdown(
         f"- spend_allowed: {_bool_text(payload['spend_allowed'])}",
         f"- manual_review_only: {_bool_text(payload['manual_review_only'])}",
         (
-            "- supervised_pilot_first_send_preflight_is_not_go_live: "
-            f"{_bool_text(payload['supervised_pilot_first_send_preflight_is_not_go_live'])}"
+            "- supervised_pilot_launch_rehearsal_control_map_is_not_go_live: "
+            f"{_bool_text(payload['supervised_pilot_launch_rehearsal_control_map_is_not_go_live'])}"
         ),
         (
-            "- first_send_preflight_is_not_a_send: "
-            f"{_bool_text(payload['first_send_preflight_is_not_a_send'])}"
+            "- rehearsal_control_map_is_not_a_script_runner: "
+            f"{_bool_text(payload['rehearsal_control_map_is_not_a_script_runner'])}"
         ),
+        f"- control_map_is_not_execution: {_bool_text(payload['control_map_is_not_execution'])}",
         (
             "- export_is_not_permission_to_go_live: "
             f"{_bool_text(payload['export_is_not_permission_to_go_live'])}"
@@ -1053,11 +1165,23 @@ def _format_markdown(
         f"- live_providers_enabled: {_bool_text(payload['live_providers_enabled'])}",
         f"- cli_command: {payload['cli_command']}",
         f"- http_route: {payload['http_route']}",
+        f"- source_first_send_command: {payload['source_first_send_command']}",
         f"- source_go_no_go_command: {payload['source_go_no_go_command']}",
         f"- source_pilot_plan_command: {payload['source_pilot_plan_command']}",
         f"- source_candidates_command: {payload['source_candidates_command']}",
+        (
+            "- source_first_send_overall_status: "
+            f"{payload['source_first_send_overall_status']}"
+        ),
         f"- source_go_no_go_overall_status: {payload['source_go_no_go_overall_status']}",
-        f"- source_pilot_plan_overall_status: {payload['source_pilot_plan_overall_status']}",
+        (
+            "- source_pilot_plan_overall_status: "
+            f"{payload['source_pilot_plan_overall_status']}"
+        ),
+        (
+            "- source_candidates_overall_status: "
+            f"{payload['source_candidates_overall_status']}"
+        ),
         f"- blocker_codes: {_format_codes(packet.blocker_codes)}",
         f"- gate_codes: {_format_codes(packet.gate_codes)}",
         f"- missing_prerequisite_codes: {_format_codes(packet.missing_prerequisite_codes)}",
@@ -1070,6 +1194,7 @@ def _format_markdown(
         f"- missing_config_names: {_format_codes(packet.missing_config_names)}",
         f"- closed_provider_flag_names: {_format_codes(packet.closed_provider_flag_names)}",
         f"- failed_safe_assertion_keys: {_format_codes(packet.failed_safe_assertion_keys)}",
+        f"- blocking_control_codes: {_format_codes(packet.blocking_control_codes)}",
         "",
         "## Live-blocking flags",
         f"- OUTBOUND_ENABLED={_bool_text(packet.outbound_enabled)}",
@@ -1081,21 +1206,23 @@ def _format_markdown(
         "- no_outbound=true",
         "- no_provider_calls=true",
         "- no_spend=true",
+        "- no_first_send=true",
+        "- no_deployment=true",
         "- manual_review_only=true",
         "- execution_allowed=false",
         "- first_send_allowed=false",
         "- first_send_attempted=false",
         "- first_send_executed=0",
         "- sends_executed=0",
-        f"- suggested_max_first_sends={packet.suggested_max_first_sends}",
         "- go_live_permitted=false",
         "- deployment_allowed=false",
         "- spend_allowed=false",
         "- settings_applied=false",
         "- halt_changed=false",
         "- owner_approved=false",
-        "- supervised_pilot_first_send_preflight_is_not_go_live=true",
-        "- first_send_preflight_is_not_a_send=true",
+        "- supervised_pilot_launch_rehearsal_control_map_is_not_go_live=true",
+        "- rehearsal_control_map_is_not_a_script_runner=true",
+        "- control_map_is_not_execution=true",
         "- export_is_not_permission_to_go_live=true",
         "- export_is_not_execution=true",
         f"- local_git_available: {_bool_text(packet.local_git.available)}",
@@ -1105,55 +1232,48 @@ def _format_markdown(
         f"- git_provider_called: {_bool_text(packet.local_git.git_provider_called)}",
         f"- github_actions_called: {_bool_text(packet.local_git.github_actions_called)}",
         "",
-        "## First-send scope recommendation",
-        f"- suggested_max_first_sends: {packet.suggested_max_first_sends}",
-        f"- suggested_max_leads: {packet.suggested_max_leads}",
-        f"- suggested_max_drafts: {packet.suggested_max_drafts}",
-        (
-            "- suggested_max_manually_reviewed_sends: "
-            f"{packet.suggested_max_manually_reviewed_sends}"
-        ),
-        f"- suggested_max_daily_activity: {packet.suggested_max_daily_activity}",
+        "## Blocking status rollups",
+        f"- blocking_control_count: {packet.blocking_control_count}",
+        f"- warning_control_count: {packet.warning_control_count}",
+        f"- info_control_count: {packet.info_control_count}",
         "",
-        "## Candidate and queue counts",
-        f"- ready_for_review_count: {packet.ready_for_review_count}",
-        f"- blocked_candidate_count: {packet.blocked_candidate_count}",
-        f"- total_candidate_count: {packet.total_candidate_count}",
-        f"- review_queue_pending_count: {packet.review_queue_pending_count}",
-        f"- action_readiness_candidate_count: {packet.action_readiness_candidate_count}",
-        f"- approval_packet_count: {packet.approval_packet_count}",
-        f"- settings_request_count: {packet.settings_request_count}",
-        f"- settings_request_pending_count: {packet.settings_request_pending_count}",
-        (
-            "- expected_safe_assertions: "
-            f"passed={packet.expected_safe_assertions_passed} "
-            f"failed={packet.expected_safe_assertions_failed} "
-            f"count={packet.expected_safe_assertion_count}"
-        ),
+        "## Control counts by category",
     ]
-    lines.extend(["", "## Prerequisite category summary"])
-    _append_counts(lines, packet.prerequisite_counts_by_status)
-    lines.extend(["", "## Candidate readiness summary"])
-    _append_counts(lines, packet.candidate_counts_by_readiness)
-    lines.extend(["", "## Blocked-count reasons"])
-    _append_counts(lines, packet.blocked_reason_counts)
-    lines.extend(["", "## First-send preflight checks"])
-    for check in packet.preflight_checks:
-        command_name = check.command_name or "-"
-        json_route = check.json_route or "-"
-        html_route = check.html_route or "-"
+    _append_counts(lines, packet.control_counts_by_category)
+    lines.extend(["", "## Control counts by status"])
+    _append_counts(lines, packet.control_counts_by_status)
+    lines.extend(
+        [
+            "",
+            "## Safe counts",
+            f"- ready_for_review_count: {packet.ready_for_review_count}",
+            f"- blocked_candidate_count: {packet.blocked_candidate_count}",
+            f"- total_candidate_count: {packet.total_candidate_count}",
+            f"- review_queue_pending_count: {packet.review_queue_pending_count}",
+            f"- action_readiness_candidate_count: {packet.action_readiness_candidate_count}",
+            f"- approval_packet_count: {packet.approval_packet_count}",
+            f"- settings_request_count: {packet.settings_request_count}",
+            f"- settings_request_pending_count: {packet.settings_request_pending_count}",
+            (
+                "- expected_safe_assertions: "
+                f"passed={packet.expected_safe_assertions_passed} "
+                f"failed={packet.expected_safe_assertions_failed} "
+                f"count={packet.expected_safe_assertion_count}"
+            ),
+            "",
+            "## Control map",
+        ]
+    )
+    for node in packet.control_nodes:
+        command_name = node.command_name or "-"
+        json_route = node.json_route or "-"
+        html_route = node.html_route or "-"
         lines.append(
-            f"- [{check.status}] {check.code} blocking={_bool_text(check.blocking)} "
-            f"command={command_name} json_route={json_route} "
-            f"html_route={html_route} label={check.label}"
+            f"- [{node.status}] {node.category}/{node.code} "
+            f"blocking={_bool_text(node.blocking)} command={command_name} "
+            f"json_route={json_route} html_route={html_route} "
+            f"label={node.label}"
         )
-    lines.extend(["", "## Abort and stop conditions"])
-    for criterion in packet.abort_criteria:
-        lines.append(
-            f"- {criterion.code}: {criterion.label} instruction={criterion.instruction}"
-        )
-    if packet.stop_conditions:
-        lines.append(f"- stop_conditions: {_format_codes(packet.stop_conditions)}")
     lines.extend(["", "## Owner next actions"])
     for action in packet.next_actions:
         command_name = action.command_name or "-"
@@ -1170,7 +1290,7 @@ def _format_markdown(
     return "\n".join(lines)
 
 
-def _append_counts(lines: list[str], items: Sequence[FirstSendCount]) -> None:
+def _append_counts(lines: list[str], items: Sequence[ControlCount]) -> None:
     if not items:
         lines.append("- counts: none")
         return

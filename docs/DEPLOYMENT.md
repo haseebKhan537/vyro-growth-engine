@@ -198,6 +198,8 @@ vyro-growth recommend-growth
 
 `GET /internal/operator-supervised-pilot-first-send-preflight` is a read-only owner/operator HTML shell of that same supervised pilot first-send preflight packet. It does not execute, apply settings, lift halt, enable outbound, scrape, select candidates, send, spend, build, publish, or deploy. It is a first-send preflight review view only, not permission to send, not permission to go live, and not an execution surface.
 
+`vyro-growth supervised-pilot-launch-rehearsal-control-map` is a read-only supervised-pilot launch rehearsal control map over existing halt, outbound, supervised-pilot, approval, settings, launch-readiness, rehearsal, provider-setup, compliance, and release surfaces. It does not execute commands, apply settings, lift halt, enable outbound, scrape, select candidates, send, spend, build, publish, or deploy. `GET /internal/supervised-pilot-launch-rehearsal-control-map` is the same packet as sanitized JSON and is also not a script runner, not permission to send, not permission to go live, and not an execution surface.
+
 `GET /internal/operator-go-live-rehearsal-checklist` is a read-only owner/operator HTML shell of that same manual rehearsal checklist. It does not execute, apply settings, lift halt, enable outbound, build, publish, or deploy. It is a manual rehearsal review view only, not a script runner, not permission to go live, and not an execution surface.
 
 Do not schedule `send_email`, `schedule_meeting`, or `place_consent_callback`. Those names exist only as fail-closed outbound guards and are not deployable jobs.

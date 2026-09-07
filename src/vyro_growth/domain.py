@@ -462,6 +462,9 @@ class NextActionCode(StrEnum):
     SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE = (
         "supervised_pilot_first_send_preflight_is_not_permission_to_go_live"
     )
+    SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE = (
+        "supervised_pilot_launch_rehearsal_control_map_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

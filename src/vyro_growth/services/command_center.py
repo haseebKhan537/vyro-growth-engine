@@ -222,6 +222,14 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "First-send preflight review only; it is not permission to "
         "send, not permission to go live, and not an execution surface."
     ),
+    NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE: (
+        "Inspect the supervised pilot launch rehearsal control map at "
+        "/internal/supervised-pilot-launch-rehearsal-control-map or via "
+        "`vyro-growth supervised-pilot-launch-rehearsal-control-map`. "
+        "Control map review only; it is not a script runner, not "
+        "permission to send, not permission to go live, and not an "
+        "execution surface."
+    ),
 }
 
 
@@ -649,6 +657,11 @@ def _next_actions(
         NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="supervised_pilot_first_send_preflight",
+    )
+    add(
+        NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="supervised_pilot_launch_rehearsal_control_map",
     )
 
     return tuple(
