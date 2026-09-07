@@ -230,6 +230,11 @@ from vyro_growth.services.supervised_pilot_plan import (
     SupervisedPilotPlanService,
     format_supervised_pilot_plan,
 )
+from vyro_growth.services.supervised_validation_run_gate import (
+    SupervisedValidationRunGate,
+    SupervisedValidationRunGateService,
+    format_supervised_validation_run_gate,
+)
 from vyro_growth.services.voice_qualification import (
     VoiceConsentInput,
     VoiceItemResult,
@@ -359,6 +364,8 @@ __all__ = [
     "ScoringResult",
     "SmokeDryRunRefused",
     "SmokeDryRunResult",
+    "SupervisedValidationRunGate",
+    "SupervisedValidationRunGateService",
     "VoiceConsentInput",
     "VoiceItemResult",
     "VoiceQualificationJobResult",
@@ -386,6 +393,7 @@ __all__ = [
     "format_staged_rollout_plan",
     "format_launch_readiness",
     "format_live_provider_setup_checklist",
+    "format_supervised_validation_run_gate",
     "format_release_artifact_manifest",
     "format_release_candidate_runbook",
     "format_owner_handoff",

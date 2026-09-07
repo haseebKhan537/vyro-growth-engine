@@ -558,6 +558,9 @@ class NextActionCode(StrEnum):
     LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE = (
         "live_provider_setup_checklist_is_not_permission_to_go_live"
     )
+    SUPERVISED_VALIDATION_RUN_GATE_IS_NOT_EXECUTION = (
+        "supervised_validation_run_gate_is_not_execution"
+    )
 
 
 class ReviewArtifactType(StrEnum):

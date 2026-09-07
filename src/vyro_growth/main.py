@@ -266,6 +266,10 @@ from vyro_growth.api.supervised_pilot_plan import (
     SupervisedPilotPlanResponse,
     build_supervised_pilot_plan_response,
 )
+from vyro_growth.api.supervised_validation_run_gate import (
+    SupervisedValidationRunGateResponse,
+    build_supervised_validation_run_gate_response,
+)
 from vyro_growth.api.supervised_validation_run_packet import (
     SupervisedValidationRunPacketResponse,
     build_supervised_validation_run_packet_response,
@@ -442,6 +446,37 @@ def supervised_validation_run_packet(
     response.headers["Cache-Control"] = "no-store"
     try:
         return build_supervised_validation_run_packet_response(
+            db,
+            active_settings,
+            filters=filters_from_query(
+                state=state,
+                city=city,
+                specialty=specialty,
+                taxonomy_description=taxonomy_description,
+                max_cohort_size=max_cohort_size,
+            ),
+        )
+    except ContactValidationError as exc:
+        status_code, detail = contact_validation_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.get("/internal/supervised-validation-run", tags=["internal"])
+def supervised_validation_run(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    state: Annotated[str | None, Query()] = None,
+    city: Annotated[str | None, Query()] = None,
+    specialty: Annotated[str | None, Query()] = None,
+    taxonomy_description: Annotated[str | None, Query()] = None,
+    max_cohort_size: Annotated[int, Query(ge=1, le=200)] = 200,
+) -> SupervisedValidationRunGateResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return build_supervised_validation_run_gate_response(
             db,
             active_settings,
             filters=filters_from_query(

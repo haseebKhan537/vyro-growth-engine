@@ -238,6 +238,14 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "credential readiness review; it is not permission to run a "
         "supervised validation and is not an execution surface."
     ),
+    NextActionCode.SUPERVISED_VALIDATION_RUN_GATE_IS_NOT_EXECUTION: (
+        "Inspect the supervised validation run gate at "
+        "/internal/supervised-validation-run or via "
+        "`vyro-growth supervised-validation-run --dry-run`. "
+        "Owner-approval-required refusal/preflight only; it is not "
+        "permission to run a supervised validation and is not an "
+        "execution surface."
+    ),
 }
 
 
@@ -675,6 +683,11 @@ def _next_actions(
         NextActionCode.LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="live_provider_setup_checklist",
+    )
+    add(
+        NextActionCode.SUPERVISED_VALIDATION_RUN_GATE_IS_NOT_EXECUTION,
+        FindingSeverity.INFO,
+        phase="supervised_validation_run_gate",
     )
 
     return tuple(

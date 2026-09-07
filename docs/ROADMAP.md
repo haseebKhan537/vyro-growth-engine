@@ -930,6 +930,19 @@ Read-only owner live-provider setup checklist and credential readiness packet fo
 - CI/defaults run against empty/local fixtures with no live provider traffic
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
+## Phase 77 — Supervised 200-practice validation run gate (current)
+Owner-approval-required, default-refusing gate for a future supervised 200-practice contact-enrichment validation run. Dry-run/preflight only. Does not execute the run or grant approval.
+- Deterministic CLI/JSON `supervised-validation-run --dry-run` plus `GET /internal/supervised-validation-run`
+- Reuses existing Phase 76 `LiveProviderSetupChecklistService`, Phase 73 `SupervisedValidationRunPacketService`, Phase 71 `ContactValidationService` plan/report, launch readiness, settings preflight, and the compliance binder. Does not duplicate source-of-truth readiness calculations
+- Default behavior is refusal/blocking with coded gate reasons and no side effects
+- Live `--execute` path is represented only as a refused request; this phase never runs validation or calls providers
+- Prerequisites evaluated: explicit owner approval record/code (presence boolean only), one target state/specialty, max cohort <= 200, credential readiness names/present booleans, suppression/opt-out, operator halt/outbound safeguards, and closed live-provider flags
+- Packet may describe what a later owner-approved phase would need, but keeps `owner_approved=false`, `validation_permitted=false`, and `supervised_validation_run_permitted=false`
+- Same `INTERNAL_API_KEY` gate as other internal JSON routes; `Cache-Control: no-store`
+- CI/defaults run against empty/local fixtures with no live provider traffic
+- The actual 200-practice validation requires separate owner approval before execution
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
 Future contact-enrichment work (not in this phase):
 - live sending or campaign enrollment
 - live email-verifier HTTP with an injected owner-approved client
