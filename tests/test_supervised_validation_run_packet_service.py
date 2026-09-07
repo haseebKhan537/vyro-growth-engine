@@ -34,7 +34,9 @@ from vyro_growth.models import (
     OutreachMessage,
 )
 from vyro_growth.services.contact_validation import (
-    HTML_ROUTE,
+    HTML_ROUTE as CONTACT_VALIDATION_HTML_ROUTE,
+)
+from vyro_growth.services.contact_validation import (
     PLAN_CLI_COMMAND,
     PLAN_HTTP_ROUTE,
     REPORT_CLI_COMMAND,
@@ -46,6 +48,7 @@ from vyro_growth.services.contact_validation import (
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
 from vyro_growth.services.supervised_validation_run_packet import (
     CLI_COMMAND,
+    HTML_ROUTE,
     HTTP_ROUTE,
     PACKET_KIND,
     PACKET_PURPOSE,
@@ -141,7 +144,7 @@ def _assert_no_execution(payload: dict[str, object]) -> None:
     assert payload["source_plan_route"] == PLAN_HTTP_ROUTE
     assert payload["source_report_command"] == REPORT_CLI_COMMAND
     assert payload["source_report_route"] == REPORT_HTTP_ROUTE
-    assert payload["source_html_route"] == HTML_ROUTE
+    assert payload["source_html_route"] == CONTACT_VALIDATION_HTML_ROUTE
     assert all(item["granted"] is False for item in payload["required_owner_decisions"])
     assert all(stage["executed"] is False for stage in payload["planned_stages"])
     assert all(stage["live_provider_called"] is False for stage in payload["planned_stages"])
@@ -196,6 +199,7 @@ def test_empty_packet_reuses_phase_71_and_does_not_permit_the_run(
         "no_contact_found_is_normal_outcome",
         "no_verified_email_is_normal_outcome",
         "review_operator_contact_validation_ui",
+        "review_operator_supervised_validation_run_packet_ui",
     }
     assert {item.code for item in packet.required_owner_decisions} >= {
         "permit_supervised_validation_run",
@@ -215,6 +219,7 @@ def test_empty_packet_reuses_phase_71_and_does_not_permit_the_run(
     )
     assert packet.blocked_code_count + packet.warning_code_count + packet.info_code_count > 0
     assert HTML_ROUTE in packet.related_routes
+    assert CONTACT_VALIDATION_HTML_ROUTE in packet.related_routes
     assert CLI_COMMAND in packet.related_commands
     assert PLAN_CLI_COMMAND in packet.related_commands
     assert read_operator_halt(db_session) is before_halt
@@ -273,7 +278,7 @@ def test_packet_reuses_funnel_counts_without_leaking_prospect_details(
     assert "## Prerequisite checklist" in markdown
     assert "cli_command: supervised-validation-run-packet" in markdown
     assert "http_route: /internal/supervised-validation-run-packet" in markdown
-    assert "html_route: /internal/operator-contact-validation" in markdown
+    assert "html_route: /internal/operator-supervised-validation-run-packet" in markdown
 
 
 def test_packet_source_does_not_call_later_phase_providers() -> None:

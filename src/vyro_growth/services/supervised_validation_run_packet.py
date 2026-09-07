@@ -58,7 +58,7 @@ PACKET_KIND = "supervised_validation_run_packet"
 PACKET_PURPOSE = "manual_owner_supervised_validation_run_review_only"
 CLI_COMMAND = "supervised-validation-run-packet"
 HTTP_ROUTE = "/internal/supervised-validation-run-packet"
-HTML_ROUTE = CONTACT_VALIDATION_HTML_ROUTE
+HTML_ROUTE = "/internal/operator-supervised-validation-run-packet"
 REQUIRED_CREDENTIAL_NAMES: tuple[str, ...] = (
     "DECISION_MAKER_API_KEY",
     "EMAIL_VERIFICATION_API_KEY",
@@ -375,7 +375,7 @@ class SupervisedValidationRunPacketService:
             source_plan_route=PLAN_HTTP_ROUTE,
             source_report_command=REPORT_CLI_COMMAND,
             source_report_route=REPORT_HTTP_ROUTE,
-            source_html_route=HTML_ROUTE,
+            source_html_route=CONTACT_VALIDATION_HTML_ROUTE,
             segment_state=report.segment.state,
             segment_city=report.segment.city,
             segment_specialty=report.segment.specialty,
@@ -649,7 +649,7 @@ def _prerequisites(
             blocking=False,
             command_name=PLAN_CLI_COMMAND,
             json_route=PLAN_HTTP_ROUTE,
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
         ),
         PrerequisiteItem(
             code="review_contact_validation_report",
@@ -661,7 +661,7 @@ def _prerequisites(
             blocking=False,
             command_name=REPORT_CLI_COMMAND,
             json_route=REPORT_HTTP_ROUTE,
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
         ),
         PrerequisiteItem(
             code="review_operator_contact_validation_ui",
@@ -673,6 +673,18 @@ def _prerequisites(
             blocking=False,
             command_name=REPORT_CLI_COMMAND,
             json_route=REPORT_HTTP_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
+        ),
+        PrerequisiteItem(
+            code="review_operator_supervised_validation_run_packet_ui",
+            status=_bucket_status(report.overall_status),
+            label=(
+                "Review the Phase 74 operator supervised-validation run-packet UI. "
+                "That page is an aggregate-only shell, not an execution surface."
+            ),
+            blocking=False,
+            command_name=CLI_COMMAND,
+            json_route=HTTP_ROUTE,
             html_route=HTML_ROUTE,
         ),
         PrerequisiteItem(
@@ -694,7 +706,7 @@ def _prerequisites(
             blocking=False,
             command_name="list-phone-verification",
             json_route="/internal/phone-verification/tasks",
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
         ),
         PrerequisiteItem(
             code="no_verified_email_is_normal_outcome",
@@ -706,7 +718,7 @@ def _prerequisites(
             blocking=False,
             command_name="email-verification-metrics",
             json_route="/internal/email-verification/metrics",
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
         ),
         PrerequisiteItem(
             code="later_owner_approval_required_before_supervised_run",
@@ -792,7 +804,7 @@ def _next_actions(
             ),
             command_name=PLAN_CLI_COMMAND,
             json_route=PLAN_HTTP_ROUTE,
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
             config_name=None,
         ),
         OwnerNextStep(
@@ -804,7 +816,7 @@ def _next_actions(
             ),
             command_name=REPORT_CLI_COMMAND,
             json_route=REPORT_HTTP_ROUTE,
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
             config_name=None,
         ),
         OwnerNextStep(
@@ -816,6 +828,18 @@ def _next_actions(
             ),
             command_name=REPORT_CLI_COMMAND,
             json_route=REPORT_HTTP_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
+            config_name=None,
+        ),
+        OwnerNextStep(
+            code="review_operator_supervised_validation_run_packet_ui",
+            status=_bucket_status(report.overall_status),
+            label=(
+                "Review GET /internal/operator-supervised-validation-run-packet. "
+                "That Phase 74 shell is aggregate-only and is not an execution surface."
+            ),
+            command_name=CLI_COMMAND,
+            json_route=HTTP_ROUTE,
             html_route=HTML_ROUTE,
             config_name=None,
         ),
@@ -837,7 +861,7 @@ def _next_actions(
             ),
             command_name="list-phone-verification",
             json_route="/internal/phone-verification/tasks",
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
             config_name=None,
         ),
         OwnerNextStep(
@@ -849,7 +873,7 @@ def _next_actions(
             ),
             command_name="email-verification-metrics",
             json_route="/internal/email-verification/metrics",
-            html_route=HTML_ROUTE,
+            html_route=CONTACT_VALIDATION_HTML_ROUTE,
             config_name=None,
         ),
         OwnerNextStep(

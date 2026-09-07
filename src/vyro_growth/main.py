@@ -169,6 +169,9 @@ from vyro_growth.api.operator_supervised_pilot_launch_rehearsal_control_map impo
 from vyro_growth.api.operator_supervised_pilot_plan import (
     build_operator_supervised_pilot_plan_response,
 )
+from vyro_growth.api.operator_supervised_validation_run_packet import (
+    build_operator_supervised_validation_run_packet_response,
+)
 from vyro_growth.api.optimizer import (
     OptimizerRunResponse,
     build_latest_optimizer_response,
@@ -948,6 +951,35 @@ def operator_contact_validation(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_contact_validation_response(
+        db,
+        active_settings,
+        filters=filters_from_query(
+            state=state,
+            city=city,
+            specialty=specialty,
+            taxonomy_description=taxonomy_description,
+            max_cohort_size=max_cohort_size,
+        ),
+    )
+
+
+@app.get(
+    "/internal/operator-supervised-validation-run-packet",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_supervised_validation_run_packet(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    state: Annotated[str | None, Query()] = None,
+    city: Annotated[str | None, Query()] = None,
+    specialty: Annotated[str | None, Query()] = None,
+    taxonomy_description: Annotated[str | None, Query()] = None,
+    max_cohort_size: Annotated[int, Query(ge=1, le=200)] = 200,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_supervised_validation_run_packet_response(
         db,
         active_settings,
         filters=filters_from_query(

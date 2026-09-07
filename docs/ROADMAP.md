@@ -867,7 +867,7 @@ Internal operator HTML shell of the Phase 71 contact-enrichment validation plan/
 - No LinkedIn/Sales Navigator automation, no restricted job-board scraping, and no AI voice cold calling
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 73 — Supervised validation owner approval/run packet (current)
+## Phase 73 — Supervised validation owner approval/run packet
 Read-only owner approval/run packet for a later supervised 200-practice contact-enrichment validation run. Export/review only. Does not execute the run or grant approval.
 - Deterministic CLI/JSON `supervised-validation-run-packet` plus `GET /internal/supervised-validation-run-packet`
 - Reuses existing Phase 71 `ContactValidationService` plan/report payloads and Phase 72 UI route names. Does not duplicate readiness calculations
@@ -881,6 +881,20 @@ Read-only owner approval/run packet for a later supervised 200-practice contact-
 - Packet may describe what the owner would need to approve later, but keeps `owner_approved=false` and `supervised_validation_run_permitted=false`
 - Same `INTERNAL_API_KEY` gate as other internal JSON routes; `Cache-Control: no-store`
 - CI/defaults run against empty/local fixtures with no live provider traffic
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
+## Phase 74 — Operator supervised validation run packet UI shell (current)
+Internal operator HTML shell of the Phase 73 supervised validation owner approval/run packet. Read-only, aggregate-only, no execution.
+- `GET /internal/operator-supervised-validation-run-packet`
+- Reuses existing Phase 73 `SupervisedValidationRunPacketService` and packet payload. Does not duplicate readiness calculations
+- Safe query filters: `state`, `city`, `specialty` / `taxonomy_description`, and `max_cohort_size` capped at 200
+- Renders generated timestamp, packet kind, purpose, overall status, target segment and planned cohort size, prerequisite checklist, required owner decisions by code/name only with `granted=false`, required credential/config names with present/missing booleans only, no-execution / no-outbound / no-provider-call / no-send / no-call / no-book / no-spend / no-deploy flags, operator halt before/status/after and unchanged proof, Phase 71 funnel counts/rates and threshold statuses, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` as normal outcomes, related route/command names, blocked/warning/info code counts, safe local git metadata, and non-executable owner next-step labels
+- Linked from the existing operator dashboard/readiness surfaces
+- Same `INTERNAL_API_KEY` gate as other internal operator routes; `Cache-Control: no-store`
+- No forms, buttons, POST/PUT/PATCH/DELETE handlers, approval/rejection controls, or execute/apply/run/lift-halt/enable-outbound/provider/spend/deploy/send/call/book/candidate-selection/contact controls
+- Does not expose real emails, phones, websites, NPI numbers, street addresses, practice names, provider names, contact names, evidence snippets, message bodies, outreach drafts, API keys, tokens, provider secrets, raw env values, or unsafe error text
+- Packet may describe what the owner would need to approve later, but keeps `owner_approved=false` and `supervised_validation_run_permitted=false`
+- No LinkedIn/Sales Navigator automation, no restricted job-board scraping, and no AI voice cold calling
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
 Future contact-enrichment work (not in this phase):

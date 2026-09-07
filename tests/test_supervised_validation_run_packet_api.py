@@ -69,7 +69,8 @@ def test_packet_open_in_development(
     assert body["operator_halt_unchanged"] is True
     assert body["source_plan_command"] == "contact-validation-plan"
     assert body["source_report_command"] == "contact-validation-report"
-    assert body["html_route"] == "/internal/operator-contact-validation"
+    assert body["html_route"] == "/internal/operator-supervised-validation-run-packet"
+    assert body["source_html_route"] == "/internal/operator-contact-validation"
     assert "prerequisites" in body
     assert "required_owner_decisions" in body
     assert "required_credentials" in body
