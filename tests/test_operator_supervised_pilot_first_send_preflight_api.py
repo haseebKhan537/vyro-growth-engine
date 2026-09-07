@@ -17,14 +17,14 @@ from tests.test_supervised_pilot_candidates_service import (
     PRACTICE_NAME,
     PROVIDER_NAME,
     WEBSITE,
-    _assert_no_execution,
     _seed_candidate,
 )
-from vyro_growth.api.operator_supervised_pilot_candidates import (
-    render_supervised_pilot_candidates,
-    render_supervised_pilot_candidates_error,
+from tests.test_supervised_pilot_first_send_preflight_service import _assert_no_execution
+from vyro_growth.api.operator_supervised_pilot_first_send_preflight import (
+    render_supervised_pilot_first_send_preflight,
+    render_supervised_pilot_first_send_preflight_error,
 )
-from vyro_growth.api.operator_ui import OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH
+from vyro_growth.api.operator_ui import OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH
 from vyro_growth.config import Settings
 from vyro_growth.database import get_db
 from vyro_growth.domain import FindingSeverity, NextActionCode, SettingsChangeRequestType
@@ -39,13 +39,14 @@ from vyro_growth.models import (
 from vyro_growth.services.operator_halt import HaltStatus, read_operator_halt, set_operator_halt
 from vyro_growth.services.release_artifact_manifest import LocalGitMetadata
 from vyro_growth.services.settings_change_requests import SettingsChangeRequestService
-from vyro_growth.services.supervised_pilot_candidates import (
+from vyro_growth.services.supervised_pilot_first_send_preflight import (
     CLI_COMMAND,
     HTTP_ROUTE,
-    CandidateCount,
-    CandidateNextAction,
-    CandidateScopeRecommendation,
-    SupervisedPilotCandidates,
+    FirstSendAbortCriterion,
+    FirstSendCount,
+    FirstSendNextAction,
+    FirstSendPreflightCheck,
+    SupervisedPilotFirstSendPreflight,
 )
 
 XSS_LABEL = "<script>alert(1)</script>"
@@ -64,20 +65,17 @@ GIT_SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
 GIT_BRANCH_RE = re.compile(r"cursor/[A-Za-z0-9._/\-]+")
 SECTION_IDS = (
     "live-blocking-flags",
-    "candidate-gates",
-    "candidate-scope",
-    "counts-by-readiness",
-    "counts-by-status",
-    "counts-by-stage",
-    "counts-by-source",
-    "counts-by-specialty",
-    "counts-by-state",
-    "scoring-distribution",
-    "website-match-counts",
-    "outreach-status-counts",
-    "suppression-kill-switch",
-    "blocked-counts",
-    "missing-prerequisite-codes",
+    "first-send-flags",
+    "first-send-scope",
+    "candidate-queue-counts",
+    "prerequisite-status-counts",
+    "candidate-readiness-counts",
+    "blocked-reason-counts",
+    "expected-safe-assertions",
+    "first-send-preflight-checks",
+    "abort-criteria",
+    "stop-conditions",
+    "owner-decision-prerequisites",
     "remaining-owner-approvals",
     "blocker-gate-codes",
     "missing-names",
@@ -145,48 +143,55 @@ def _patch_settings(monkeypatch: pytest.MonkeyPatch, settings: Settings) -> None
     monkeypatch.setattr("vyro_growth.main.get_settings", lambda: settings)
 
 
-def _count(**overrides: object) -> CandidateCount:
+def _count(**overrides: object) -> FirstSendCount:
     payload: dict[str, object] = {"key": "ready_for_owner_review", "count": 1}
     payload.update(overrides)
-    return CandidateCount(**payload)  # type: ignore[arg-type]
+    return FirstSendCount(**payload)  # type: ignore[arg-type]
 
 
-def _scope(**overrides: object) -> CandidateScopeRecommendation:
+def _check(**overrides: object) -> FirstSendPreflightCheck:
     payload: dict[str, object] = {
-        "suggested_candidate_count": 0,
-        "suggested_max_leads": 10,
-        "suggested_max_drafts": 5,
-        "suggested_max_manually_reviewed_sends": 0,
-        "suggested_max_daily_activity": 5,
-        "ready_for_review_count": 0,
-        "blocked_candidate_count": 0,
-        "total_candidate_count": 0,
-        "stop_conditions": ("stop_if_outbound_enabled",),
-        "recommendation_summary": "Supervised first-pilot candidate counts only.",
-    }
-    payload.update(overrides)
-    return CandidateScopeRecommendation(**payload)  # type: ignore[arg-type]
-
-
-def _action(**overrides: object) -> CandidateNextAction:
-    payload: dict[str, object] = {
-        "code": NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE.value,
+        "code": "first_send_not_permitted",
         "status": FindingSeverity.INFO.value,
-        "label": "This supervised pilot candidate readiness export is review only.",
+        "label": "This preflight is not permission to send.",
+        "blocking": False,
         "command_name": CLI_COMMAND,
         "json_route": HTTP_ROUTE,
-        "html_route": OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        "html_route": OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
+    }
+    payload.update(overrides)
+    return FirstSendPreflightCheck(**payload)  # type: ignore[arg-type]
+
+
+def _abort(**overrides: object) -> FirstSendAbortCriterion:
+    payload: dict[str, object] = {
+        "code": "operator_halt_active",
+        "label": "Keep operator halt unchanged.",
+        "instruction": "Do not lift halt from this page.",
+    }
+    payload.update(overrides)
+    return FirstSendAbortCriterion(**payload)  # type: ignore[arg-type]
+
+
+def _action(**overrides: object) -> FirstSendNextAction:
+    payload: dict[str, object] = {
+        "code": NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE.value,
+        "status": FindingSeverity.INFO.value,
+        "label": "This supervised pilot first-send preflight is review only.",
+        "command_name": CLI_COMMAND,
+        "json_route": HTTP_ROUTE,
+        "html_route": OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         "config_name": None,
     }
     payload.update(overrides)
-    return CandidateNextAction(**payload)  # type: ignore[arg-type]
+    return FirstSendNextAction(**payload)  # type: ignore[arg-type]
 
 
-def _empty_packet(**overrides: object) -> SupervisedPilotCandidates:
+def _empty_packet(**overrides: object) -> SupervisedPilotFirstSendPreflight:
     payload: dict[str, object] = {
         "generated_at": datetime(2026, 9, 6, 12, 0, tzinfo=UTC),
-        "packet_kind": "supervised_pilot_candidates",
-        "purpose": "manual_owner_supervised_pilot_candidate_review_only",
+        "packet_kind": "supervised_pilot_first_send_preflight",
+        "purpose": "manual_owner_supervised_pilot_first_send_preflight_review_only",
         "overall_status": "blocked",
         "read_only": True,
         "no_execution": True,
@@ -224,61 +229,69 @@ def _empty_packet(**overrides: object) -> SupervisedPilotCandidates:
         "outbound_enabled": False,
         "live_providers_enabled": False,
         "manual_review_only": True,
-        "supervised_pilot_candidates_is_not_go_live": True,
+        "first_send_allowed": False,
+        "first_send_attempted": False,
+        "first_send_executed": 0,
+        "sends_executed": 0,
+        "suggested_max_first_sends": 0,
+        "suggested_max_leads": 0,
+        "suggested_max_drafts": 0,
+        "suggested_max_manually_reviewed_sends": 0,
+        "suggested_max_daily_activity": 0,
+        "supervised_pilot_first_send_preflight_is_not_go_live": True,
+        "first_send_preflight_is_not_a_send": True,
         "export_is_not_permission_to_go_live": True,
         "export_is_not_execution": True,
+        "supervised_pilot_go_no_go_is_not_go_live": True,
         "supervised_pilot_plan_is_not_go_live": True,
+        "supervised_pilot_candidates_is_not_go_live": True,
         "rehearsal_outcome_report_is_not_go_live": True,
         "go_live_rehearsal_checklist_is_not_go_live": True,
         "provider_setup_checklist_is_not_go_live": True,
         "operator_halt_status": "halted",
         "operator_halt_before": "halted",
         "operator_halt_after": "halted",
-        "candidate_scope": _scope(),
+        "source_go_no_go_overall_status": "blocked",
+        "source_pilot_plan_overall_status": "blocked",
+        "source_candidates_overall_status": "blocked",
+        "ready_for_review_count": 0,
+        "blocked_candidate_count": 0,
+        "total_candidate_count": 0,
+        "review_queue_pending_count": 0,
+        "action_readiness_candidate_count": 0,
+        "approval_packet_count": 0,
+        "settings_request_count": 0,
+        "settings_request_pending_count": 0,
+        "prerequisite_counts_by_status": (),
         "candidate_counts_by_readiness": (),
-        "candidate_counts_by_status": (),
-        "candidate_counts_by_stage": (),
-        "candidate_counts_by_source": (),
-        "candidate_counts_by_specialty": (),
-        "candidate_counts_by_state": (),
-        "scoring_distribution": (),
-        "website_match_counts": (),
-        "outreach_status_counts": (),
-        "suppression_counts_by_reason": (),
-        "kill_switch_outbound_disabled": True,
-        "kill_switch_operator_halt_active": True,
-        "kill_switch_live_providers_closed": True,
-        "suppression_record_count": 0,
-        "blocked_counts": (),
-        "missing_prerequisite_codes": (),
+        "blocked_reason_counts": (),
+        "expected_safe_assertion_count": 0,
+        "expected_safe_assertions_passed": 0,
+        "expected_safe_assertions_failed": 0,
+        "failed_safe_assertion_keys": (),
+        "preflight_checks": (),
+        "abort_criteria": (),
+        "stop_conditions": (),
+        "owner_decision_prerequisites": (),
         "remaining_owner_approval_types": (),
         "closed_provider_flag_names": ("VOICE_LIVE_ENABLED",),
         "missing_credential_names": (),
         "missing_config_names": (),
+        "missing_prerequisite_codes": (),
         "blocker_codes": ("execution_disabled_in_this_phase",),
-        "gate_codes": ("no_execution", "no_go_live", "no_outbound"),
+        "gate_codes": ("no_execution", "no_go_live", "no_outbound", "first_send_not_permitted"),
         "cli_command": CLI_COMMAND,
         "http_route": HTTP_ROUTE,
+        "source_go_no_go_command": "supervised-pilot-go-no-go",
+        "source_go_no_go_route": "/internal/supervised-pilot-go-no-go",
+        "source_go_no_go_html_route": "/internal/operator-supervised-pilot-go-no-go",
         "source_pilot_plan_command": "supervised-pilot-plan",
         "source_pilot_plan_route": "/internal/supervised-pilot-plan",
         "source_pilot_plan_html_route": "/internal/operator-supervised-pilot-plan",
-        "source_pilot_plan_overall_status": "blocked",
-        "source_outcome_command": "rehearsal-outcome-report",
-        "source_outcome_route": "/internal/rehearsal-outcome-report",
-        "source_outcome_overall_status": "blocked",
-        "source_rehearsal_command": "go-live-rehearsal-checklist",
-        "source_rehearsal_route": "/internal/go-live-rehearsal-checklist",
-        "source_rehearsal_overall_status": "blocked",
-        "source_launch_readiness_command": "launch-readiness",
-        "source_launch_readiness_route": "/internal/launch-readiness",
-        "source_launch_readiness_overall_status": "blocked",
-        "source_index_command": "go-live-readiness-index",
-        "source_index_route": "/internal/go-live-readiness-index",
-        "source_index_overall_status": "blocked",
-        "source_provider_setup_command": "provider-setup-checklist",
-        "source_provider_setup_route": "/internal/provider-setup-checklist",
-        "source_provider_setup_overall_status": "blocked",
-        "related_commands": ("supervised-pilot-candidates", "supervised-pilot-plan"),
+        "source_candidates_command": "supervised-pilot-candidates",
+        "source_candidates_route": "/internal/supervised-pilot-candidates",
+        "source_candidates_html_route": "/internal/operator-supervised-pilot-candidates",
+        "related_commands": ("supervised-pilot-first-send-preflight", "supervised-pilot-go-no-go"),
         "related_routes": LINKED_SURFACES,
         "local_git": LocalGitMetadata(
             available=True,
@@ -291,7 +304,7 @@ def _empty_packet(**overrides: object) -> SupervisedPilotCandidates:
         "next_actions": (),
     }
     payload.update(overrides)
-    return SupervisedPilotCandidates(**payload)  # type: ignore[arg-type]
+    return SupervisedPilotFirstSendPreflight(**payload)  # type: ignore[arg-type]
 
 
 def _strip_volatile(html: str) -> str:
@@ -301,21 +314,29 @@ def _strip_volatile(html: str) -> str:
 
 
 def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None:
-    html = render_supervised_pilot_candidates(_empty_packet())
+    html = render_supervised_pilot_first_send_preflight(_empty_packet())
 
-    assert 'id="operator-supervised-pilot-candidates"' in html
+    assert 'id="operator-supervised-pilot-first-send-preflight"' in html
     assert (
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH
-        == "/internal/operator-supervised-pilot-candidates"
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH
+        == "/internal/operator-supervised-pilot-first-send-preflight"
     )
     for section_id in SECTION_IDS:
         assert f'id="{section_id}"' in html
-    assert "No counts in this bucket" in html
+    assert "No prerequisite status counts" in html
     assert "No missing prerequisite codes" in html
-    assert "No remaining owner approval types" in html
+    assert "No candidate readiness counts" in html
+    assert "No blocked reason counts" in html
+    assert "No first-send preflight checks" in html
+    assert "No abort criteria" in html
+    assert "No stop conditions" in html
     assert "No owner next steps" in html
     assert "go_live_permitted=false" in html
     assert "execution_allowed=false" in html
+    assert "first_send_allowed=false" in html
+    assert "first_send_attempted=false" in html
+    assert "first_send_executed=0" in html
+    assert "sends_executed=0" in html
     assert "deployment_allowed=false" in html
     assert "build_allowed=false" in html
     assert "artifact_publish_allowed=false" in html
@@ -324,18 +345,23 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
     assert "OUTBOUND_ENABLED=false" in html
     assert "no_outbound=true" in html
     assert "no_provider_calls=true" in html
-    assert "supervised_pilot_candidates_is_not_go_live=true" in html
+    assert "supervised_pilot_first_send_preflight_is_not_go_live=true" in html
+    assert "first_send_preflight_is_not_a_send=true" in html
     assert "export_is_not_permission_to_go_live=true" in html
     assert "export_is_not_execution=true" in html
-    assert "candidate readiness review view" in html
+    assert "first-send preflight review view" in html
+    assert "not permission to send" in html
     assert "not permission to go live" in html
     assert "There are no apply, execute, lift-halt" in html
     assert 'data-execution-allowed="false"' in html
     assert 'data-go-live-permitted="false"' in html
+    assert 'data-first-send-allowed="false"' in html
+    assert 'data-first-send-attempted="false"' in html
     assert 'data-no-outbound="true"' in html
     assert 'data-no-provider-calls="true"' in html
     assert 'data-spend-allowed="false"' in html
-    assert 'data-supervised-pilot-candidates-is-not-go-live="true"' in html
+    assert 'data-supervised-pilot-first-send-preflight-is-not-go-live="true"' in html
+    assert 'data-first-send-preflight-is-not-a-send="true"' in html
     assert "Halt unchanged" in html
     for href in LINKED_SURFACES:
         assert href in html
@@ -345,7 +371,7 @@ def test_renderer_empty_state_is_read_only_and_has_no_execute_controls() -> None
 
 
 def test_renderer_populated_sections_and_xss_escape() -> None:
-    html = render_supervised_pilot_candidates(
+    html = render_supervised_pilot_first_send_preflight(
         _empty_packet(
             blocker_codes=["execution_disabled_in_this_phase", XSS_LABEL],
             gate_codes=["no_execution", XSS_LABEL],
@@ -353,26 +379,22 @@ def test_renderer_populated_sections_and_xss_escape() -> None:
             missing_config_names=["OUTBOUND_ENABLED", XSS_LABEL],
             closed_provider_flag_names=["EXAMPLE_LIVE_ENABLED", XSS_LABEL],
             missing_prerequisite_codes=("website_credibility", XSS_LABEL),
+            owner_decision_prerequisites=("live_enablement_review", XSS_LABEL),
             remaining_owner_approval_types=("live_enablement_review", XSS_LABEL),
-            candidate_scope=_scope(recommendation_summary=XSS_LABEL),
-            candidate_counts_by_readiness=(_count(key=XSS_LABEL, count=2),),
-            candidate_counts_by_status=(_count(key="new", count=1),),
-            candidate_counts_by_stage=(_count(key="ready_for_outreach", count=1),),
-            candidate_counts_by_source=(_count(key="nppes", count=1),),
-            candidate_counts_by_specialty=(_count(key="target", count=1),),
-            candidate_counts_by_state=(_count(key="TX", count=1),),
-            scoring_distribution=(_count(key="high", count=1),),
-            website_match_counts=(_count(key="verified", count=1),),
-            outreach_status_counts=(_count(key="planned", count=1),),
-            suppression_counts_by_reason=(_count(key="operator_halt", count=1),),
-            blocked_counts=(_count(key="missing_website", count=1),),
+            failed_safe_assertion_keys=("first_send_not_permitted", XSS_LABEL),
+            stop_conditions=("keep_operator_halt_unchanged", XSS_LABEL),
+            prerequisite_counts_by_status=(_count(key=XSS_LABEL, count=2),),
+            candidate_counts_by_readiness=(_count(key="ready_for_owner_review", count=1),),
+            blocked_reason_counts=(_count(key="missing_website", count=1),),
+            preflight_checks=(_check(code=XSS_LABEL, label=XSS_LABEL), _check()),
+            abort_criteria=(_abort(code=XSS_LABEL, label=XSS_LABEL, instruction=XSS_LABEL),),
             next_actions=(
                 _action(code=XSS_LABEL, label=XSS_LABEL, config_name=XSS_LABEL),
                 _action(),
             ),
         )
     )
-    error = render_supervised_pilot_candidates_error()
+    error = render_supervised_pilot_first_send_preflight_error()
 
     assert XSS_LABEL not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
@@ -382,11 +404,10 @@ def test_renderer_populated_sections_and_xss_escape() -> None:
     assert "execution_disabled_in_this_phase" in html
     assert "live_enablement_review" in html
     assert "website_credibility" in html
-    assert "TX" in html
-    assert "nppes" in html
     assert "missing_website" in html
-    assert "Supervised pilot candidate readiness" in html
-    assert 'id="operator-supervised-pilot-candidates-error"' in error
+    assert "keep_operator_halt_unchanged" in html
+    assert "Supervised pilot first-send preflight" in html
+    assert 'id="operator-supervised-pilot-first-send-preflight-error"' in error
     assert "sk-testsecret" not in error
     lowered = html.lower()
     error_lowered = error.lower()
@@ -396,15 +417,15 @@ def test_renderer_populated_sections_and_xss_escape() -> None:
 
 
 def test_renderer_is_deterministic_aside_from_timestamps_and_git_metadata() -> None:
-    first = render_supervised_pilot_candidates(_empty_packet())
-    second = render_supervised_pilot_candidates(
+    first = render_supervised_pilot_first_send_preflight(_empty_packet())
+    second = render_supervised_pilot_first_send_preflight(
         _empty_packet(generated_at=datetime(2026, 9, 7, 8, 30, tzinfo=UTC))
     )
-    git_variant = render_supervised_pilot_candidates(
+    git_variant = render_supervised_pilot_first_send_preflight(
         _empty_packet(
             local_git=LocalGitMetadata(
                 available=True,
-                current_branch="cursor/phase-58-supervised-pilot-candidates-ui-4eb8",
+                current_branch="cursor/phase-62-first-send-preflight-ui-88b5",
                 current_sha="cccccccccccccccccccccccccccccccccccccccc",
                 working_tree_status="not_inspected",
                 git_provider_called=False,
@@ -415,12 +436,12 @@ def test_renderer_is_deterministic_aside_from_timestamps_and_git_metadata() -> N
 
     assert _strip_volatile(first) == _strip_volatile(second)
     assert "cccccccccccccccccccccccccccccccccccccccc" in git_variant
-    assert "cursor/phase-58-supervised-pilot-candidates-ui-4eb8" in git_variant
+    assert "cursor/phase-62-first-send-preflight-ui-88b5" in git_variant
     assert TIMESTAMP_RE.search(first)
     assert TIMESTAMP_RE.search(second)
 
 
-def test_operator_supervised_pilot_candidates_open_in_development(
+def test_operator_supervised_pilot_first_send_preflight_open_in_development(
     api_client: TestClient,
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -428,36 +449,40 @@ def test_operator_supervised_pilot_candidates_open_in_development(
     _patch_settings(monkeypatch, Settings(environment="development", internal_api_key=""))
     set_operator_halt(db_session, halted=True, reason="keep-halted")
 
-    response = api_client.get(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
+    response = api_client.get(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert response.headers["cache-control"] == "no-store"
     body = response.text
-    assert "Supervised pilot candidate readiness" in body
+    assert "Supervised pilot first-send preflight" in body
     for section_id in SECTION_IDS:
         assert f'id="{section_id}"' in body
     for href in LINKED_SURFACES:
         assert href in body
     assert "go_live_permitted=false" in body
     assert "execution_allowed=false" in body
+    assert "first_send_allowed=false" in body
+    assert "first_send_attempted=false" in body
+    assert "first_send_executed=0" in body
+    assert "sends_executed=0" in body
     assert "deployment_allowed=false" in body
     assert "spend_allowed=false" in body
     assert "owner_approved=false" in body
     assert "OUTBOUND_ENABLED=false" in body
     assert "no_outbound=true" in body
     assert "no_provider_calls=true" in body
-    assert "supervised_pilot_candidates_is_not_go_live=true" in body
+    assert "supervised_pilot_first_send_preflight_is_not_go_live=true" in body
+    assert "first_send_preflight_is_not_a_send=true" in body
     assert "export_is_not_permission_to_go_live=true" in body
     assert "export_is_not_execution=true" in body
+    assert "not permission to send" in body
     assert "not permission to go live" in body
-    assert "Safe count-only candidate scope" in body
-    assert "Candidate counts by readiness" in body
-    assert "Scoring distribution counts" in body
-    assert "Website match counts" in body
-    assert "Outreach status counts" in body
-    assert "Suppression and kill-switch status rollups" in body
-    assert "Blocked counts by generic reason" in body
+    assert "First-send scope recommendation" in body
+    assert "Candidate and queue counts" in body
+    assert "Expected safe assertions" in body
+    assert "First-send preflight checks" in body
+    assert "Abort criteria" in body
     assert "Closed provider and live flag names" in body
     assert "Non-executable owner next steps" in body
     assert PHI_SNIPPET not in body
@@ -467,37 +492,37 @@ def test_operator_supervised_pilot_candidates_open_in_development(
         assert marker not in lowered
 
 
-def test_operator_supervised_pilot_candidates_requires_internal_access(
+def test_operator_supervised_pilot_first_send_preflight_requires_internal_access(
     api_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_settings(monkeypatch, Settings(environment="production", internal_api_key=""))
-    denied = api_client.get(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
+    denied = api_client.get(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
     assert denied.status_code == 403
 
     _patch_settings(
         monkeypatch,
         Settings(environment="production", internal_api_key="internal-secret"),
     )
-    missing = api_client.get(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
+    missing = api_client.get(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
     invalid = api_client.get(
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         headers={"X-Internal-Api-Key": "wrong-secret"},
     )
     post = api_client.post(
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     put = api_client.put(
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     delete = api_client.delete(
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     patch = api_client.patch(
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     assert missing.status_code == 401
@@ -508,7 +533,7 @@ def test_operator_supervised_pilot_candidates_requires_internal_access(
     assert patch.status_code == 405
 
 
-def test_operator_supervised_pilot_candidates_populated_sections_and_no_side_effects(
+def test_operator_supervised_pilot_first_send_preflight_populated_and_no_side_effects(
     api_client: TestClient,
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -533,7 +558,7 @@ def test_operator_supervised_pilot_candidates_populated_sections_and_no_side_eff
         settings,
         request_type=SettingsChangeRequestType.REQUEST_OUTBOUND_ENABLEMENT_REVIEW.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
-        idempotency_key="ui-supervised-pilot-candidates-main",
+        idempotency_key="ui-supervised-pilot-first-send-preflight-main",
         reviewer_notes=PHI_SNIPPET,
     )
     SettingsChangeRequestService().record_decision(
@@ -548,7 +573,7 @@ def test_operator_supervised_pilot_candidates_populated_sections_and_no_side_eff
         settings,
         request_type=SettingsChangeRequestType.KEEP_OUTBOUND_DISABLED.value,
         requested_setting_names=["OUTBOUND_ENABLED"],
-        idempotency_key="ui-supervised-pilot-candidates-pending",
+        idempotency_key="ui-supervised-pilot-first-send-preflight-pending",
     )
     before_activities = int(db_session.scalar(select(func.count()).select_from(Activity)) or 0)
     before_meetings = int(db_session.scalar(select(func.count()).select_from(Meeting)) or 0)
@@ -562,21 +587,26 @@ def test_operator_supervised_pilot_candidates_populated_sections_and_no_side_eff
     before_halt = read_operator_halt(db_session)
 
     first = api_client.get(
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     second = api_client.get(
-        OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+        OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
     json_export = api_client.get(
         HTTP_ROUTE,
         headers={"X-Internal-Api-Key": "internal-secret"},
     )
+    go_no_go_export = api_client.get(
+        "/internal/supervised-pilot-go-no-go",
+        headers={"X-Internal-Api-Key": "internal-secret"},
+    )
 
     assert first.status_code == 200
     assert second.status_code == 200
     assert json_export.status_code == 200
+    assert go_no_go_export.status_code == 200
     assert first.headers["cache-control"] == "no-store"
     body = first.text
     for section_id in SECTION_IDS:
@@ -585,22 +615,25 @@ def test_operator_supervised_pilot_candidates_populated_sections_and_no_side_eff
         assert href in body
     assert "OUTBOUND_ENABLED" in body
     assert "execution_disabled_in_this_phase" in body
-    assert NextActionCode.SUPERVISED_PILOT_CANDIDATES_IS_NOT_GO_LIVE.value in body
+    assert NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE.value in body
     assert "go_live_permitted=false" in body
     assert "execution_allowed=false" in body
+    assert "first_send_allowed=false" in body
+    assert "first_send_executed=0" in body
     assert "deployment_allowed=false" in body
     assert "spend_allowed=false" in body
     assert "owner_approved=false" in body
     assert "no_outbound=true" in body
     assert "no_provider_calls=true" in body
-    assert "supervised_pilot_candidates_is_not_go_live=true" in body
+    assert "supervised_pilot_first_send_preflight_is_not_go_live=true" in body
+    assert "first_send_preflight_is_not_a_send=true" in body
     assert "export_is_not_permission_to_go_live=true" in body
     assert "export_is_not_execution=true" in body
-    assert "supervised-pilot-candidates" in body
+    assert "supervised-pilot-first-send-preflight" in body
+    assert "supervised-pilot-go-no-go" in body
     assert "supervised-pilot-plan" in body
     assert "Halt unchanged" in body
-    assert "Suggested candidate count" in body
-    assert "Kill switch outbound disabled" in body
+    assert "First-send preflight checks" in body
     payload = json_export.json()
     assert payload["cli_command"] == CLI_COMMAND
     assert payload["http_route"] == HTTP_ROUTE
@@ -611,7 +644,15 @@ def test_operator_supervised_pilot_candidates_populated_sections_and_no_side_eff
     assert payload["no_provider_calls"] is True
     assert payload["no_spend"] is True
     assert payload["executed"] == 0
+    assert payload["first_send_allowed"] is False
+    assert payload["first_send_executed"] == 0
     assert payload["go_live_permitted"] is False
+    go_no_go_payload = go_no_go_export.json()
+    assert go_no_go_payload["packet_kind"] == "supervised_pilot_go_no_go"
+    assert go_no_go_payload["read_only"] is True
+    assert go_no_go_payload["no_execution"] is True
+    assert go_no_go_payload["executed"] == 0
+    assert go_no_go_payload["go_live_permitted"] is False
     _assert_no_leakage(body, SECRET_VALUE)
     assert PHI_SNIPPET not in body
     assert PROSPECT_EMAIL not in body
@@ -641,7 +682,7 @@ def test_operator_supervised_pilot_candidates_populated_sections_and_no_side_eff
     assert settings.voice_live_enabled is False
 
 
-def test_operator_supervised_pilot_candidates_failure_state_redacts_errors(
+def test_operator_supervised_pilot_first_send_preflight_failure_redacts_errors(
     api_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -651,14 +692,15 @@ def test_operator_supervised_pilot_candidates_failure_state_redacts_errors(
         raise RuntimeError("patient diagnosis sk-testsecret12345")
 
     monkeypatch.setattr(
-        "vyro_growth.api.operator_supervised_pilot_candidates.SupervisedPilotCandidateService.build",
+        "vyro_growth.api.operator_supervised_pilot_first_send_preflight"
+        ".SupervisedPilotFirstSendPreflightService.build",
         _boom,
     )
-    response = api_client.get(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
+    response = api_client.get(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
 
     assert response.status_code == 500
     assert "patient diagnosis" not in response.text.lower()
     assert "sk-testsecret12345" not in response.text
-    assert "Unable to load the supervised pilot candidate readiness export" in response.text
+    assert "Unable to load the supervised pilot first-send preflight packet" in response.text
     for marker in FORM_MARKERS:
         assert marker not in response.text.lower()

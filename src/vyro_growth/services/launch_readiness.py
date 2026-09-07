@@ -216,6 +216,7 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_IS_NOT_GO_LIVE: (
         "Inspect the supervised pilot first-send preflight at "
+        "/internal/operator-supervised-pilot-first-send-preflight or "
         "/internal/supervised-pilot-first-send-preflight or via "
         "`vyro-growth supervised-pilot-first-send-preflight`. "
         "First-send preflight review only; it is not permission to "

@@ -37,6 +37,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+    OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
     OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
     OPERATOR_UI_STYLES,
@@ -193,6 +194,7 @@ def _render_related_links() -> str:
     pilot_href = escape(OPERATOR_SUPERVISED_PILOT_PLAN_PATH)
     candidates_href = escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
     go_no_go_href = escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)
+    first_send_href = escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
     checklist_json_href = escape(PROVIDER_SETUP_CHECKLIST_JSON_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
@@ -222,6 +224,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{pilot_href}">Supervised pilot</a>\n'
         f'      <a class="nav-link" href="{candidates_href}">Pilot candidates</a>\n'
         f'      <a class="nav-link" href="{go_no_go_href}">Pilot go/no-go</a>\n'
+        f'      <a class="nav-link" href="{first_send_href}">First-send preflight</a>\n'
         f'      <a class="nav-link" href="{checklist_json_href}">JSON checklist</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
