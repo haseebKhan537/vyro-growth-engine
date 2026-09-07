@@ -913,6 +913,7 @@ Read-only repository and safety audit before any owner-approved real-world valid
 - Explicit list of actions still requiring owner approval, all `granted=false`
 - Safe local git metadata
 - Packet may describe what remains before real validation, but keeps `owner_approved=false` and `supervised_validation_run_permitted=false`
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
 ## Phase 76 — Owner live-provider setup checklist and credential readiness packet (current)
 Read-only owner live-provider setup checklist and credential readiness packet for a later supervised validation. Export/review only. Does not verify credentials or execute the run.
 - Deterministic CLI/JSON `live-provider-setup-checklist` plus `GET /internal/live-provider-setup-checklist`

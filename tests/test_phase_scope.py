@@ -85,6 +85,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "settings_change_requests.py",
         "settings_execution_preflight.py",
         "provider_setup_checklist.py",
+        "live_provider_setup_checklist.py",
     }
     calendar_boundary = {
         "config.py",
@@ -106,6 +107,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "settings_change_requests.py",
         "settings_execution_preflight.py",
         "provider_setup_checklist.py",
+        "live_provider_setup_checklist.py",
     }
     smartlead_boundary = {
         "config.py",
@@ -127,6 +129,7 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "settings_change_requests.py",
         "settings_execution_preflight.py",
         "provider_setup_checklist.py",
+        "live_provider_setup_checklist.py",
     }
     forbidden = (
         "apollo",
@@ -136,9 +139,14 @@ def test_current_phases_do_not_add_later_phase_integrations() -> None:
         "vapi",
         "retell",
     )
+    token_exceptions = {
+        "apollo": {"live_provider_setup_checklist.py"},
+    }
     for path in src_root.rglob("*.py"):
         source = path.read_text(encoding="utf-8").lower()
         for token in forbidden:
+            if path.name in token_exceptions.get(token, set()):
+                continue
             assert token not in source, f"{token} found in {path}"
         if "openai" in source:
             assert path.name in openai_boundary, f"openai token leaked into {path}"
