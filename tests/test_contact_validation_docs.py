@@ -56,7 +56,7 @@ def test_phase_72_docs_describe_read_only_operator_ui() -> None:
     assert "Cache-Control: no-store" in architecture.split("### Phase 72")[1].split("### ")[0]
 
     assert "GET /internal/operator-contact-validation" in security
-    assert "operator contact-validation UI" in security.lower()
+    assert "operator contact-validation ui" in security.lower()
 
     assert "## Phase 72 — Operator contact-validation UI (read-only)" in readme
     assert "GET /internal/operator-contact-validation" in readme

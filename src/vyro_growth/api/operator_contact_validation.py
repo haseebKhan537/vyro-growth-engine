@@ -659,7 +659,10 @@ def _render_funnel(report: ContactValidationReport) -> str:
         }\n"
         "      </div>\n"
         "      <h3>Website match counts</h3>\n"
-        f"      {_render_count_map(report.website_match_counts, empty='No website match counts.')}\n"
+        f"      {_render_count_map(
+            report.website_match_counts,
+            empty='No website match counts.',
+        )}\n"
         "      <h3>Run counts by source</h3>\n"
         f"      {_render_count_map(report.run_counts_by_source, empty='No run counts.')}\n"
         "    </section>"
