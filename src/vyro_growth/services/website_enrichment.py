@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.domain import EnrichmentRunStatus, WebsiteFactType, WebsiteMatchStatus
 from vyro_growth.models import Activity, EnrichmentRun, Organization, SourceEvidence
+from vyro_growth.providers.job_signal import extract_job_posting_signals, job_signal_metrics
 from vyro_growth.providers.website import (
     WEBSITE_ENRICHMENT_SOURCE,
     WEBSITE_MAX_LENGTH,
@@ -24,12 +25,16 @@ from vyro_growth.providers.website import (
     WebsiteSearchQuery,
     WebsiteUrlError,
     clip_text,
+    generate_job_page_candidates,
     generate_staff_page_candidates,
     hostname_of,
     is_blocked_public_path,
     is_directory_host,
+    is_job_board_host,
+    is_job_page_url,
     is_staff_page_url,
     normalize_url,
+    prioritize_job_page_urls,
     prioritize_page_urls,
     same_registrable_host,
 )
@@ -47,6 +52,7 @@ WEBSITE_ENRICHMENT_ACTOR = "website_enrichment"
 BATCH_MAX = 200
 DEFAULT_MAX_PAGES = 5
 DEFAULT_MAX_STAFF_PAGES = 4
+DEFAULT_MAX_JOB_PAGES = 3
 
 
 class WebsiteEnrichmentError(ValueError):
@@ -73,11 +79,13 @@ class WebsiteEnrichmentService:
         *,
         max_pages_per_org: int = DEFAULT_MAX_PAGES,
         max_staff_pages_per_org: int = DEFAULT_MAX_STAFF_PAGES,
+        max_job_pages_per_org: int = DEFAULT_MAX_JOB_PAGES,
     ) -> None:
         self._search_provider = search_provider
         self._page_fetcher = page_fetcher
         self._max_pages_per_org = max(1, max_pages_per_org)
         self._max_staff_pages_per_org = max(0, max_staff_pages_per_org)
+        self._max_job_pages_per_org = max(0, max_job_pages_per_org)
 
     def enrich_organization(
         self,
@@ -218,7 +226,7 @@ class WebsiteEnrichmentService:
         candidates = self._collect_candidates(organization, candidate_url)
         run.candidates_considered = len(candidates)
         pages, fetch_errors = self._fetch_pages(candidates)
-        staff_pages: list[PublicPage] = []
+        extra_pages: list[PublicPage] = []
 
         match_input = OrganizationMatchInput(
             name=organization.name,
@@ -240,18 +248,26 @@ class WebsiteEnrichmentService:
                 decision.official_website,
                 pages,
             )
+            job_pages, job_errors = self._fetch_job_pages(
+                decision.official_website,
+                [*pages, *staff_pages],
+            )
+            extra_pages.extend(staff_pages)
+            extra_pages.extend(job_pages)
             fetch_errors.extend(staff_errors)
+            fetch_errors.extend(job_errors)
             extraction_pages = _unique_pages(
-                tuple(page for page in (winner, *staff_pages, *pages) if page is not None),
+                tuple(page for page in (winner, *extra_pages, *pages) if page is not None),
                 host_url=decision.official_website,
             )
             for page in extraction_pages:
                 facts.extend(extract_staff_members(page))
+                facts.extend(extract_job_posting_signals(page))
             self._apply_verified_website(organization, decision.official_website)
         organization.website_match_status = match_status_label(decision.status)
 
         unique_facts = _dedupe_extracted_facts(facts)
-        fetched_pages = [*pages, *staff_pages]
+        fetched_pages = [*pages, *extra_pages]
         run.pages_fetched = len(_unique_pages(tuple(fetched_pages)))
         self._persist_match_evidence(db, organization, run, decision, fetch_errors)
         for fact in unique_facts:
@@ -279,6 +295,7 @@ class WebsiteEnrichmentService:
                 "pages_fetched": run.pages_fetched,
                 "candidates_considered": len(candidates),
                 "fetch_errors": fetch_errors,
+                "job_signals": job_signal_metrics(unique_facts),
                 "fabricated_facts": False,
             },
         )
@@ -382,6 +399,53 @@ class WebsiteEnrichmentService:
             if url in fetched_urls:
                 continue
             if not is_staff_page_url(url):
+                continue
+            if is_directory_host(url):
+                errors.append({"url": url, "error": "directory_host"})
+                continue
+            if is_blocked_public_path(url):
+                errors.append({"url": url, "error": "blocked_public_path"})
+                continue
+            try:
+                page = self._page_fetcher.fetch(url)
+            except (WebsiteFetchError, WebsiteUrlError) as exc:
+                errors.append({"url": url, "error": str(exc)})
+                continue
+            fetched_urls.add(normalize_url(page.url))
+            pages.append(page)
+        return pages, errors
+
+    def _fetch_job_pages(
+        self,
+        official_website: str,
+        already_fetched: list[PublicPage],
+    ) -> tuple[list[PublicPage], list[dict[str, str]]]:
+        if self._max_job_pages_per_org <= 0:
+            return [], []
+        fetched_urls = {normalize_url(page.url) for page in already_fetched}
+        discovered: list[str] = []
+        for page in already_fetched:
+            if not same_registrable_host(page.url, official_website):
+                continue
+            for href in extract_hrefs(page):
+                if not href.startswith("http"):
+                    continue
+                if not same_registrable_host(href, official_website):
+                    continue
+                discovered.append(href)
+        heuristic = [item.url for item in generate_job_page_candidates(official_website)]
+        ordered = prioritize_job_page_urls((*discovered, *heuristic))
+        pages: list[PublicPage] = []
+        errors: list[dict[str, str]] = []
+        for url in ordered:
+            if len(pages) >= self._max_job_pages_per_org:
+                break
+            if url in fetched_urls:
+                continue
+            if not is_job_page_url(url):
+                continue
+            if is_job_board_host(url):
+                errors.append({"url": url, "error": "job_board_host"})
                 continue
             if is_directory_host(url):
                 errors.append({"url": url, "error": "directory_host"})

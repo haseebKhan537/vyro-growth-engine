@@ -795,7 +795,7 @@ Dry-run / provider-plumbing / measurement only. Does not send email, enroll lead
 - No LinkedIn/Sales Navigator provider, AI voice cold-calling, list purchase, or job-response automation
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 67 — Person-level website staff extraction fallback (current)
+## Phase 67 — Person-level website staff extraction fallback
 Dry-run website fallback only. Does not send email, enroll leads, call prospects, book meetings, spend money, publish content, execute packets, lift halt, or enable live outbound.
 - `STAFF_MEMBER` website fact type for evidence-backed public name + title pairs
 - Public business staff pages are prioritized: `/about`, `/our-team`, `/staff`, `/meet-the-team`, `/leadership`, and similar safe paths
@@ -807,10 +807,20 @@ Dry-run website fallback only. Does not send email, enroll leads, call prospects
 - No LinkedIn/Sales Navigator automation
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
+## Phase 68 — Job-posting billing intent signal (current)
+Read-only targeting/timing signal only. Does not apply to jobs, respond to postings, contact hiring managers, send outreach, enroll campaigns, call, book meetings, spend money, publish, deploy, or change halt/outbound settings.
+- Parses public schema.org `JobPosting` JSON-LD from a verified practice website using the existing safe public-page fetcher
+- Extracts only evidence-backed facts: role/category, posting date if present, source URL, recency, billing/RCM/coding/denials intent code, confidence, and timestamp
+- Lead scoring applies a strong positive weight (up to +15) with linear recency decay; a 90-day-old posting is expired
+- Public careers/jobs paths on the official host may be fetched after a verified match
+- Indeed, ZipRecruiter, LinkedIn, Sales Navigator, and similar job boards are not scraped
+- Metrics and activity details expose sanitized counts/statuses/codes only
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
 Future contact-enrichment work (not in this phase):
 - email verification before send
 - email-pattern inference followed by verification
-- job-posting intent signals
+- job-posting intent signals (Phase 68: read-only website JSON-LD scoring signal; board scraping and apply/response automation remain out of scope)
 - human phone-verification queue for `NO_CONTACT_FOUND`
 - live sending or campaign enrollment
 

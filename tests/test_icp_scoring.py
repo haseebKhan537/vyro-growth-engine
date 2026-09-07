@@ -3,9 +3,12 @@ from __future__ import annotations
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from vyro_growth.config import Settings
 from vyro_growth.domain import (
     ContactFactType,
     ContactRoleCategory,
+    JobIntentCode,
+    JobRecencyStatus,
     WebsiteFactType,
     WebsiteMatchStatus,
 )
@@ -18,6 +21,7 @@ from vyro_growth.models import (
     OutreachMessage,
     SourceEvidence,
 )
+from vyro_growth.services.job_signal import POINTS_JOB_SIGNAL
 from vyro_growth.services.lead_scoring import (
     EvidencePointer,
     FactorCode,
@@ -31,6 +35,7 @@ from vyro_growth.services.lead_scoring import (
     canonical_rationale_digest,
     score_snapshot,
 )
+from vyro_growth.services.operator_halt import read_operator_halt
 
 
 def _factor(result: ScoringResult, code: FactorCode) -> ScoreFactor:
@@ -276,6 +281,89 @@ def test_public_business_contact_counts_only_when_stored() -> None:
     assert _factor(stored, FactorCode.BUSINESS_EMAIL).points == 3
 
 
+def test_fresh_billing_job_posting_adds_strong_positive_weight() -> None:
+    baseline = score_snapshot(
+        ScoringSnapshot(
+            organization_name="AUSTIN CLINIC",
+            npi="1487448189",
+            specialty="Family Medicine",
+            state="TX",
+            website_match_status=WebsiteMatchStatus.VERIFIED.value,
+            website_facts_eligible=True,
+        )
+    )
+    result = score_snapshot(
+        ScoringSnapshot(
+            organization_name="AUSTIN CLINIC",
+            npi="1487448189",
+            specialty="Family Medicine",
+            state="TX",
+            website_match_status=WebsiteMatchStatus.VERIFIED.value,
+            website_facts_eligible=True,
+            job_intent_code=JobIntentCode.BILLING_HIRING.value,
+            job_role_category="billing_specialist",
+            job_date_posted="2026-08-15",
+            job_recency_days=0,
+            job_recency_status=JobRecencyStatus.FRESH.value,
+        )
+    )
+    job = _factor(result, FactorCode.JOB_POSTING_SIGNAL)
+    assert job.points == POINTS_JOB_SIGNAL
+    assert job.points == 15
+    assert job.reason_code is ReasonCode.POS_JOB_POSTING_BILLING_INTENT
+    assert job.observed_value == JobIntentCode.BILLING_HIRING.value
+    assert result.total == baseline.total + POINTS_JOB_SIGNAL
+
+
+def test_non_billing_and_expired_job_postings_do_not_add_points() -> None:
+    non_billing = score_snapshot(
+        _enriched_snapshot(
+            job_intent_code=JobIntentCode.NON_BILLING_HIRING.value,
+            job_recency_days=3,
+            job_recency_status=JobRecencyStatus.FRESH.value,
+        )
+    )
+    expired = score_snapshot(
+        _enriched_snapshot(
+            job_intent_code=JobIntentCode.BILLING_HIRING.value,
+            job_recency_days=90,
+            job_recency_status=JobRecencyStatus.EXPIRED.value,
+        )
+    )
+    missing_date = score_snapshot(
+        _enriched_snapshot(
+            job_intent_code=JobIntentCode.RCM_HIRING.value,
+            job_recency_days=None,
+            job_recency_status=JobRecencyStatus.UNKNOWN.value,
+        )
+    )
+    assert _factor(non_billing, FactorCode.JOB_POSTING_SIGNAL).points == 0
+    assert _factor(non_billing, FactorCode.JOB_POSTING_SIGNAL).reason_code is (
+        ReasonCode.INFO_JOB_POSTING_NON_BILLING
+    )
+    assert _factor(expired, FactorCode.JOB_POSTING_SIGNAL).reason_code is (
+        ReasonCode.INFO_JOB_POSTING_EXPIRED
+    )
+    assert _factor(missing_date, FactorCode.JOB_POSTING_SIGNAL).reason_code is (
+        ReasonCode.INFO_JOB_POSTING_DATE_MISSING
+    )
+    aged = score_snapshot(
+        ScoringSnapshot(
+            organization_name="AUSTIN CLINIC",
+            npi="1487448189",
+            specialty="Family Medicine",
+            state="TX",
+            website_match_status=WebsiteMatchStatus.VERIFIED.value,
+            website_facts_eligible=True,
+            job_intent_code=JobIntentCode.CODING_HIRING.value,
+            job_recency_days=45,
+            job_recency_status=JobRecencyStatus.AGING.value,
+        )
+    )
+    aged_job = _factor(aged, FactorCode.JOB_POSTING_SIGNAL)
+    assert 0 < aged_job.points < POINTS_JOB_SIGNAL
+
+
 def _seed_organization(
     db: Session,
     *,
@@ -315,7 +403,11 @@ def _add_fact(
     claim_type: str,
     value: str,
     source_url: str = "https://austinfamily.example",
+    metadata: dict[str, object] | None = None,
 ) -> SourceEvidence:
+    payload: dict[str, object] = {"fabricated": False}
+    if metadata:
+        payload.update(metadata)
     row = SourceEvidence(
         organization_id=organization.id,
         source_url=source_url,
@@ -323,7 +415,7 @@ def _add_fact(
         extracted_value=value,
         confidence=0.84,
         evidence_snippet=f"evidence for {value}",
-        metadata_json={"fabricated": False},
+        metadata_json=payload,
     )
     db.add(row)
     db.flush()
@@ -485,9 +577,10 @@ def test_rationale_digest_changes_when_evidence_pointers_change() -> None:
     assert canonical_rationale_digest(first.to_rationale()) != canonical_rationale_digest(
         second.to_rationale()
     )
-    assert _factor(first, FactorCode.WEBSITE_MATCH).source_url != _factor(
-        second, FactorCode.WEBSITE_MATCH
-    ).source_url
+    assert (
+        _factor(first, FactorCode.WEBSITE_MATCH).source_url
+        != _factor(second, FactorCode.WEBSITE_MATCH).source_url
+    )
 
 
 def test_evidence_pointer_change_writes_new_score_when_totals_match(db_session: Session) -> None:
@@ -572,3 +665,43 @@ def test_disqualified_hospital_is_not_auto_qualified(db_session: Session) -> Non
     assert lead is not None
     assert lead.stage == "discovered"
     assert db_session.scalar(select(func.count()).select_from(OutreachMessage)) == 0
+
+
+def test_stored_job_posting_signal_is_scored_without_side_effects(db_session: Session) -> None:
+    organization = _seed_organization(db_session)
+    _add_fact(db_session, organization, WebsiteFactType.WEBSITE_MATCH.value, "verified")
+    job_row = _add_fact(
+        db_session,
+        organization,
+        WebsiteFactType.JOB_POSTING_SIGNAL.value,
+        "billing_hiring:billing_specialist:2026-08-15:medical_biller",
+        source_url="https://austinfamily.example/careers",
+        metadata={
+            "intent_code": JobIntentCode.BILLING_HIRING.value,
+            "role_category": "billing_specialist",
+            "date_posted": "2026-08-15",
+            "recency_status": JobRecencyStatus.FRESH.value,
+            "fabricated": False,
+            "applied": False,
+            "contacted": False,
+        },
+    )
+    halt_before = read_operator_halt(db_session)
+    contacts_before = db_session.scalar(select(func.count()).select_from(Contact)) or 0
+    service = LeadScoringService()
+
+    result = service.score_organization(db_session, organization.id)
+    job = _factor(result.scoring, FactorCode.JOB_POSTING_SIGNAL)
+
+    assert job.points > 0
+    assert job.reason_code is ReasonCode.POS_JOB_POSTING_BILLING_INTENT
+    assert job.evidence_id == str(job_row.id)
+    assert job.claim_type == WebsiteFactType.JOB_POSTING_SIGNAL.value
+    assert job.observed_value == JobIntentCode.BILLING_HIRING.value
+    assert result.scoring.external_providers_called == ()
+    assert result.scoring.fabricated_facts is False
+    assert db_session.scalar(select(func.count()).select_from(OutreachMessage)) == 0
+    assert (db_session.scalar(select(func.count()).select_from(Contact)) or 0) == contacts_before
+    halt_after = read_operator_halt(db_session)
+    assert halt_after is halt_before
+    assert Settings().outbound_enabled is False

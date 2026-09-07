@@ -152,6 +152,111 @@ EMPTY_ABOUT_HTML = """
 </html>
 """
 
+BILLING_JOB_JSONLD_HTML = """
+<html>
+  <head>
+    <title>Careers | Austin Family Medicine PLLC</title>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {"@type": "Organization", "name": "Austin Family Medicine PLLC"},
+        {
+          "@type": "JobPosting",
+          "title": "Medical Biller",
+          "datePosted": "2026-08-15",
+          "description": "Email apply@austinfamilymedicine.com to apply.",
+          "occupationalCategory": "Medical Billing"
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Serving families in Austin, TX.</p>
+    <h2>Careers</h2>
+    <p>We are hiring a Medical Biller.</p>
+  </body>
+</html>
+"""
+
+NON_BILLING_JOB_JSONLD_HTML = """
+<html>
+  <head>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": "Front Desk Receptionist",
+      "datePosted": "2026-08-15",
+      "description": "Greet patients and answer phones."
+    }
+    </script>
+  </head>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Join our Austin, TX team as a Front Desk Receptionist.</p>
+  </body>
+</html>
+"""
+
+MISSING_DATE_JOB_JSONLD_HTML = """
+<html>
+  <head>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": "Revenue Cycle Manager",
+      "description": "Own RCM operations for the practice."
+    }
+    </script>
+  </head>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Hiring a Revenue Cycle Manager in Austin, TX.</p>
+  </body>
+</html>
+"""
+
+STALE_BILLING_JOB_JSONLD_HTML = """
+<html>
+  <head>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": "Medical Coding Specialist",
+      "datePosted": "2026-05-10T09:00:00Z"
+    }
+    </script>
+  </head>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Coding specialist opening.</p>
+  </body>
+</html>
+"""
+
+HOME_WITH_CAREERS_LINK_HTML = """
+<html>
+  <head><title>Austin Family Medicine PLLC</title></head>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Serving families in Austin, TX.</p>
+    <p>Our services include family medicine and pediatrics.</p>
+    <p>We are an independently owned practice with 3 physicians.</p>
+    <p>Call us at <a href="tel:5125550100">(512) 555-0100</a></p>
+    <p>Email <a href="mailto:info@austinfamilymedicine.com">info@austinfamilymedicine.com</a></p>
+    <p><a href="/contact">Contact us</a></p>
+    <p><a href="/careers">Careers</a></p>
+    <p>In-house billing questions can be sent to the front desk.</p>
+  </body>
+</html>
+"""
+
+
 REVIEW_HTML = """
 <html>
   <body>

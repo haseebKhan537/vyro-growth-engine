@@ -54,7 +54,8 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Extract only allowlisted public B2B facts. Never invent a missing phone, email, count, billing signal, staff name, or title.
 - Store source URL, extracted value, confidence, timestamp, and evidence snippet for each claim.
 - Official website is persisted only after a conservative NPPES match (`verified`). Ambiguous and no-match runs leave `organizations.website` unchanged.
-- After a verified match, public staff/about/team/leadership pages may be fetched. Patient portals, reviews, intake forms, authenticated paths, and social-network hosts remain blocked.
+- After a verified match, public staff/about/team/leadership pages may be fetched. Public careers/jobs paths on the same host may be fetched only for schema.org JobPosting JSON-LD. Patient portals, reviews, intake forms, authenticated paths, social-network hosts, and job boards (Indeed, ZipRecruiter, LinkedIn, Sales Navigator, and similar) remain blocked.
+- Job-posting facts store role/category, posting date if present, source URL, recency status, intent code, confidence, and timestamp. Raw descriptions, applicant emails/phones, and job-board pages are not stored or fetched.
 
 ## Decision-maker contact enrichment
 - Do not call a live paid contact provider in CI or local tests. The stub returns no invented people.
@@ -69,6 +70,7 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Score only stored public/business evidence. Do not invent practice size, revenue, denials, A/R, payer mix, billing software, decision-makers, emails, phones, score evidence, or confidence.
 - Unknown, missing, ambiguous, and conflicting facts remain unknown. Website-derived ICP signals require a verified website match.
 - Billing/revenue-cycle points require an explicit stored claim. Do not infer billing software or financials.
+- Job-posting intent points require a stored official-website JobPosting fact with an allowlisted billing/RCM/coding/denials intent code. Recency decays to zero by 90 days. Missing dates are not assumed.
 - Scoring is not outreach. It must not send email, place calls, book calendar events, or contact prospects.
 - Do not call Apollo, Smartlead, OpenAI, Google, Twilio, Vapi, Retell, or any live paid/external provider from scoring.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.

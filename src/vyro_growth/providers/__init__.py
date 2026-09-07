@@ -36,6 +36,7 @@ from vyro_growth.providers.guarded import (
     GuardedVoiceProvider,
     GuardedVoiceQualificationProvider,
 )
+from vyro_growth.providers.job_signal import extract_job_posting_signals, job_signal_metrics
 from vyro_growth.providers.nppes import (
     NARROW_FILTER_ERROR,
     NPPES_MAX_SKIP,
@@ -112,6 +113,8 @@ __all__ = [
     "DecisionMakerEnrichmentResult",
     "EmailProvider",
     "EnrichmentProvider",
+    "extract_job_posting_signals",
+    "job_signal_metrics",
     "GuardedCalendarProvider",
     "GuardedDecisionMakerEnrichmentProvider",
     "GuardedEmailProvider",
