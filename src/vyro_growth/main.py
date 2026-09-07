@@ -107,6 +107,9 @@ from vyro_growth.api.operator_audit_timeline import (
 from vyro_growth.api.operator_compliance_evidence_binder import (
     build_operator_compliance_evidence_binder_response,
 )
+from vyro_growth.api.operator_contact_validation import (
+    build_operator_contact_validation_response,
+)
 from vyro_growth.api.operator_dashboard import build_operator_dashboard_response
 from vyro_growth.api.operator_go_live_readiness_index import (
     build_operator_go_live_readiness_index_response,
@@ -890,6 +893,35 @@ def operator_supervised_pilot_launch_rehearsal_control_map(
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_supervised_pilot_launch_rehearsal_control_map_response(
         db, active_settings
+    )
+
+
+@app.get(
+    "/internal/operator-contact-validation",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_contact_validation(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    state: Annotated[str | None, Query()] = None,
+    city: Annotated[str | None, Query()] = None,
+    specialty: Annotated[str | None, Query()] = None,
+    taxonomy_description: Annotated[str | None, Query()] = None,
+    max_cohort_size: Annotated[int, Query(ge=1, le=200)] = 200,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_contact_validation_response(
+        db,
+        active_settings,
+        filters=filters_from_query(
+            state=state,
+            city=city,
+            specialty=specialty,
+            taxonomy_description=taxonomy_description,
+            max_cohort_size=max_cohort_size,
+        ),
     )
 
 

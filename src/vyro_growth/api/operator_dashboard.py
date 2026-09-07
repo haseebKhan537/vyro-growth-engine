@@ -39,6 +39,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_APPROVAL_PACKETS_PATH,
     OPERATOR_AUDIT_TIMELINE_PATH,
     OPERATOR_COMPLIANCE_EVIDENCE_BINDER_PATH,
+    OPERATOR_CONTACT_VALIDATION_PATH,
     OPERATOR_GO_LIVE_READINESS_INDEX_PATH,
     OPERATOR_GO_LIVE_REHEARSAL_CHECKLIST_PATH,
     OPERATOR_LAUNCH_BLOCKERS_PLAN_PATH,
@@ -303,7 +304,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         "First-send preflight</a> "
         f'<a class="nav-link" href="'
         f'{escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}">'
-        "Rehearsal control map</a>\n"
+        "Rehearsal control map</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_CONTACT_VALIDATION_PATH)}">'
+        "Contact validation</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -408,7 +411,10 @@ def _render_safety(
         f'<a class="nav-link" href="'
         f'{escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}">'
         "Open rehearsal control map</a> — read-only review view. "
-        "No execute controls. Not a script runner. Not permission to send or go live.</p>\n"
+        "No execute controls. Not a script runner. Not permission to send or go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_CONTACT_VALIDATION_PATH)}">'
+        "Open contact validation</a> — read-only aggregate review view. "
+        "No execute controls. Not permission to contact or run a supervised validation.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
         f"        {_metric('Settings halt', _flag(safety.outbound_halted_settings))}\n"
@@ -636,7 +642,10 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         f'<a class="nav-link" href="'
         f'{escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}">'
         "Open rehearsal control map</a> — read-only review view. "
-        "No execute controls. Not a script runner. Not permission to send or go live.</p>\n"
+        "No execute controls. Not a script runner. Not permission to send or go live. "
+        f'<a class="nav-link" href="{escape(OPERATOR_CONTACT_VALIDATION_PATH)}">'
+        "Open contact validation</a> — read-only aggregate review view. "
+        "No execute controls. Not permission to contact or run a supervised validation.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"
         f"        {_metric('Owner approved', packets.owner_approved)}\n"

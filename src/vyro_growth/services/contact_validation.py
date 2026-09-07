@@ -59,6 +59,7 @@ PLAN_CLI_COMMAND = "contact-validation-plan"
 REPORT_CLI_COMMAND = "contact-validation-report"
 PLAN_HTTP_ROUTE = "/internal/contact-validation/plan"
 REPORT_HTTP_ROUTE = "/internal/contact-validation/report"
+HTML_ROUTE = "/internal/operator-contact-validation"
 MAX_COHORT_SIZE = 200
 DEFAULT_COHORT_SIZE = 200
 MIN_COHORT_SIZE = 1
@@ -104,6 +105,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/phone-verification/tasks",
     PLAN_HTTP_ROUTE,
     REPORT_HTTP_ROUTE,
+    HTML_ROUTE,
 )
 PLANNED_STAGES: tuple[tuple[str, str, str | None], ...] = (
     ("nppes_discovery", "discover-nppes", "/internal/discovery/nppes"),

@@ -842,7 +842,7 @@ Human-in-the-loop review/task records only. Does not place calls, autodial, use 
 - No AI voice cold calling
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 71 — Contact-enrichment validation harness and 200-practice measurement plan (current)
+## Phase 71 — Contact-enrichment validation harness and 200-practice measurement plan
 Dry-run / read-only measurement only. Does not send email, enroll campaigns, call prospects, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift halt, or enable outbound.
 - Deterministic CLI/JSON `contact-validation-plan` and `contact-validation-report` plus `GET /internal/contact-validation/plan` and `GET /internal/contact-validation/report`
 - Planned validation cohort of up to 200 organizations, represented by counts, filters, run IDs, and safe status/code rollups only
@@ -852,6 +852,19 @@ Dry-run / read-only measurement only. Does not send email, enroll campaigns, cal
 - `NO_CONTACT_FOUND` is a normal path, not a failure
 - Safe go/no-go threshold fields for owner review; they are not applied to live settings or scoring thresholds
 - CI/defaults run against empty/local fixtures with no live provider traffic
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
+## Phase 72 — Operator contact-validation UI shell (current)
+Internal operator HTML shell of the Phase 71 contact-enrichment validation plan/report. Read-only, aggregate-only, no execution.
+- `GET /internal/operator-contact-validation`
+- Reuses existing Phase 71 `ContactValidationService`, plan payload, and report payload. Does not duplicate readiness calculations.
+- Safe query filters: `state`, `city`, `specialty` / `taxonomy_description`, and `max_cohort_size` capped at 200
+- Renders overall status and generated timestamp, target segment and planned cohort size, read-only / dry-run / no-execution / no-outbound / no-provider-call flags, operator halt before/status/after and unchanged proof, live provider flag booleans only, planned existing-stage list with route/command names only, funnel counts and rates from Phase 71, threshold comparison rows with metric/code/status only, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` / queued human phone-verification summaries, related safe routes and CLI commands, safe local git metadata, and non-executable owner next-step labels
+- Linked from the existing operator dashboard/readiness surfaces
+- Same `INTERNAL_API_KEY` gate as other internal operator routes; `Cache-Control: no-store`
+- No forms, buttons, POST/PUT/PATCH/DELETE handlers, approval controls, or execute/apply/run/lift-halt/enable-outbound/provider/spend/deploy/send/call/book/candidate-selection/contact controls
+- Does not expose real emails, phones, websites, NPI numbers, street addresses, practice names, provider names, contact names, evidence snippets, message bodies, outreach drafts, API keys, tokens, provider secrets, raw env values, or unsafe error text
+- No LinkedIn/Sales Navigator automation, no restricted job-board scraping, and no AI voice cold calling
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
 Future contact-enrichment work (not in this phase):
