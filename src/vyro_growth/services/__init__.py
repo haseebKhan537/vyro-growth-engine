@@ -98,6 +98,11 @@ from vyro_growth.services.lead_scoring import (
     ScoringResult,
     score_snapshot,
 )
+from vyro_growth.services.live_provider_setup_checklist import (
+    LiveProviderSetupChecklist,
+    LiveProviderSetupChecklistService,
+    format_live_provider_setup_checklist,
+)
 from vyro_growth.services.monitoring import (
     MonitoringSnapshot,
     OperatorMonitoringService,
@@ -311,6 +316,8 @@ __all__ = [
     "SecretInventoryItem",
     "LeadScoringError",
     "LeadScoringService",
+    "LiveProviderSetupChecklist",
+    "LiveProviderSetupChecklistService",
     "MonitoringSnapshot",
     "OperatorMonitoringService",
     "NppesDiscoveryService",
@@ -378,6 +385,7 @@ __all__ = [
     "format_launch_blockers_plan",
     "format_staged_rollout_plan",
     "format_launch_readiness",
+    "format_live_provider_setup_checklist",
     "format_release_artifact_manifest",
     "format_release_candidate_runbook",
     "format_owner_handoff",

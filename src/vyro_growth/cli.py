@@ -112,6 +112,10 @@ from vyro_growth.services.launch_readiness import (
     format_launch_readiness,
 )
 from vyro_growth.services.lead_scoring import LeadScoringService
+from vyro_growth.services.live_provider_setup_checklist import (
+    LiveProviderSetupChecklistService,
+    format_live_provider_setup_checklist,
+)
 from vyro_growth.services.monitoring import MonitoringSnapshot, OperatorMonitoringService
 from vyro_growth.services.outreach_enrollment import OutreachEnrollmentService
 from vyro_growth.services.owner_handoff import (
@@ -364,6 +368,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Print the sanitized final safety audit as JSON",
+    )
+    live_provider_setup = subparsers.add_parser(
+        "live-provider-setup-checklist",
+        help=(
+            "Export a sanitized owner live-provider setup checklist "
+            "(read-only; does not verify credentials, call providers, or execute)"
+        ),
+    )
+    live_provider_setup.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized live-provider setup checklist as JSON",
     )
 
     phone_queue = subparsers.add_parser(
@@ -1097,6 +1113,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "final-safety-audit":
         return _run_final_safety_audit(args)
+    if args.command == "live-provider-setup-checklist":
+        return _run_live_provider_setup_checklist(args)
 
     if args.command == "queue-phone-verification":
         return _run_queue_phone_verification(args)
@@ -1461,6 +1479,14 @@ def _run_final_safety_audit(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         packet = FinalSafetyAuditService().build(db, settings)
     print(format_final_safety_audit(packet, as_json=args.json))
+    return 0
+
+
+def _run_live_provider_setup_checklist(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        checklist = LiveProviderSetupChecklistService().build(db, settings)
+    print(format_live_provider_setup_checklist(checklist, as_json=args.json))
     return 0
 
 

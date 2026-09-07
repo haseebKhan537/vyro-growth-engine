@@ -231,6 +231,13 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "permission to send, not permission to go live, and not an "
         "execution surface."
     ),
+    NextActionCode.LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE: (
+        "Inspect the owner live-provider setup checklist at "
+        "/internal/live-provider-setup-checklist or via "
+        "`vyro-growth live-provider-setup-checklist`. Read-only "
+        "credential readiness review; it is not permission to run a "
+        "supervised validation and is not an execution surface."
+    ),
 }
 
 
@@ -663,6 +670,11 @@ def _next_actions(
         NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="supervised_pilot_launch_rehearsal_control_map",
+    )
+    add(
+        NextActionCode.LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="live_provider_setup_checklist",
     )
 
     return tuple(

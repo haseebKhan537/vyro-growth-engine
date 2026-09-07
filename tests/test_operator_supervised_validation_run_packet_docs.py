@@ -12,6 +12,9 @@ def test_phase_74_docs_describe_read_only_operator_ui() -> None:
     health = Path("docs/OPERATOR_HEALTH.md").read_text(encoding="utf-8")
 
     heading = "## Phase 74 — Operator supervised validation run packet UI shell"
+    heading = (
+        "## Phase 74 — Operator supervised validation run packet UI shell"
+    )
     assert heading in roadmap
     assert "GET /internal/operator-supervised-validation-run-packet" in roadmap
     assert "SupervisedValidationRunPacketService" in roadmap.split("## Phase 74")[1].split(
