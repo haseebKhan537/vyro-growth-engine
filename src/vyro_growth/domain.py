@@ -35,6 +35,35 @@ class WebsiteFactType(StrEnum):
     BUSINESS_EMAIL = "business_email"
     BILLING_SIGNAL = "billing_signal"
     STAFF_MEMBER = "staff_member"
+    JOB_POSTING_SIGNAL = "job_posting_signal"
+
+
+class JobIntentCode(StrEnum):
+    BILLING_HIRING = "billing_hiring"
+    CODING_HIRING = "coding_hiring"
+    DENIALS_HIRING = "denials_hiring"
+    RCM_HIRING = "rcm_hiring"
+    AR_HIRING = "ar_hiring"
+    NON_BILLING_HIRING = "non_billing_hiring"
+
+
+class JobRoleCategory(StrEnum):
+    BILLING_SPECIALIST = "billing_specialist"
+    BILLING_MANAGER = "billing_manager"
+    MEDICAL_CODER = "medical_coder"
+    CODING_MANAGER = "coding_manager"
+    DENIALS_SPECIALIST = "denials_specialist"
+    RCM_MANAGER = "rcm_manager"
+    AR_SPECIALIST = "ar_specialist"
+    OTHER = "other"
+
+
+class JobRecencyStatus(StrEnum):
+    FRESH = "fresh"
+    AGING = "aging"
+    STALE = "stale"
+    EXPIRED = "expired"
+    UNKNOWN = "unknown"
 
 
 class ContactRoleCategory(StrEnum):
@@ -435,15 +464,9 @@ class NextActionCode(StrEnum):
     GO_LIVE_READINESS_INDEX_IS_NOT_PERMISSION = (
         "go_live_readiness_index_is_not_permission_to_go_live"
     )
-    LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION = (
-        "launch_blockers_plan_is_not_permission_to_go_live"
-    )
-    STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE = (
-        "staged_rollout_plan_is_not_permission_to_go_live"
-    )
-    OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE = (
-        "owner_launch_dossier_is_not_permission_to_go_live"
-    )
+    LAUNCH_BLOCKERS_PLAN_IS_NOT_PERMISSION = "launch_blockers_plan_is_not_permission_to_go_live"
+    STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE = "staged_rollout_plan_is_not_permission_to_go_live"
+    OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE = "owner_launch_dossier_is_not_permission_to_go_live"
     PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE = (
         "provider_setup_checklist_is_not_permission_to_go_live"
     )

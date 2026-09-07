@@ -71,6 +71,29 @@ DIRECTORY_HOSTS = frozenset(
     }
 )
 
+JOB_BOARD_HOSTS = frozenset(
+    {
+        "indeed.com",
+        "ziprecruiter.com",
+        "linkedin.com",
+        "glassdoor.com",
+        "monster.com",
+        "careerbuilder.com",
+        "simplyhired.com",
+        "dice.com",
+        "jooble.org",
+        "snagajob.com",
+        "talent.com",
+        "greenhouse.io",
+        "lever.co",
+        "myworkdayjobs.com",
+        "smartrecruiters.com",
+        "icims.com",
+        "jobvite.com",
+        "applytojob.com",
+    }
+)
+
 BLOCKED_PATH_FRAGMENTS = (
     "patient-portal",
     "patientportal",
@@ -135,6 +158,22 @@ STAFF_PAGE_PATH_HINTS: tuple[str, ...] = (
 )
 STAFF_PAGE_SOURCE = "staff_page_heuristic"
 NON_STAFF_PAGE_RANK = len(STAFF_PAGE_PATH_HINTS) + 1
+JOB_PAGE_PATH_HINTS: tuple[str, ...] = (
+    "careers",
+    "jobs",
+    "employment",
+    "join-our-team",
+    "joinourteam",
+    "career-opportunities",
+    "job-openings",
+    "openings",
+    "work-with-us",
+    "we-are-hiring",
+    "were-hiring",
+    "hiring",
+)
+JOB_PAGE_SOURCE = "job_page_heuristic"
+NON_JOB_PAGE_RANK = len(JOB_PAGE_PATH_HINTS) + 1
 
 BLOCKED_HOSTS = frozenset(
     {
@@ -349,7 +388,21 @@ def is_directory_host(url: str) -> bool:
     host = hostname_of(url)
     if host is None:
         return False
-    return registrable_host(host) in DIRECTORY_HOSTS or host in DIRECTORY_HOSTS
+    registrable = registrable_host(host)
+    return (
+        registrable in DIRECTORY_HOSTS
+        or host in DIRECTORY_HOSTS
+        or registrable in JOB_BOARD_HOSTS
+        or host in JOB_BOARD_HOSTS
+    )
+
+
+def is_job_board_host(url: str) -> bool:
+    host = hostname_of(url)
+    if host is None:
+        return False
+    registrable = registrable_host(host)
+    return registrable in JOB_BOARD_HOSTS or host in JOB_BOARD_HOSTS
 
 
 def _path_and_query(url: str) -> str:
@@ -384,6 +437,21 @@ def staff_page_rank(url: str) -> int:
 
 def is_staff_page_url(url: str) -> bool:
     return staff_page_rank(url) < NON_STAFF_PAGE_RANK
+
+
+def job_page_rank(url: str) -> int:
+    if is_directory_host(url) or is_blocked_public_path(url) or is_job_board_host(url):
+        return NON_JOB_PAGE_RANK + 1
+    key = staff_path_key(url)
+    segments = path_segments(url)
+    for index, hint in enumerate(JOB_PAGE_PATH_HINTS):
+        if hint in segments or key.endswith(hint):
+            return index
+    return NON_JOB_PAGE_RANK
+
+
+def is_job_page_url(url: str) -> bool:
+    return job_page_rank(url) < NON_JOB_PAGE_RANK
 
 
 def same_registrable_host(left: str, right: str) -> bool:
@@ -422,6 +490,28 @@ def generate_staff_page_candidates(base_url: str) -> tuple[WebsiteCandidate, ...
     return tuple(candidates)
 
 
+def generate_job_page_candidates(base_url: str) -> tuple[WebsiteCandidate, ...]:
+    origin = origin_of(base_url)
+    if origin is None:
+        return ()
+    candidates: list[WebsiteCandidate] = []
+    seen: set[str] = set()
+    for hint in JOB_PAGE_PATH_HINTS:
+        url = normalize_url(f"{origin}/{hint}")
+        if (
+            url in seen
+            or is_blocked_public_path(url)
+            or is_directory_host(url)
+            or is_job_board_host(url)
+        ):
+            continue
+        seen.add(url)
+        candidates.append(
+            WebsiteCandidate(url=url, source=JOB_PAGE_SOURCE, title=None, snippet=None)
+        )
+    return tuple(candidates)
+
+
 def prioritize_page_urls(urls: Sequence[str]) -> tuple[str, ...]:
     unique: list[str] = []
     seen: set[str] = set()
@@ -435,6 +525,22 @@ def prioritize_page_urls(urls: Sequence[str]) -> tuple[str, ...]:
         unique.append(normalized)
     indexed = list(enumerate(unique))
     ordered = sorted(indexed, key=lambda item: (staff_page_rank(item[1]), item[0]))
+    return tuple(url for _index, url in ordered)
+
+
+def prioritize_job_page_urls(urls: Sequence[str]) -> tuple[str, ...]:
+    unique: list[str] = []
+    seen: set[str] = set()
+    for url in urls:
+        if not url.strip():
+            continue
+        normalized = normalize_url(url)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        unique.append(normalized)
+    indexed = list(enumerate(unique))
+    ordered = sorted(indexed, key=lambda item: (job_page_rank(item[1]), item[0]))
     return tuple(url for _index, url in ordered)
 
 

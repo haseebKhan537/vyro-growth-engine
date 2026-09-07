@@ -161,7 +161,7 @@ Each run writes:
 
 Bands: `hot`, `high`, `medium`, `low`, `research`, `disqualified`.
 
-Material reasons link back to stored `source_evidence` (`evidence_id`, `source_url`, `claim_type`) when available. Missing, ambiguous, and conflicting facts score 0 for that factor and are not inferred. Website practice-size, ownership, provider-count, billing, and website business-contact signals are used only after a verified website match. Billing/RCM points require an explicit stored phrase.
+Material reasons link back to stored `source_evidence` (`evidence_id`, `source_url`, `claim_type`) when available. Missing, ambiguous, and conflicting facts score 0 for that factor and are not inferred. Website practice-size, ownership, provider-count, billing, website business-contact, and job-posting intent signals are used only after a verified website match. Billing/RCM points require an explicit stored phrase. A public billing/coding/denials/RCM job posting on the official website can add up to +15 with recency decay; postings 90 days old are expired. Missing posting dates are not assumed fresh.
 
 Identical reruns reuse the existing same-version score only when the canonical rationale matches, including evidence pointers and observed values. They do not create duplicate leads, activities, or outreach rows. Leads are not auto-qualified.
 
@@ -192,8 +192,9 @@ When a site is verified, the extractor may persist only these public B2B facts, 
 - public business email if present
 - billing/revenue-cycle signals only when explicitly stated
 - staff-member name + title pairs from public team/about/leadership pages when explicitly stated
+- job-posting billing/RCM/coding/denials intent from public schema.org JobPosting JSON-LD on the official site
 
-Patient portals, appointment flows, reviews, intake forms, and other PHI-like pages are blocked. Public staff pages such as `/about`, `/our-team`, `/staff`, `/meet-the-team`, and `/leadership` are prioritized after a verified match. Tests use HTML fixtures and in-memory fetchers; CI does not call live websites.
+Patient portals, appointment flows, reviews, intake forms, and other PHI-like pages are blocked. Public staff pages such as `/about`, `/our-team`, `/staff`, `/meet-the-team`, and `/leadership` are prioritized after a verified match. Public careers/jobs paths on the same host may be fetched for structured JobPosting data. Indeed, ZipRecruiter, LinkedIn, and similar job boards are not scraped. Tests use HTML fixtures and in-memory fetchers; CI does not call live websites.
 
 Each run writes:
 

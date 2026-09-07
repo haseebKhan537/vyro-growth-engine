@@ -62,6 +62,8 @@ def test_blocked_paths_cover_phi_and_reviews() -> None:
 
 def test_directory_hosts_are_recognized() -> None:
     assert is_directory_host("https://www.healthgrades.com/group/austin")
+    assert is_directory_host("https://www.indeed.com/viewjob?jk=abc")
+    assert is_directory_host("https://www.ziprecruiter.com/jobs")
     assert not is_directory_host("https://austinfamilymedicine.com")
 
 

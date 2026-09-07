@@ -1043,6 +1043,27 @@ def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:
     assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
 
 
+def test_job_signal_is_read_only_and_does_not_scrape_job_boards() -> None:
+    service_source = Path("src/vyro_growth/services/job_signal.py").read_text(encoding="utf-8")
+    scoring_source = Path("src/vyro_growth/services/lead_scoring.py").read_text(encoding="utf-8")
+    provider_source = Path("src/vyro_growth/providers/job_signal.py").read_text(encoding="utf-8")
+    lowered_service = service_source.lower()
+    lowered_scoring = scoring_source.lower()
+    lowered_provider = provider_source.lower()
+    assert "httpx" not in lowered_service
+    assert "httpx" not in lowered_scoring
+    assert "httpx" not in lowered_provider
+    assert "smartlead" not in lowered_provider
+    assert "apply()" not in lowered_provider
+    assert (
+        "indeed.com" in lowered_provider
+        or "indeed.com"
+        in Path("src/vyro_growth/providers/website.py").read_text(encoding="utf-8").lower()
+    )
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+
+
 def test_default_decision_maker_provider_is_stub_plus_website_staff_fallback() -> None:
     settings = Settings(
         decision_maker_live_enabled=True,

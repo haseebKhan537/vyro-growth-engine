@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 from vyro_growth.domain import (
     ContactFactType,
     ContactRoleCategory,
+    JobIntentCode,
+    JobRecencyStatus,
     LeadStage,
     WebsiteFactType,
     WebsiteMatchStatus,
@@ -25,6 +27,11 @@ from vyro_growth.models import (
     LeadScore,
     Organization,
     SourceEvidence,
+)
+from vyro_growth.services.job_signal import (
+    JobSignalRecord,
+    job_signal_points,
+    select_best_job_signal,
 )
 
 logger = structlog.get_logger(__name__)
@@ -276,6 +283,7 @@ class FactorCode(StrEnum):
     PRACTICE_SIZE_SIGNAL = "practice_size_signal"
     PROVIDER_COUNT = "provider_count"
     BILLING_SIGNAL = "billing_signal"
+    JOB_POSTING_SIGNAL = "job_posting_signal"
     BUSINESS_PHONE = "business_phone"
     BUSINESS_EMAIL = "business_email"
     DECISION_MAKER_TITLE = "decision_maker_title"
@@ -313,6 +321,7 @@ class ReasonCode(StrEnum):
     POS_MODERATE_PRACTICE = "pos_moderate_practice"
     POS_PROVIDER_COUNT_ICP = "pos_provider_count_icp"
     POS_BILLING_SIGNAL = "pos_billing_signal"
+    POS_JOB_POSTING_BILLING_INTENT = "pos_job_posting_billing_intent"
     POS_BUSINESS_PHONE = "pos_business_phone"
     POS_BUSINESS_EMAIL = "pos_business_email"
     POS_DECISION_MAKER = "pos_decision_maker"
@@ -335,6 +344,9 @@ class ReasonCode(StrEnum):
     INFO_CONFLICTING_PRACTICE_SIZE = "info_conflicting_practice_size"
     INFO_CONFLICTING_PROVIDER_COUNT = "info_conflicting_provider_count"
     INFO_CONFLICTING_BILLING = "info_conflicting_billing"
+    INFO_JOB_POSTING_NON_BILLING = "info_job_posting_non_billing"
+    INFO_JOB_POSTING_EXPIRED = "info_job_posting_expired"
+    INFO_JOB_POSTING_DATE_MISSING = "info_job_posting_date_missing"
     INFO_CONFLICTING_SIZE_AND_COUNT = "info_conflicting_size_and_count"
     INFO_WEBSITE_FACTS_SKIPPED = "info_website_facts_skipped"
     DISQ_EXCLUDED_ORGANIZATION = "disq_excluded_organization"
@@ -415,6 +427,12 @@ class ScoringSnapshot:
     billing_value: str | None = None
     billing_conflict: bool = False
     billing_evidence: EvidencePointer | None = None
+    job_intent_code: str | None = None
+    job_role_category: str | None = None
+    job_date_posted: str | None = None
+    job_recency_days: int | None = None
+    job_recency_status: str | None = None
+    job_evidence: EvidencePointer | None = None
     business_phone: str | None = None
     business_phone_evidence: EvidencePointer | None = None
     business_email: str | None = None
@@ -484,6 +502,7 @@ class ScoringResult:
                 "unknown_not_inferred": True,
                 "website_facts_require_verified_match": True,
                 "billing_signals_require_explicit_evidence": True,
+                "job_posting_signals_require_explicit_jsonld": True,
             },
         }
 
@@ -711,6 +730,7 @@ def score_snapshot(snapshot: ScoringSnapshot) -> ScoringResult:
         _practice_size_factor(snapshot, size_count_conflict),
         _provider_count_factor(snapshot, size_count_conflict),
         _billing_factor(snapshot),
+        _job_posting_factor(snapshot),
         _business_phone_factor(snapshot),
         _business_email_factor(snapshot),
         _decision_maker_factor(snapshot),
@@ -1559,6 +1579,116 @@ def _billing_factor(snapshot: ScoringSnapshot) -> ScoreFactor:
     )
 
 
+def _job_posting_factor(snapshot: ScoringSnapshot) -> ScoreFactor:
+    field_name = "source_evidence.job_posting_signal"
+    if not snapshot.website_facts_eligible:
+        return _skipped_website_fact(
+            code=FactorCode.JOB_POSTING_SIGNAL,
+            evidence_field=field_name,
+            snapshot=snapshot,
+        )
+    intent_text = _text(snapshot.job_intent_code)
+    if intent_text is None:
+        return _factor(
+            code=FactorCode.JOB_POSTING_SIGNAL,
+            points=0,
+            reason="job-posting billing intent missing; not inferred",
+            evidence_field=field_name,
+            observed_value=None,
+            status=FactorStatus.MISSING,
+            reason_code=ReasonCode.INFO_MISSING,
+            polarity=FactorPolarity.NEUTRAL,
+        )
+    try:
+        intent = JobIntentCode(intent_text)
+    except ValueError:
+        return _factor(
+            code=FactorCode.JOB_POSTING_SIGNAL,
+            points=0,
+            reason="job-posting signal present but not an allowlisted billing intent; not assumed",
+            evidence_field=field_name,
+            observed_value=intent_text,
+            status=FactorStatus.APPLIED,
+            reason_code=ReasonCode.INFO_UNCLASSIFIED_SIGNAL,
+            polarity=FactorPolarity.NEUTRAL,
+            pointer=snapshot.job_evidence,
+        )
+    recency_status = _parse_job_recency(snapshot.job_recency_status)
+    points = job_signal_points(
+        intent,
+        recency_days=snapshot.job_recency_days,
+        recency_status=recency_status,
+    )
+    match intent:
+        case JobIntentCode.NON_BILLING_HIRING:
+            return _factor(
+                code=FactorCode.JOB_POSTING_SIGNAL,
+                points=0,
+                reason="stored job posting is not a billing/RCM/coding/denials role; not assumed",
+                evidence_field=field_name,
+                observed_value=intent.value,
+                status=FactorStatus.APPLIED,
+                reason_code=ReasonCode.INFO_JOB_POSTING_NON_BILLING,
+                polarity=FactorPolarity.NEUTRAL,
+                pointer=snapshot.job_evidence,
+            )
+        case (
+            JobIntentCode.BILLING_HIRING
+            | JobIntentCode.CODING_HIRING
+            | JobIntentCode.DENIALS_HIRING
+            | JobIntentCode.RCM_HIRING
+            | JobIntentCode.AR_HIRING
+        ):
+            if recency_status is JobRecencyStatus.EXPIRED:
+                return _factor(
+                    code=FactorCode.JOB_POSTING_SIGNAL,
+                    points=0,
+                    reason="billing job posting is older than 90 days; intent signal expired",
+                    evidence_field=field_name,
+                    observed_value=intent.value,
+                    status=FactorStatus.APPLIED,
+                    reason_code=ReasonCode.INFO_JOB_POSTING_EXPIRED,
+                    polarity=FactorPolarity.NEUTRAL,
+                    pointer=snapshot.job_evidence,
+                )
+            if recency_status is JobRecencyStatus.UNKNOWN or snapshot.job_recency_days is None:
+                return _factor(
+                    code=FactorCode.JOB_POSTING_SIGNAL,
+                    points=0,
+                    reason="billing job posting date missing; recency not assumed",
+                    evidence_field=field_name,
+                    observed_value=intent.value,
+                    status=FactorStatus.APPLIED,
+                    reason_code=ReasonCode.INFO_JOB_POSTING_DATE_MISSING,
+                    polarity=FactorPolarity.NEUTRAL,
+                    pointer=snapshot.job_evidence,
+                )
+            return _factor(
+                code=FactorCode.JOB_POSTING_SIGNAL,
+                points=points,
+                reason="verified practice website has a public billing/RCM job posting",
+                evidence_field=field_name,
+                observed_value=intent.value,
+                status=FactorStatus.APPLIED,
+                reason_code=ReasonCode.POS_JOB_POSTING_BILLING_INTENT,
+                polarity=FactorPolarity.POSITIVE,
+                pointer=snapshot.job_evidence,
+            )
+        case _:
+            unreachable: Never = intent
+            raise RuntimeError(f"unhandled job intent: {unreachable}")
+
+
+def _parse_job_recency(value: str | None) -> JobRecencyStatus | None:
+    text = _text(value)
+    if text is None:
+        return None
+    try:
+        return JobRecencyStatus(text)
+    except ValueError:
+        return None
+
+
 def _business_phone_factor(snapshot: ScoringSnapshot) -> ScoreFactor:
     website_phone = _text(snapshot.business_phone) if snapshot.website_facts_eligible else None
     contact_phone = snapshot.has_contact_phone
@@ -1803,6 +1933,7 @@ def snapshot_from_records(
     official_latest, _official_values = _latest_and_values(
         grouped.get(WebsiteFactType.OFFICIAL_WEBSITE.value, ())
     )
+    job_record = select_best_job_signal(grouped.get(WebsiteFactType.JOB_POSTING_SIGNAL.value, ()))
     decision_contact, decision_pointer = _decision_maker_from_records(contacts, evidence_rows)
     verified_contact = next((contact for contact in contacts if contact.email_verified), None)
     verified_pointer = (
@@ -1851,6 +1982,12 @@ def snapshot_from_records(
         billing_value=_selected_value(billing_latest, billing_values),
         billing_conflict=len(billing_values) > 1,
         billing_evidence=_pointer_from_row(billing_latest, billing_values),
+        job_intent_code=job_record.intent_code.value if job_record is not None else None,
+        job_role_category=job_record.role_category.value if job_record is not None else None,
+        job_date_posted=job_record.date_posted if job_record is not None else None,
+        job_recency_days=job_record.recency_days if job_record is not None else None,
+        job_recency_status=job_record.recency_status.value if job_record is not None else None,
+        job_evidence=_job_pointer(job_record),
         business_phone=_selected_value(phone_latest, phone_values),
         business_phone_evidence=_pointer_from_row(phone_latest, phone_values),
         business_email=_selected_value(email_latest, email_values),
@@ -1917,6 +2054,17 @@ def _pointer_from_row(
         claim_type=_text(row.claim_type),
         extracted_value=_text(row.extracted_value),
         conflicting_values=conflicting_values if len(conflicting_values) > 1 else (),
+    )
+
+
+def _job_pointer(record: JobSignalRecord | None) -> EvidencePointer | None:
+    if record is None:
+        return None
+    return EvidencePointer(
+        evidence_id=record.evidence_id,
+        source_url=_text(record.source_url),
+        claim_type=WebsiteFactType.JOB_POSTING_SIGNAL.value,
+        extracted_value=record.intent_code.value,
     )
 
 

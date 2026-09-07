@@ -132,6 +132,7 @@ def test_rationale_payload_is_auditable_and_json_serializable() -> None:
         "unknown_not_inferred": True,
         "website_facts_require_verified_match": True,
         "billing_signals_require_explicit_evidence": True,
+        "job_posting_signals_require_explicit_jsonld": True,
     }
     assert "reason_codes" in payload
     assert payload["fabricated_facts"] is False

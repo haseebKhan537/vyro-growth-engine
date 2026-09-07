@@ -3,10 +3,12 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from tests.fixtures.website_pages import (
+    BILLING_JOB_JSONLD_HTML,
+    HOME_WITH_CAREERS_LINK_HTML,
     HOME_WITH_STAFF_LINK_HTML,
     NAME_ONLY_HTML,
     NO_OPTIONAL_FACTS_HTML,
@@ -17,7 +19,14 @@ from tests.fixtures.website_pages import (
     page,
 )
 from vyro_growth.domain import EnrichmentRunStatus, WebsiteFactType, WebsiteMatchStatus
-from vyro_growth.models import Activity, Contact, EnrichmentRun, Organization, SourceEvidence
+from vyro_growth.models import (
+    Activity,
+    Contact,
+    EnrichmentRun,
+    Organization,
+    OutreachMessage,
+    SourceEvidence,
+)
 from vyro_growth.providers.website import (
     StaticPublicPageFetcher,
     StaticWebsiteSearchProvider,
@@ -314,3 +323,92 @@ def test_staff_fallback_skips_portals_reviews_and_social(db_session: Session) ->
     assert "linkedin" not in combined
     assert "/reviews" not in combined
     assert "patient-portal" not in combined
+
+
+class _RecordingFetcher(StaticPublicPageFetcher):
+    def __init__(self, pages: dict[str, object]) -> None:
+        super().__init__(pages)  # type: ignore[arg-type]
+        self.fetched: list[str] = []
+
+    def fetch(self, url: str) -> object:
+        self.fetched.append(url)
+        return super().fetch(url)
+
+
+def test_verified_job_pages_store_sanitized_job_posting_signals(db_session: Session) -> None:
+    organization = _org(db_session)
+    careers_url = f"{VERIFIED_URL}/careers"
+    result = _service(
+        {
+            VERIFIED_URL: page(VERIFIED_URL, HOME_WITH_CAREERS_LINK_HTML),
+            careers_url: page(careers_url, BILLING_JOB_JSONLD_HTML),
+        },
+        [WebsiteCandidate(url=VERIFIED_URL, source="search")],
+    ).enrich_organization(db_session, organization.id)
+
+    assert result.match_status is WebsiteMatchStatus.VERIFIED
+    job_rows = db_session.scalars(
+        select(SourceEvidence).where(
+            SourceEvidence.organization_id == organization.id,
+            SourceEvidence.claim_type == WebsiteFactType.JOB_POSTING_SIGNAL.value,
+        )
+    ).all()
+    assert job_rows
+    for row in job_rows:
+        assert row.source_url
+        assert row.confidence is not None
+        assert row.created_at is not None
+        assert row.metadata_json.get("fabricated") is False
+        assert row.metadata_json.get("applied") is False
+        assert row.metadata_json.get("intent_code") == "billing_hiring"
+        assert "apply@" not in (row.extracted_value or "")
+        assert "apply@" not in (row.evidence_snippet or "")
+        assert "(512)" not in (row.evidence_snippet or "")
+    activity = db_session.scalar(
+        select(Activity).where(Activity.action == "website_enrichment_completed")
+    )
+    assert activity is not None
+    metrics = activity.details["job_signals"]
+    assert metrics["extracted"] >= 1
+    assert metrics["billing_intent_count"] >= 1
+    assert "by_intent_code" in metrics
+    dumped = str(metrics)
+    assert "apply@" not in dumped
+    assert "Medical Biller" not in dumped
+    assert db_session.scalar(select(Contact)) is None
+    assert db_session.scalar(select(func.count()).select_from(OutreachMessage)) == 0
+
+
+def test_job_signal_enrichment_does_not_fetch_job_boards(db_session: Session) -> None:
+    organization = _org(db_session)
+    fetcher = _RecordingFetcher(
+        {VERIFIED_URL: page(VERIFIED_URL, HOME_WITH_CAREERS_LINK_HTML)},
+    )
+    service = WebsiteEnrichmentService(
+        StaticWebsiteSearchProvider(
+            [
+                WebsiteCandidate(url=VERIFIED_URL, source="search"),
+                WebsiteCandidate(url="https://www.indeed.com/jobs?q=biller", source="search"),
+                WebsiteCandidate(
+                    url="https://www.ziprecruiter.com/Jobs/Medical-Biller",
+                    source="search",
+                ),
+                WebsiteCandidate(url="https://www.linkedin.com/jobs/view/1", source="search"),
+            ]
+        ),
+        fetcher,  # type: ignore[arg-type]
+        max_pages_per_org=5,
+    )
+    result = service.enrich_organization(db_session, organization.id)
+    assert result.match_status is WebsiteMatchStatus.VERIFIED
+    joined = " ".join(fetcher.fetched).lower()
+    assert "indeed.com" not in joined
+    assert "ziprecruiter.com" not in joined
+    assert "linkedin.com" not in joined
+    match_row = db_session.scalar(
+        select(SourceEvidence).where(SourceEvidence.claim_type == "website_match")
+    )
+    assert match_row is not None
+    errors = match_row.metadata_json["fetch_errors"]
+    assert any(item["error"] == "directory_host" for item in errors)
+    assert db_session.scalar(select(Contact)) is None
