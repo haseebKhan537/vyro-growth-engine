@@ -191,6 +191,7 @@ class PhoneVerificationService:
         commit: bool = True,
     ) -> tuple[PhoneVerificationTaskView, ...]:
         halt_before = read_operator_halt(db)
+        organizations: tuple[Organization, ...]
         if organization_id is not None:
             organization = db.get(Organization, organization_id)
             if organization is None:

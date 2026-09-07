@@ -53,14 +53,6 @@ from vyro_growth.api.email_verification_metrics import (
     EmailVerificationMetricsResponse,
     build_email_verification_metrics_response,
 )
-from vyro_growth.api.phone_verification import (
-    PhoneVerificationQueueResponse,
-    PhoneVerificationTaskResponse,
-    RecordPhoneVerificationOutcomeRequest,
-    build_phone_verification_outcome_response,
-    build_phone_verification_queue_response,
-    phone_verification_http_error,
-)
 from vyro_growth.api.execution_plans import (
     ExecutionPlanRunRequest,
     ExecutionPlanRunResponse,
@@ -178,6 +170,14 @@ from vyro_growth.api.owner_handoff import (
 from vyro_growth.api.owner_launch_dossier import (
     OwnerLaunchDossierResponse,
     build_owner_launch_dossier_response,
+)
+from vyro_growth.api.phone_verification import (
+    PhoneVerificationQueueResponse,
+    PhoneVerificationTaskResponse,
+    RecordPhoneVerificationOutcomeRequest,
+    build_phone_verification_outcome_response,
+    build_phone_verification_queue_response,
+    phone_verification_http_error,
 )
 from vyro_growth.api.provider_setup_checklist import (
     ProviderSetupChecklistResponse,

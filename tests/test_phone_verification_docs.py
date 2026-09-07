@@ -10,11 +10,15 @@ def test_phase_70_docs_describe_human_queue_without_ai_calling() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     deployment = Path("docs/DEPLOYMENT.md").read_text(encoding="utf-8")
 
-    assert "## Phase 70 — Human phone-verification task queue for NO_CONTACT_FOUND (current)" in roadmap
+    heading = (
+        "## Phase 70 — Human phone-verification task queue for NO_CONTACT_FOUND (current)"
+    )
+    assert heading in roadmap
     assert "human-in-the-loop" in roadmap.lower()
     assert "Do not route through `VoiceProvider`" in roadmap
     assert "no ai voice cold calling" in roadmap.lower()
-    assert "- human phone-verification queue for `NO_CONTACT_FOUND`" not in roadmap.split("## Phase 70")[0]
+    before_phase_70 = roadmap.split("## Phase 70")[0]
+    assert "- human phone-verification queue for `NO_CONTACT_FOUND`" not in before_phase_70
 
     assert "### Phase 70: human phone-verification queue" in architecture
     assert "GET /internal/phone-verification/tasks" in architecture
