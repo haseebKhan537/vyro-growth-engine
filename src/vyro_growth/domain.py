@@ -83,10 +83,51 @@ class ContactVerificationStatus(StrEnum):
     UNKNOWN = "unknown"
     UNVERIFIED = "unverified"
     PROVIDER_VERIFIED = "provider_verified"
+    INFERRED = "inferred"
+    VERIFIER_VALID = "verifier_valid"
+    VERIFIER_INVALID = "verifier_invalid"
+    VERIFIER_RISKY = "verifier_risky"
+
+
+class EmailVerificationVerdict(StrEnum):
+    VALID = "valid"
+    INVALID = "invalid"
+    CATCH_ALL = "catch_all"
+    UNKNOWN = "unknown"
+    RISKY = "risky"
+    DISPOSABLE = "disposable"
+    ROLE = "role"
+    UNVERIFIED = "unverified"
+
+
+class EmailCandidateOrigin(StrEnum):
+    STORED = "stored"
+    INFERRED = "inferred"
+
+
+class EmailVerificationOutcome(StrEnum):
+    VERIFIED = "verified"
+    NO_VERIFIED_EMAIL = "no_verified_email"
+    SKIPPED = "skipped"
+    BLOCKED = "blocked"
+
+
+class EmailPatternName(StrEnum):
+    FIRST_DOT_LAST = "first.last"
+    FIRST_UNDERSCORE_LAST = "first_last"
+    FIRST_LAST = "firstlast"
+    F_DOT_LAST = "f.last"
+    F_LAST = "flast"
+    FIRST_L = "firstl"
+    FIRST = "first"
+    LAST = "last"
+    LAST_DOT_FIRST = "last.first"
 
 
 class ContactFactType(StrEnum):
     DECISION_MAKER_CONTACT = "decision_maker_contact"
+    EMAIL_VERIFICATION = "email_verification"
+    EMAIL_PATTERN_INFERENCE = "email_pattern_inference"
 
 
 class PersonalizationReadiness(StrEnum):
@@ -124,6 +165,8 @@ class EnrollmentSkipReason(StrEnum):
     MISSING_LEAD_SCORE = "missing_lead_score"
     INELIGIBLE_SCORE = "ineligible_score"
     MISSING_CONTACT_EMAIL = "missing_contact_email"
+    NO_VERIFIED_EMAIL = "no_verified_email"
+    INFERRED_EMAIL_UNVERIFIED = "inferred_email_unverified"
     MISSING_PERSONALIZATION = "missing_personalization"
     PERSONALIZATION_NOT_READY = "personalization_not_ready"
     SUPPRESSED = "suppressed"
@@ -613,6 +656,7 @@ class SecretName(StrEnum):
     GOOGLE_CALENDAR_API_KEY = "GOOGLE_CALENDAR_API_KEY"
     VOICE_API_KEY = "VOICE_API_KEY"
     DECISION_MAKER_API_KEY = "DECISION_MAKER_API_KEY"
+    EMAIL_VERIFICATION_API_KEY = "EMAIL_VERIFICATION_API_KEY"
 
 
 class SettingsChangeRequestType(StrEnum):

@@ -60,6 +60,8 @@ def test_empty_database_url_fails_closed() -> None:
         ({"google_calendar_live_enabled": True}, "GOOGLE_CALENDAR_API_KEY"),
         ({"voice_live_enabled": True}, "VOICE_API_KEY"),
         ({"decision_maker_live_enabled": True}, "DECISION_MAKER_API_KEY"),
+        ({"email_verification_live_enabled": True}, "EMAIL_VERIFICATION_API_KEY"),
+        ({"email_verification_smtp_enabled": True}, "EMAIL_VERIFICATION_SMTP_ENABLED"),
     ],
 )
 def test_live_flag_without_key_fails_closed(
@@ -98,4 +100,5 @@ def test_default_settings_keep_live_providers_off() -> None:
         "google_calendar": False,
         "voice": False,
         "decision_maker": False,
+        "email_verification": False,
     }

@@ -168,6 +168,38 @@ class Settings(BaseSettings):
     decision_maker_timeout_seconds: float = Field(default=10.0, ge=1.0)
     decision_maker_max_retries: int = Field(default=3, ge=0)
     decision_maker_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
+    email_verification_live_enabled: bool = Field(
+        default=False,
+        description=(
+            "Explicit opt-in for the live email-verification adapter boundary. Default "
+            "false; CI and local development use the deterministic stub and never call "
+            "NeverBounce/ZeroBounce/Hunter or SMTP recipient servers. Phase 69 does not "
+            "perform live HTTP even when this flag is true unless a test injects a client."
+        ),
+    )
+    email_verification_api_key: str = Field(
+        default="",
+        description=(
+            "Live email-verifier credential placeholder. Unused unless a future "
+            "owner-approved live step."
+        ),
+    )
+    email_verification_api_base_url: str = Field(
+        default="",
+        description=(
+            "Live email-verifier API base URL. Unused by default; not required for tests."
+        ),
+    )
+    email_verification_timeout_seconds: float = Field(default=10.0, ge=1.0)
+    email_verification_max_retries: int = Field(default=3, ge=0)
+    email_verification_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
+    email_verification_smtp_enabled: bool = Field(
+        default=False,
+        description=(
+            "Must remain false. SMTP recipient-server validation is forbidden in Phase 69 "
+            "and in CI/defaults."
+        ),
+    )
 
 
 class RuntimeConfigError(ValueError):
@@ -188,6 +220,7 @@ def live_provider_flags(settings: Settings) -> dict[str, bool]:
         "google_calendar": settings.google_calendar_live_enabled,
         "voice": settings.voice_live_enabled,
         "decision_maker": settings.decision_maker_live_enabled,
+        "email_verification": settings.email_verification_live_enabled,
     }
 
 
@@ -205,6 +238,7 @@ def credential_presence_flags(settings: Settings) -> dict[str, bool]:
         "calendar_api_key": bool(settings.google_calendar_api_key.strip()),
         "voice_api_key": bool(settings.voice_api_key.strip()),
         "decision_maker_api_key": bool(settings.decision_maker_api_key.strip()),
+        "email_verification_api_key": bool(settings.email_verification_api_key.strip()),
     }
 
 
@@ -234,6 +268,16 @@ def validate_runtime_settings(settings: Settings) -> tuple[str, ...]:
         issues.append(
             "DECISION_MAKER_API_KEY is required when DECISION_MAKER_LIVE_ENABLED is true"
         )
+    if (
+        settings.email_verification_live_enabled
+        and not settings.email_verification_api_key.strip()
+    ):
+        issues.append(
+            "EMAIL_VERIFICATION_API_KEY is required when EMAIL_VERIFICATION_LIVE_ENABLED "
+            "is true"
+        )
+    if settings.email_verification_smtp_enabled:
+        issues.append("EMAIL_VERIFICATION_SMTP_ENABLED must remain false")
     return tuple(issues)
 
 

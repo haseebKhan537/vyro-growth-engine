@@ -60,6 +60,8 @@ from vyro_growth.services.dashboard import (
     WebsiteEnrichmentSummary,
 )
 from vyro_growth.services.discovery import DiscoveryRunResult
+from vyro_growth.services.email_verification import EmailVerificationRunResult
+from vyro_growth.services.email_verification_metrics import EmailVerificationFunnel
 from vyro_growth.services.execution_planning import ExecutionPlanRunResult, ExecutionPlanView
 from vyro_growth.services.growth_optimizer import (
     OptimizerRecommendationView,
@@ -326,6 +328,160 @@ def test_cli_main_runs_contact_enrichment_metrics(
     assert '"organizations_with_verified_decision_maker_email": 1' in output
     assert '"outbound_attempted": false' in output
     assert '"live_call_attempted": false' in output
+    assert "owner@austinfamily.example" not in output
+
+
+def test_parser_accepts_verify_emails() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "verify-emails",
+            "--organization-id",
+            "11111111-1111-1111-1111-111111111111",
+            "--limit",
+            "3",
+        ]
+    )
+
+    assert args.command == "verify-emails"
+    assert args.limit == 3
+    assert args.state is None
+
+
+def test_parser_accepts_email_verification_metrics() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["email-verification-metrics", "--json"])
+
+    assert args.command == "email-verification-metrics"
+    assert args.json is True
+
+
+def test_cli_main_runs_email_verification(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    result = EmailVerificationRunResult(
+        enrichment_run_id=uuid4(),
+        organization_id=uuid4(),
+        contacts_considered=2,
+        verified_count=1,
+        no_verified_email_count=1,
+        inferred_count=1,
+        promoted_count=0,
+        reused_count=0,
+        status=EnrichmentRunStatus.COMPLETED,
+        provider_name="stub",
+        items=(),
+    )
+
+    class DummyService:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+        def verify_batch(
+            self,
+            _db: object,
+            *,
+            limit: int,
+            state: str | None,
+            city: str | None,
+        ) -> tuple[EmailVerificationRunResult, ...]:
+            assert limit == 4
+            assert state == "TX"
+            assert city == "AUSTIN"
+            return (result,)
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.EmailVerificationService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+
+    exit_code = main(["verify-emails", "--limit", "4", "--state", "TX", "--city", "AUSTIN"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "no_verified_email=1" in output
+    assert "verified_runs=1" in output
+    assert "owner@austinfamily.example" not in output
+
+
+def test_cli_main_runs_email_verification_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    metrics = EmailVerificationFunnel(
+        generated_at=datetime.now(tz=UTC),
+        packet_kind="email_verification_funnel",
+        purpose="email_verification_validation_only",
+        read_only=True,
+        dry_run_only=True,
+        no_execution=True,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        smtp_attempted=False,
+        execution_allowed=False,
+        owner_approved=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        halt_changed=False,
+        outbound_enabled=False,
+        operator_halt_status="halted",
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        live_providers_enabled=False,
+        live_providers={"email_verification": False},
+        email_verification_live_enabled=False,
+        email_verification_smtp_enabled=False,
+        email_verification_is_not_outbound=True,
+        contacts_considered=2,
+        contacts_with_business_email=2,
+        contacts_with_verified_safe_email=1,
+        no_verified_email_count=1,
+        inferred_candidate_count=1,
+        inferred_unverified_count=1,
+        inferred_promoted_count=0,
+        provider_error_count=0,
+        verified_email_rate=0.5,
+        no_verified_email_rate=0.5,
+        inferred_candidate_rate=0.5,
+        inferred_promoted_rate=0.0,
+        verdicts_by_status={"valid": 1, "unverified": 1},
+        outcomes_by_status={"verified": 1, "no_verified_email": 1},
+        inferred_by_status={"unverified": 1},
+        skipped_by_reason={"no_verified_email": 1},
+        provider_errors_by_category={},
+        cli_command="email-verification-metrics",
+        http_route="/internal/email-verification/metrics",
+    )
+
+    class DummyService:
+        def summarize(self, _db: object, _settings: object) -> EmailVerificationFunnel:
+            return metrics
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.EmailVerificationMetricsService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["email-verification-metrics", "--json"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert '"contacts_considered": 2' in output
+    assert '"contacts_with_verified_safe_email": 1' in output
+    assert '"smtp_attempted": false' in output
+    assert '"outbound_attempted": false' in output
     assert "owner@austinfamily.example" not in output
 
 
@@ -863,6 +1019,7 @@ def test_cli_main_runs_dashboard_summary(
             google_calendar_live_enabled=False,
             voice_live_enabled=False,
             decision_maker_live_enabled=False,
+            email_verification_live_enabled=False,
             planned_count=2,
             skipped_count=1,
             suppressed_count=0,
@@ -2032,6 +2189,7 @@ def test_cli_worker_lists_jobs_without_running_them(
     assert exit_code == 0
     output = capsys.readouterr().out
     assert "discover_nppes_practices" in output
+    assert "verify_contact_emails" in output
     assert "generate_growth_recommendations" in output
     assert "generate_channel_plans" in output
     assert "generate_content_briefs" in output

@@ -197,9 +197,12 @@ CATEGORY_SPECS: tuple[_CategorySpec, ...] = (
     _CategorySpec(
         key="enrichment",
         label="Enrichment",
-        credential_names=(SecretName.DECISION_MAKER_API_KEY.value,),
-        flag_names=("DECISION_MAKER_LIVE_ENABLED",),
-        planned_config_names=("DECISION_MAKER_API_BASE_URL",),
+        credential_names=(
+            SecretName.DECISION_MAKER_API_KEY.value,
+            SecretName.EMAIL_VERIFICATION_API_KEY.value,
+        ),
+        flag_names=("DECISION_MAKER_LIVE_ENABLED", "EMAIL_VERIFICATION_LIVE_ENABLED"),
+        planned_config_names=("DECISION_MAKER_API_BASE_URL", "EMAIL_VERIFICATION_API_BASE_URL"),
         default_approval="live_enablement_review",
         command_name=LAUNCH_READINESS_COMMAND,
         json_route=LAUNCH_READINESS_ROUTE,

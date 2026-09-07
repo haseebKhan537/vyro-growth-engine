@@ -32,6 +32,10 @@ from vyro_growth.workers.discovery_handler import (
     DISCOVER_NPPES_PRACTICES_JOB,
     DiscoverNppesPracticesHandler,
 )
+from vyro_growth.workers.email_verification_handler import (
+    VERIFY_CONTACT_EMAILS_JOB,
+    VerifyContactEmailsHandler,
+)
 from vyro_growth.workers.execution_planning_handler import (
     GENERATE_EXECUTION_PLANS_JOB,
     GenerateExecutionPlansHandler,
@@ -96,6 +100,8 @@ __all__ = [
     "ENRICH_ORGANIZATION_WEBSITES_JOB",
     "ClassifyInboundRepliesHandler",
     "DiscoverNppesPracticesHandler",
+    "VERIFY_CONTACT_EMAILS_JOB",
+    "VerifyContactEmailsHandler",
     "EnrichDecisionMakersHandler",
     "EnrichOrganizationWebsitesHandler",
     "PersonalizeScoredLeadsHandler",

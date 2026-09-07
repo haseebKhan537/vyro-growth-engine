@@ -17,6 +17,8 @@ SAFE_FLAGS = (
     "GOOGLE_CALENDAR_LIVE_ENABLED=false",
     "VOICE_LIVE_ENABLED=false",
     "DECISION_MAKER_LIVE_ENABLED=false",
+    "EMAIL_VERIFICATION_LIVE_ENABLED=false",
+    "EMAIL_VERIFICATION_SMTP_ENABLED=false",
 )
 
 
@@ -40,6 +42,7 @@ def test_dockerfile_is_production_safe() -> None:
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in dockerfile
     assert "VOICE_LIVE_ENABLED=false" in dockerfile
     assert "DECISION_MAKER_LIVE_ENABLED=false" in dockerfile
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in dockerfile
     assert "SMARTLEAD_LIVE_ENABLED=false" in dockerfile
     assert ".env" in dockerignore
     assert "COPY .env" not in dockerfile
@@ -54,6 +57,7 @@ def test_compose_keeps_outbound_and_live_providers_off() -> None:
     assert 'GOOGLE_CALENDAR_LIVE_ENABLED: "false"' in compose
     assert 'VOICE_LIVE_ENABLED: "false"' in compose
     assert 'DECISION_MAKER_LIVE_ENABLED: "false"' in compose
+    assert 'EMAIL_VERIFICATION_LIVE_ENABLED: "false"' in compose
     assert '"vyro-growth", "worker", "--check"' in compose
     assert '"alembic", "upgrade", "head"' in compose
     assert "/health" in compose
@@ -168,9 +172,10 @@ def test_worker_catalog_excludes_outbound_send_jobs() -> None:
     assert "generate_content_briefs" in names
     assert "generate_execution_plans" in names
     assert "generate_approval_packets" in names
+    assert "verify_contact_emails" in names
     assert "send_email" not in names
     assert "schedule_meeting" not in names
     assert "place_consent_callback" not in names
     assert undeployed_outbound_job_names() == UNDEPLOYED_OUTBOUND_JOBS
     assert set(UNDEPLOYED_OUTBOUND_JOBS).isdisjoint(names)
-    assert len(DEPLOYABLE_JOBS) == 14
+    assert len(DEPLOYABLE_JOBS) == 15

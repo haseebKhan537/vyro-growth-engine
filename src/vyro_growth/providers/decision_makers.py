@@ -30,9 +30,6 @@ FUTURE_WATERFALL_STAGES: tuple[str, ...] = (
     "website_fallback",
 )
 FUTURE_HOOKS: tuple[str, ...] = (
-    "email_verification_provider",
-    "email_pattern_inference",
-    "job_posting_intent",
     "human_phone_verification_queue",
 )
 

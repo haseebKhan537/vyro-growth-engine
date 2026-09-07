@@ -27,10 +27,16 @@ from vyro_growth.providers.decision_makers import (
     WebsiteStaffFallbackProvider,
     build_decision_maker_provider,
 )
+from vyro_growth.providers.email_verification import (
+    StaticEmailVerificationProvider,
+    StubEmailVerificationProvider,
+    build_email_verification_provider,
+)
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
     GuardedDecisionMakerEnrichmentProvider,
     GuardedEmailProvider,
+    GuardedEmailVerificationProvider,
     GuardedGoogleCalendarProvider,
     GuardedSmartleadProvider,
     GuardedVoiceProvider,
@@ -118,6 +124,7 @@ __all__ = [
     "GuardedCalendarProvider",
     "GuardedDecisionMakerEnrichmentProvider",
     "GuardedEmailProvider",
+    "GuardedEmailVerificationProvider",
     "GuardedGoogleCalendarProvider",
     "GuardedSmartleadProvider",
     "GuardedVoiceProvider",
@@ -156,6 +163,8 @@ __all__ = [
     "StubCalendarProvider",
     "StubDecisionMakerEnrichmentProvider",
     "StubEmailProvider",
+    "StubEmailVerificationProvider",
+    "StaticEmailVerificationProvider",
     "StubEnrichmentProvider",
     "StubPersonalizationProvider",
     "StaticReplyClassifier",
@@ -176,6 +185,7 @@ __all__ = [
     "WebsiteSearchQuery",
     "build_booking_calendar_provider",
     "build_decision_maker_provider",
+    "build_email_verification_provider",
     "build_nppes_provider",
     "build_personalization_provider",
     "build_public_page_fetcher",

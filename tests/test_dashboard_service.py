@@ -84,6 +84,7 @@ def test_empty_database_summary_is_zeroed_and_safe(db_session: Session) -> None:
     assert summary.safety.google_calendar_live_enabled is False
     assert summary.safety.voice_live_enabled is False
     assert summary.safety.decision_maker_live_enabled is False
+    assert summary.safety.email_verification_live_enabled is False
     assert summary.safety.planned_count == 0
     assert summary.safety.live_calendar_events == 0
     assert summary.safety.live_meet_links == 0
@@ -178,6 +179,7 @@ def test_default_safety_flags_stay_disabled(db_session: Session) -> None:
     assert summary.safety.google_calendar_live_enabled is False
     assert summary.safety.voice_live_enabled is False
     assert summary.safety.decision_maker_live_enabled is False
+    assert summary.safety.email_verification_live_enabled is False
     assert summary.safety.live_send_attempted_enrollments == 0
     assert summary.safety.outbound_attempted_classifications == 0
     assert summary.safety.booking_events_created == 0

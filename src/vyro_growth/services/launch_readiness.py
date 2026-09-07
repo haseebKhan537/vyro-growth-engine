@@ -60,6 +60,7 @@ REQUIRED_FLAG_NAMES: tuple[str, ...] = (
     "GOOGLE_CALENDAR_LIVE_ENABLED",
     "VOICE_LIVE_ENABLED",
     "DECISION_MAKER_LIVE_ENABLED",
+    "EMAIL_VERIFICATION_LIVE_ENABLED",
 )
 REQUIRED_CONFIG_NAMES: tuple[str, ...] = (
     *REQUIRED_FLAG_NAMES,
@@ -617,6 +618,8 @@ def _secret_present(name: SecretName, settings: Settings) -> bool:
             return bool(settings.voice_api_key.strip())
         case SecretName.DECISION_MAKER_API_KEY:
             return bool(settings.decision_maker_api_key.strip())
+        case SecretName.EMAIL_VERIFICATION_API_KEY:
+            return bool(settings.email_verification_api_key.strip())
         case _:
             return _unreachable(name)
 
@@ -640,6 +643,8 @@ def _secret_required(name: SecretName, settings: Settings) -> bool:
             return settings.voice_live_enabled
         case SecretName.DECISION_MAKER_API_KEY:
             return settings.decision_maker_live_enabled
+        case SecretName.EMAIL_VERIFICATION_API_KEY:
+            return settings.email_verification_live_enabled
         case _:
             return _unreachable(name)
 
@@ -664,6 +669,10 @@ def _config_flags(settings: Settings) -> tuple[ConfigFlagStatus, ...]:
         ConfigFlagStatus(
             name="DECISION_MAKER_LIVE_ENABLED",
             enabled=settings.decision_maker_live_enabled,
+        ),
+        ConfigFlagStatus(
+            name="EMAIL_VERIFICATION_LIVE_ENABLED",
+            enabled=settings.email_verification_live_enabled,
         ),
     )
 

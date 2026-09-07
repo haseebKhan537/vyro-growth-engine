@@ -61,6 +61,18 @@ Contact enrichment identifies professional decision-makers. It does not send ema
 7. Each run writes `enrichment_runs`, `source_evidence`, and an `activities` row. No outbound actions occur.
 8. Sanitized hit-rate metrics (`vyro-growth contact-enrichment-metrics` / `GET /internal/contact-enrichment/metrics`) report organization funnel counts and safe role/verification/skip/error buckets only. They never expose emails, phones, websites, NPI, addresses, practice or provider names, evidence snippets, message bodies, secrets, or raw errors. `NO_CONTACT_FOUND` is a normal outcome.
 
+### Phase 69: email verification gate and pattern inference
+Email verification is dry-run / verification-planning only. It does not send email, enroll campaigns, call SMTP recipient servers, or call live NeverBounce/ZeroBounce/Hunter verifiers by default.
+
+1. Operator or worker submits `vyro-growth verify-emails` or job `verify_contact_emails` with an organization id or a batch limit. There is no public HTTP trigger.
+2. `EmailVerificationService` verifies stored professional business emails through `EmailVerificationProvider`. CI and local runs use `StubEmailVerificationProvider`, which never invents a `valid` verdict and never opens HTTP or SMTP. `build_email_verification_provider()` always returns the stub.
+3. A guarded live adapter exists as a future boundary. It requires `EMAIL_VERIFICATION_LIVE_ENABLED`, a configured key/base URL, and an injected HTTP client. SMTP recipient-server validation remains forbidden even when the live flag is true.
+4. Verdicts persist as contact facts (`email_verification_verdict`, `email_verified`, `email_origin`) plus `source_evidence` / `activities`. Identical contact+email reruns are idempotent.
+5. If one verified-safe same-domain pattern exists, helpers generate inferred/unverified candidates for known public names. Candidates are not promoted onto `contacts.email` unless a verifier returns `valid`.
+6. Future outreach enrollment requires a verified-safe verdict. Missing or risky addresses skip with `NO_VERIFIED_EMAIL`. This phase still does not enroll or send.
+7. Sanitized funnel metrics (`vyro-growth email-verification-metrics` / `GET /internal/email-verification/metrics`) report verified-email rates and inference outcomes only.
+8. `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
 ### Phase 5: evidence-grounded personalization
 Personalization is dry-run only. It does not send email, place calls, book meetings, enroll leads, or call live paid providers by default.
 
@@ -75,7 +87,7 @@ Personalization is dry-run only. It does not send email, place calls, book meeti
 Outreach planning is dry-run only. It does not send email, enroll a live Smartlead campaign, place calls, or book meetings.
 
 1. Operator or worker submits `vyro-growth plan-outreach` or job `plan_outreach_enrollments` with a lead id or batch limit. There is no HTTP trigger.
-2. `OutreachEnrollmentService` loads stored scored leads, professional contacts with business email, and Phase 5 personalization drafts with `readiness_status=ready`. Missing data stays missing; facts are not invented.
+2. `OutreachEnrollmentService` loads stored scored leads, professional contacts with a verified-safe business email, and Phase 5 personalization drafts with `readiness_status=ready`. Missing data stays missing; facts are not invented. Unverified, inferred-unverified, catch-all, and risky addresses skip with `NO_VERIFIED_EMAIL`.
 3. Eligibility requires stage `qualified` or `ready_for_outreach` and a score band of `hot`, `high`, or `medium`. Email, domain, and organization suppressions skip the lead with an audited reason.
 4. The `SmartleadProvider` is the only enrollment boundary. CI and local runs use `StubSmartleadProvider`, which returns a dry-run plan id and never calls Smartlead. `build_smartlead_provider()` always returns the stub.
 5. A guarded live adapter exists as a future boundary. It requires `SMARTLEAD_LIVE_ENABLED`, outbound enablement, and a lifted operator halt, and still refuses to open HTTP unless a test injects a client.

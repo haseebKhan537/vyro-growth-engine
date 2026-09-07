@@ -35,7 +35,9 @@ def test_outbound_remains_disabled_by_default() -> None:
     assert settings.voice_live_enabled is False
     assert settings.voice_api_key == ""
     assert settings.decision_maker_live_enabled is False
-    assert settings.decision_maker_api_key == ""
+    assert settings.email_verification_live_enabled is False
+    assert settings.email_verification_smtp_enabled is False
+    assert settings.email_verification_api_key == ""
 
 
 def test_env_example_keeps_outbound_disabled() -> None:
@@ -50,6 +52,8 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in env_example
     assert "VOICE_LIVE_ENABLED=false" in env_example
     assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_SMTP_ENABLED=false" in env_example
     assert "sk-" not in env_example
     dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
     compose = Path("docker-compose.yml").read_text(encoding="utf-8")
@@ -58,6 +62,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in dockerfile
     assert "VOICE_LIVE_ENABLED=false" in dockerfile
     assert "DECISION_MAKER_LIVE_ENABLED=false" in dockerfile
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in dockerfile
 
 
 def test_current_phases_do_not_add_later_phase_integrations() -> None:
@@ -1098,3 +1103,58 @@ def test_decision_maker_live_adapter_is_guarded_and_unused_by_default() -> None:
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
+
+
+def test_email_verification_does_not_call_live_or_linkedin_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/providers/email_verification.py"),
+        Path("src/vyro_growth/services/email_pattern_inference.py"),
+        Path("src/vyro_growth/services/email_verification.py"),
+        Path("src/vyro_growth/services/email_verification_metrics.py"),
+        Path("src/vyro_growth/api/email_verification_metrics.py"),
+        Path("src/vyro_growth/workers/email_verification_handler.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "linkedin" not in source
+    assert "sales navigator" not in source
+    assert "smtplib" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_SMTP_ENABLED=false" in env_example
+
+
+def test_default_email_verification_provider_is_stub() -> None:
+    from vyro_growth.providers.email_verification import (
+        StubEmailVerificationProvider,
+        build_email_verification_provider,
+    )
+
+    settings = Settings(
+        email_verification_live_enabled=True,
+        email_verification_api_key="placeholder",
+        email_verification_smtp_enabled=False,
+    )
+    provider = build_email_verification_provider(settings)
+    assert isinstance(provider, StubEmailVerificationProvider)
+    assert provider.live is False
+
+
+def test_email_verification_live_adapter_is_guarded_and_unused_by_default() -> None:
+    live_source = Path("src/vyro_growth/providers/email_verification_live.py").read_text(
+        encoding="utf-8"
+    )
+    guarded_source = Path("src/vyro_growth/providers/guarded.py").read_text(encoding="utf-8")
+    lowered_live = live_source.lower()
+    assert "live = true" in lowered_live
+    assert "from_settings" in lowered_live
+    assert "httpx.client" in lowered_live
+    assert "linkedin" not in lowered_live
+    assert "sales navigator" not in lowered_live
+    assert "smtplib" not in lowered_live
+    assert "GuardedEmailVerificationProvider" in guarded_source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_SMTP_ENABLED=false" in env_example

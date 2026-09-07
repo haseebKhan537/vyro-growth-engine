@@ -66,6 +66,8 @@ ruff check .
 mypy src
 pytest -q
 vyro-growth smoke-dry-run --local-only --json
+vyro-growth contact-enrichment-metrics --json
+vyro-growth email-verification-metrics --json
 vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
 vyro-growth owner-handoff-packet --json
@@ -249,6 +251,33 @@ Internal JSON: `GET /internal/contact-enrichment/metrics`
 
 This is contact-enrichment validation only. Outbound remains disabled. No email, calls, campaign enrollment, booking, spend, or deploy.
 
+## Phase 69 — Email verification gate and pattern-inference design (dry-run)
+
+Verify stored business emails before any future outreach enrollment, and infer additional same-domain candidates only from an already verified pattern plus known public names. This phase does not send email, enroll campaigns, call SMTP recipient servers, or call live verifiers in CI/defaults.
+
+CLI:
+```bash
+vyro-growth verify-emails --organization-id <uuid>
+vyro-growth verify-emails --limit 25 --state TX
+vyro-growth email-verification-metrics --json
+```
+
+Worker job name: `verify_contact_emails`
+
+Internal JSON: `GET /internal/email-verification/metrics`
+
+Hard-bounce risk is treated as a first-class gate: enrollment planning now requires a verified-safe verifier verdict (`valid`). Unverifiable, catch-all, disposable, role, risky, or unknown addresses become a normal `NO_VERIFIED_EMAIL` skip, not a job failure.
+
+Pattern inference:
+
+- Requires at least one verified-safe same-domain business email whose local-part uniquely matches a known name pattern
+- Applies that pattern to other known public names at the same organization
+- Stores inferred addresses as `inferred` / unverified candidates
+- Routes candidates through the verifier before promotion
+- Never invents a pattern or promotes an unverified guess onto a contact
+
+The default provider is a stub. `build_email_verification_provider()` never returns the live adapter. `EMAIL_VERIFICATION_LIVE_ENABLED=false` and `EMAIL_VERIFICATION_SMTP_ENABLED=false`. A guarded Hunter/NeverBounce/ZeroBounce-style adapter exists but does not open a default HTTP session. Tests never require a live key. Metrics are counts/rates only and never include emails, phones, names, secrets, or unsafe errors. `OUTBOUND_ENABLED` remains false by default.
+
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 
 Generate structured personalization drafts for scored/enriched leads using only stored public/business evidence. Output is evidence-grounded and outbound-disabled. CI and default local development use a deterministic stub and do not require a live OpenAI API key.
@@ -300,7 +329,7 @@ Eligible leads need:
 
 - stage `qualified` or `ready_for_outreach`
 - a stored score band of `hot`, `high`, or `medium`
-- a professional contact with a business email
+- a professional contact with a business email that has a verified-safe email-verifier verdict
 - a Phase 5 personalization draft with `readiness_status=ready`
 
 Missing personalization, ineligible scores/stages, and email/domain/organization suppressions are skipped with audited reasons. Re-running the same campaign/lead/contact plan reuses the existing enrollment row.

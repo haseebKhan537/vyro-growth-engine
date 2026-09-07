@@ -104,6 +104,51 @@ def test_missing_contact_email_is_skipped(db_session: Session) -> None:
     assert result.items[0].skip_reason is EnrollmentSkipReason.MISSING_CONTACT_EMAIL
 
 
+def test_unverified_email_is_skipped_as_no_verified_email(db_session: Session) -> None:
+    organization = sample_organization(db_session)
+    lead = sample_lead(db_session, organization)
+    sample_contact(
+        db_session,
+        organization,
+        email_verified=False,
+        email_verification_verdict="unverified",
+    )
+    sample_score(db_session, lead)
+    sample_draft(db_session, lead, organization)
+
+    result = _service().plan_lead(db_session, lead.id)
+
+    assert result.items[0].status is EnrollmentStatus.SKIPPED
+    assert result.items[0].skip_reason is EnrollmentSkipReason.NO_VERIFIED_EMAIL
+    assert db_session.scalar(select(func.count()).select_from(OutreachMessage)) == 0
+
+
+def test_inferred_unverified_email_is_not_enrollable(db_session: Session) -> None:
+    organization = sample_organization(db_session)
+    lead = sample_lead(db_session, organization)
+    sample_contact(
+        db_session,
+        organization,
+        email="sam.rivera@austinfamily.example",
+        email_origin="inferred",
+        email_verified=False,
+        email_verification_verdict="unverified",
+        dedupe_key="email:sam.rivera@austinfamily.example",
+    )
+    sample_score(db_session, lead)
+    sample_draft(db_session, lead, organization)
+
+    result = _service().plan_lead(db_session, lead.id)
+
+    assert result.items[0].status is EnrollmentStatus.SKIPPED
+    assert result.items[0].skip_reason is EnrollmentSkipReason.INFERRED_EMAIL_UNVERIFIED
+    assert db_session.scalar(select(func.count()).select_from(CampaignEnrollment)) == 1
+    enrollment = db_session.scalar(select(CampaignEnrollment))
+    assert enrollment is not None
+    assert enrollment.details_json["email_verification_required"] is True
+    assert "sam.rivera@austinfamily.example" not in str(enrollment.details_json)
+
+
 def test_ineligible_stage_is_skipped(db_session: Session) -> None:
     organization = sample_organization(db_session)
     lead = sample_lead(db_session, organization, stage=LeadStage.DISCOVERED)

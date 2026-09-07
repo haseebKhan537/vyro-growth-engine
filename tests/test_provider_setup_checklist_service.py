@@ -286,6 +286,8 @@ def test_checklist_reuses_sources_and_does_not_leak_or_write(db_session: Session
     )
     assert "DECISION_MAKER_API_KEY" in enrichment["config_names"]
     assert "DECISION_MAKER_LIVE_ENABLED" in enrichment["config_names"]
+    assert "EMAIL_VERIFICATION_API_KEY" in enrichment["config_names"]
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED" in enrichment["config_names"]
     assert SECRET_VALUE not in str(enrichment)
     assert _strip_volatile(checklist_payload(first)) == _strip_volatile(checklist_payload(second))
     assert _counts(db_session) == before

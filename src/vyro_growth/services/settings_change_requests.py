@@ -53,6 +53,7 @@ LIVE_PROVIDER_FLAG_SETTINGS: frozenset[str] = frozenset(
         "GOOGLE_CALENDAR_LIVE_ENABLED",
         "VOICE_LIVE_ENABLED",
         "DECISION_MAKER_LIVE_ENABLED",
+        "EMAIL_VERIFICATION_LIVE_ENABLED",
     }
 )
 FLAG_SETTINGS: frozenset[str] = frozenset(

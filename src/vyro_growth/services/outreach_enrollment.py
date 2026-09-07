@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from vyro_growth.config import Settings, get_settings
 from vyro_growth.domain import (
+    EmailCandidateOrigin,
     EnrollmentSkipReason,
     EnrollmentStatus,
     LeadStage,
@@ -44,6 +45,7 @@ from vyro_growth.providers.smartlead import (
     split_stored_name,
     stored_custom_fields,
 )
+from vyro_growth.services.email_verification import contact_is_verified_safe
 from vyro_growth.services.lead_scoring import ScoreBand
 from vyro_growth.services.outbound_guard import (
     OutboundAction,
@@ -402,6 +404,23 @@ class OutreachEnrollmentService:
                 details,
                 None,
             )
+        if not contact_is_verified_safe(contact):
+            skip_reason = (
+                EnrollmentSkipReason.INFERRED_EMAIL_UNVERIFIED
+                if contact.email_origin == EmailCandidateOrigin.INFERRED.value
+                else EnrollmentSkipReason.NO_VERIFIED_EMAIL
+            )
+            return (
+                EnrollmentStatus.SKIPPED,
+                skip_reason,
+                {
+                    **details,
+                    "email_verification_required": True,
+                    "email_origin": contact.email_origin,
+                    "verification_verdict": contact.email_verification_verdict,
+                },
+                None,
+            )
         if draft is None:
             not_ready = self._any_draft(db, lead.id)
             reason = (
@@ -629,6 +648,7 @@ class OutreachEnrollmentService:
             return None
         with_email.sort(
             key=lambda row: (
+                not contact_is_verified_safe(row),
                 row.role_rank is None,
                 row.role_rank if row.role_rank is not None else 0,
                 row.created_at,

@@ -37,6 +37,8 @@ jobs:
       GOOGLE_CALENDAR_LIVE_ENABLED: "false"
       VOICE_LIVE_ENABLED: "false"
       DECISION_MAKER_LIVE_ENABLED: "false"
+      EMAIL_VERIFICATION_LIVE_ENABLED: "false"
+      EMAIL_VERIFICATION_SMTP_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -50,7 +52,7 @@ jobs:
       - name: Dry-run smoke gate
         run: |
           set -euo pipefail
-          unset DATABASE_URL OPENAI_API_KEY SMARTLEAD_API_KEY GOOGLE_CALENDAR_API_KEY VOICE_API_KEY DECISION_MAKER_API_KEY CONTACT_ENRICHMENT_API_KEY INTERNAL_API_KEY
+          unset DATABASE_URL OPENAI_API_KEY SMARTLEAD_API_KEY GOOGLE_CALENDAR_API_KEY VOICE_API_KEY DECISION_MAKER_API_KEY EMAIL_VERIFICATION_API_KEY CONTACT_ENRICHMENT_API_KEY INTERNAL_API_KEY
           vyro-growth smoke-dry-run --local-only --json | tee "${RUNNER_TEMP}/smoke-output.json"
           vyro-growth check-smoke-output --file "${RUNNER_TEMP}/smoke-output.json"
 
@@ -67,6 +69,8 @@ jobs:
           grep -q 'GOOGLE_CALENDAR_LIVE_ENABLED=false' .env.example
           grep -q 'VOICE_LIVE_ENABLED=false' .env.example
           grep -q 'DECISION_MAKER_LIVE_ENABLED=false' .env.example
+          grep -q 'EMAIL_VERIFICATION_LIVE_ENABLED=false' .env.example
+          grep -q 'EMAIL_VERIFICATION_SMTP_ENABLED=false' .env.example
           grep -q 'USER appuser' Dockerfile
           test -f .dockerignore
           ! grep -E 'sk-|AIza|BEGIN PRIVATE KEY' .env.example Dockerfile docker-compose.yml

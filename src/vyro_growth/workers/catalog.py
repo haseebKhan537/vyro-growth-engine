@@ -8,6 +8,7 @@ from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
 from vyro_growth.workers.discovery_handler import DISCOVER_NPPES_PRACTICES_JOB
+from vyro_growth.workers.email_verification_handler import VERIFY_CONTACT_EMAILS_JOB
 from vyro_growth.workers.execution_planning_handler import GENERATE_EXECUTION_PLANS_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outbound import (
@@ -50,6 +51,11 @@ DEPLOYABLE_JOBS: tuple[WorkerJobSpec, ...] = (
         ENRICH_DECISION_MAKERS_JOB,
         "enrich-contacts",
         "Stub decision-maker contact enrichment",
+    ),
+    WorkerJobSpec(
+        VERIFY_CONTACT_EMAILS_JOB,
+        "verify-emails",
+        "Dry-run email verification and pattern inference",
     ),
     WorkerJobSpec(
         PERSONALIZE_SCORED_LEADS_JOB,
