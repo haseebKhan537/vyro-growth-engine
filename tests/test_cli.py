@@ -84,6 +84,10 @@ from vyro_growth.services.monitoring import (
 )
 from vyro_growth.services.outreach_enrollment import OutreachPlanResult
 from vyro_growth.services.personalization import PersonalizationJobResult
+from vyro_growth.services.phone_verification import (
+    PhoneVerificationQueueResult,
+    PhoneVerificationTaskView,
+)
 from vyro_growth.services.reply_classification import ReplyClassificationJobResult
 from vyro_growth.services.review_queue import (
     ReviewDecisionResult,
@@ -483,6 +487,126 @@ def test_cli_main_runs_email_verification_metrics(
     assert '"smtp_attempted": false' in output
     assert '"outbound_attempted": false' in output
     assert "owner@austinfamily.example" not in output
+
+
+def _phone_task_view() -> PhoneVerificationTaskView:
+    now = datetime.now(tz=UTC)
+    return PhoneVerificationTaskView(
+        task_id=uuid4(),
+        organization_id=uuid4(),
+        lead_id=None,
+        enrichment_run_id=None,
+        contact_id=None,
+        status="queued",
+        queued_reason="no_contact_found",
+        source="cli",
+        reused=False,
+        dry_run=True,
+        no_execution=True,
+        executed=False,
+        execution_attempted=False,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        voice_provider_used=False,
+        autodial_attempted=False,
+        suppression_created=False,
+        contact_fact_created=False,
+        has_name=False,
+        has_title=False,
+        has_phone=False,
+        has_email=False,
+        role_category=None,
+        operator_label=None,
+        operator_notes=None,
+        queued_at=now,
+        completed_at=None,
+    )
+
+
+def test_parser_accepts_phone_verification_commands() -> None:
+    parser = build_parser()
+    queued = parser.parse_args(
+        [
+            "queue-phone-verification",
+            "--organization-id",
+            "11111111-1111-1111-1111-111111111111",
+            "--limit",
+            "3",
+        ]
+    )
+    listed = parser.parse_args(["list-phone-verification", "--json", "--include-completed"])
+    recorded = parser.parse_args(
+        [
+            "record-phone-verification",
+            "--task-id",
+            "00000000-0000-0000-0000-000000000001",
+            "--outcome",
+            "do_not_contact",
+            "--phone",
+            "5125550199",
+        ]
+    )
+
+    assert queued.command == "queue-phone-verification"
+    assert queued.limit == 3
+    assert listed.command == "list-phone-verification"
+    assert listed.json is True
+    assert listed.include_completed is True
+    assert recorded.command == "record-phone-verification"
+    assert recorded.outcome == "do_not_contact"
+
+
+def test_cli_main_lists_phone_verification_without_exposing_phone(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    item = _phone_task_view()
+    result = PhoneVerificationQueueResult(
+        generated_at=datetime.now(tz=UTC),
+        queued_count=1,
+        decided_count=0,
+        by_status={"queued": 1},
+        suppression_created_count=0,
+        contact_fact_created_count=0,
+        executed_count=0,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        voice_provider_used=False,
+        autodial_attempted=False,
+        operator_halt_status="halted",
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        outbound_enabled=False,
+        items=(item,),
+    )
+
+    class DummyService:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+        def list_tasks(self, *_args: object, **_kwargs: object) -> PhoneVerificationQueueResult:
+            return result
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.PhoneVerificationService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["list-phone-verification", "--json"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert '"queued_count": 1' in output
+    assert '"live_call_attempted": false' in output
+    assert '"voice_provider_used": false' in output
+    assert "5125550199" not in output
+    assert "jordan.blake@austinfamily.example" not in output
 
 
 def test_cli_main_runs_website_enrichment(
@@ -2190,6 +2314,7 @@ def test_cli_worker_lists_jobs_without_running_them(
     output = capsys.readouterr().out
     assert "discover_nppes_practices" in output
     assert "verify_contact_emails" in output
+    assert "queue_phone_verification_tasks" in output
     assert "generate_growth_recommendations" in output
     assert "generate_channel_plans" in output
     assert "generate_content_briefs" in output

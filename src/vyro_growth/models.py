@@ -24,6 +24,7 @@ from vyro_growth.domain import (
     BookingPlanRunStatus,
     BookingPlanStatus,
     ChannelPlanRunStatus,
+    ContactDiscoveryCallStatus,
     ContentBriefApprovalStatus,
     ContentBriefRunStatus,
     ConversationStatus,
@@ -130,6 +131,49 @@ class EmailPatternCandidate(TimestampMixin, Base):
     live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
     smtp_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
     details_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+
+
+class ContactDiscoveryCall(TimestampMixin, Base):
+    """Human-in-the-loop phone verification task. Never places a call."""
+
+    __tablename__ = "contact_discovery_calls"
+    __table_args__ = (
+        UniqueConstraint(
+            "idempotency_key",
+            name="uq_contact_discovery_calls_idempotency_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    lead_id: Mapped[UUID | None] = mapped_column(ForeignKey("leads.id"), index=True)
+    enrichment_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("enrichment_runs.id"), index=True
+    )
+    contact_id: Mapped[UUID | None] = mapped_column(ForeignKey("contacts.id"), index=True)
+    suppression_id: Mapped[UUID | None] = mapped_column(ForeignKey("suppressions.id"), index=True)
+    status: Mapped[str] = mapped_column(
+        String(64),
+        default=ContactDiscoveryCallStatus.QUEUED.value,
+        index=True,
+    )
+    queued_reason: Mapped[str] = mapped_column(String(64), default="no_contact_found")
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    operator_label: Mapped[str | None] = mapped_column(String(120))
+    operator_notes: Mapped[str | None] = mapped_column(String(500))
+    source: Mapped[str] = mapped_column(String(64), default="contact_enrichment")
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=True)
+    no_execution: Mapped[bool] = mapped_column(Boolean, default=True)
+    executed: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    outbound_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    voice_provider_used: Mapped[bool] = mapped_column(Boolean, default=False)
+    autodial_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    suppression_created: Mapped[bool] = mapped_column(Boolean, default=False)
+    contact_fact_created: Mapped[bool] = mapped_column(Boolean, default=False)
+    details_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
+    queued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Lead(TimestampMixin, Base):

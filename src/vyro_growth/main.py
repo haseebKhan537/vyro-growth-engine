@@ -53,6 +53,14 @@ from vyro_growth.api.email_verification_metrics import (
     EmailVerificationMetricsResponse,
     build_email_verification_metrics_response,
 )
+from vyro_growth.api.phone_verification import (
+    PhoneVerificationQueueResponse,
+    PhoneVerificationTaskResponse,
+    RecordPhoneVerificationOutcomeRequest,
+    build_phone_verification_outcome_response,
+    build_phone_verification_queue_response,
+    phone_verification_http_error,
+)
 from vyro_growth.api.execution_plans import (
     ExecutionPlanRunRequest,
     ExecutionPlanRunResponse,
@@ -243,6 +251,7 @@ from vyro_growth.services.approval_packets import ApprovalPacketError
 from vyro_growth.services.content_brief import ContentBriefError
 from vyro_growth.services.execution_planning import ExecutionPlanningError
 from vyro_growth.services.launch_readiness import LaunchReadinessService
+from vyro_growth.services.phone_verification import PhoneVerificationError
 from vyro_growth.services.readiness import HealthPayload, assess_readiness, build_health_payload
 from vyro_growth.services.review_queue import ReviewQueueError
 from vyro_growth.services.settings_change_requests import SettingsChangeRequestError
@@ -330,6 +339,43 @@ def email_verification_metrics(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_email_verification_metrics_response(db, active_settings)
+
+
+@app.get("/internal/phone-verification/tasks", tags=["internal"])
+def phone_verification_tasks(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    status: Annotated[str | None, Query()] = None,
+    include_completed: Annotated[bool, Query()] = False,
+) -> PhoneVerificationQueueResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_phone_verification_queue_response(
+            db,
+            active_settings,
+            status=status,
+            include_completed=include_completed,
+        )
+    except PhoneVerificationError as exc:
+        status_code, detail = phone_verification_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.post("/internal/phone-verification/tasks/{task_id}/outcome", tags=["internal"])
+def record_phone_verification_outcome(
+    task_id: UUID,
+    request: RecordPhoneVerificationOutcomeRequest,
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> PhoneVerificationTaskResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_phone_verification_outcome_response(db, task_id, request)
+    except PhoneVerificationError as exc:
+        status_code, detail = phone_verification_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
 
 
 @app.get("/internal/operator-command-center", tags=["internal"])

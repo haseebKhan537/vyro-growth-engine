@@ -146,6 +146,7 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "vyro-growth supervised-pilot-launch-rehearsal-control-map" in runbook
     assert "018_live_settings_change_requests" in runbook
     assert "019_email_verification" in runbook
+    assert "020_contact_discovery_calls" in runbook
 
 
 def test_readiness_and_catalog_do_not_call_providers() -> None:
@@ -174,9 +175,10 @@ def test_worker_catalog_excludes_outbound_send_jobs() -> None:
     assert "generate_execution_plans" in names
     assert "generate_approval_packets" in names
     assert "verify_contact_emails" in names
+    assert "queue_phone_verification_tasks" in names
     assert "send_email" not in names
     assert "schedule_meeting" not in names
     assert "place_consent_callback" not in names
     assert undeployed_outbound_job_names() == UNDEPLOYED_OUTBOUND_JOBS
     assert set(UNDEPLOYED_OUTBOUND_JOBS).isdisjoint(names)
-    assert len(DEPLOYABLE_JOBS) == 15
+    assert len(DEPLOYABLE_JOBS) == 16

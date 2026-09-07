@@ -278,6 +278,25 @@ Pattern inference:
 
 The default provider is a stub. `build_email_verification_provider()` never returns the live adapter. `EMAIL_VERIFICATION_LIVE_ENABLED=false` and `EMAIL_VERIFICATION_SMTP_ENABLED=false`. A guarded Hunter/NeverBounce/ZeroBounce-style adapter exists but does not open a default HTTP session. Tests never require a live key. Metrics are counts/rates only and never include emails, phones, names, secrets, or unsafe errors. `OUTBOUND_ENABLED` remains false by default.
 
+## Phase 70 — Human phone-verification task queue (no AI cold calling)
+
+Queue sanitized human-operator tasks when contact enrichment cannot find a reachable decision-maker (`NO_CONTACT_FOUND`). This phase does not place calls, autodial, use AI voice, or route through `VoiceProvider`.
+
+CLI:
+```bash
+vyro-growth queue-phone-verification --organization-id <uuid>
+vyro-growth list-phone-verification --json
+vyro-growth record-phone-verification --task-id <uuid> --outcome do_not_contact
+```
+
+Worker job name: `queue_phone_verification_tasks`
+
+Internal JSON: `GET /internal/phone-verification/tasks` and `POST /internal/phone-verification/tasks/{task_id}/outcome`
+
+Statuses: `queued`, `completed`, `no_answer`, `refused`, `wrong_number`, `decision_maker_identified`, `do_not_contact`.
+
+Human-entered `decision_maker_identified` results are stored as evidence-backed contact facts with `source_provider="phone_verification"`. `do_not_contact` creates a durable suppression that later outbound guards honor. Review-queue approve/reject is audit-only and never dials. Outputs expose IDs, status codes, and `has_phone` / `has_email` flags only. `OUTBOUND_ENABLED` remains false by default.
+
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 
 Generate structured personalization drafts for scored/enriched leads using only stored public/business evidence. Output is evidence-grounded and outbound-disabled. CI and default local development use a deterministic stub and do not require a live OpenAI API key.

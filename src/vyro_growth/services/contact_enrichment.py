@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from vyro_growth.domain import (
+    ContactDiscoveryCallStatus,
     ContactFactType,
     ContactVerificationStatus,
     EnrichmentRunStatus,
@@ -39,6 +40,7 @@ from vyro_growth.providers.decision_makers import (
     rank_classified,
     skip_reason_value,
 )
+from vyro_growth.services.phone_verification import PhoneVerificationService
 
 logger = structlog.get_logger(__name__)
 
@@ -60,6 +62,8 @@ class ContactEnrichmentResult:
     candidates_considered: int
     status: EnrichmentRunStatus
     provider_name: str
+    phone_verification_queued: bool = False
+    phone_verification_task_id: UUID | None = None
 
 
 class ContactEnrichmentService:
@@ -223,6 +227,18 @@ class ContactEnrichmentService:
                 "outbound_attempted": False,
             },
         )
+        queued = False
+        task_id: UUID | None = None
+        if upserted == 0:
+            task = PhoneVerificationService().queue_for_organization(
+                db,
+                organization.id,
+                enrichment_run_id=run.id,
+                source="contact_enrichment",
+                commit=False,
+            )
+            queued = task.status == ContactDiscoveryCallStatus.QUEUED.value
+            task_id = task.task_id
         return ContactEnrichmentResult(
             enrichment_run_id=run.id,
             organization_id=organization.id,
@@ -231,6 +247,8 @@ class ContactEnrichmentService:
             candidates_considered=considered,
             status=EnrichmentRunStatus.COMPLETED,
             provider_name=provider_result.provider_name,
+            phone_verification_queued=queued,
+            phone_verification_task_id=task_id,
         )
 
     def _record_disposition(
