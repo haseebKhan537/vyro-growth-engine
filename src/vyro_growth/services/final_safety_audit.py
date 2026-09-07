@@ -572,40 +572,33 @@ def format_final_safety_audit(
 
 
 def _live_flag_inventory(settings: Settings) -> tuple[LiveFlagItem, ...]:
-    flags = live_provider_flags(settings)
-    env_names = {
-        "openai_personalization": "OPENAI_PERSONALIZATION_ENABLED",
-        "openai_reply_classification": "OPENAI_REPLY_CLASSIFICATION_ENABLED",
-        "smartlead": "SMARTLEAD_LIVE_ENABLED",
-        "google_calendar": "GOOGLE_CALENDAR_LIVE_ENABLED",
-        "voice": "VOICE_LIVE_ENABLED",
-        "decision_maker": "DECISION_MAKER_LIVE_ENABLED",
-        "email_verification": "EMAIL_VERIFICATION_LIVE_ENABLED",
+    mapped = {
+        _live_flag_env_name(key): enabled
+        for key, enabled in live_provider_flags(settings).items()
     }
-    extra = sorted(set(flags) - set(env_names))
-    missing = sorted(set(env_names) - set(flags))
-    if extra or missing:
-        raise RuntimeError(
-            f"unhandled live provider flag keys extra={extra!r} missing={missing!r}"
-        )
-    items = [
-        LiveFlagItem(name=env_names[key], enabled=flags[key]) for key in sorted(flags)
-    ]
-    items.append(
-        LiveFlagItem(
-            name="EMAIL_VERIFICATION_SMTP_ENABLED",
-            enabled=settings.email_verification_smtp_enabled,
-        )
-    )
-    items.append(LiveFlagItem(name="OUTBOUND_ENABLED", enabled=settings.outbound_enabled))
+    mapped["EMAIL_VERIFICATION_SMTP_ENABLED"] = settings.email_verification_smtp_enabled
+    mapped["OUTBOUND_ENABLED"] = settings.outbound_enabled
     expected = set(REQUIRED_FLAG_NAMES) | {"EMAIL_VERIFICATION_SMTP_ENABLED"}
-    present = {item.name for item in items}
+    present = set(mapped)
     if present != expected:
         raise RuntimeError(
             f"unhandled live flag inventory names extra={sorted(present - expected)!r} "
             f"missing={sorted(expected - present)!r}"
         )
-    return tuple(items)
+    return tuple(
+        LiveFlagItem(name=name, enabled=mapped[name]) for name in sorted(mapped)
+    )
+
+
+def _live_flag_env_name(key: str) -> str:
+    upper = key.upper()
+    enabled_name = f"{upper}_ENABLED"
+    live_name = f"{upper}_LIVE_ENABLED"
+    if enabled_name in REQUIRED_FLAG_NAMES:
+        return enabled_name
+    if live_name in REQUIRED_FLAG_NAMES:
+        return live_name
+    raise RuntimeError(f"unhandled live provider flag key={key!r}")
 
 
 def _phase_inventory(repo_root: Path) -> tuple[PhaseInventoryItem, ...]:
