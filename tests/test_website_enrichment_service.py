@@ -7,8 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from tests.fixtures.website_pages import (
+    HOME_WITH_STAFF_LINK_HTML,
     NAME_ONLY_HTML,
     NO_OPTIONAL_FACTS_HTML,
+    STAFF_TEAM_HTML,
     UNRELATED_HTML,
     VERIFIED_HOME_HTML,
     WRONG_CITY_HTML,
@@ -246,3 +248,69 @@ def test_batch_skips_verified_and_respects_limit(db_session: Session) -> None:
     ids = {item.organization_id for item in results}
     assert first.id in ids
     assert second.id not in ids
+
+
+def test_verified_staff_pages_store_staff_member_facts(db_session: Session) -> None:
+    organization = _org(db_session)
+    team_url = f"{VERIFIED_URL}/our-team"
+    result = _service(
+        {
+            VERIFIED_URL: page(VERIFIED_URL, HOME_WITH_STAFF_LINK_HTML),
+            team_url: page(team_url, STAFF_TEAM_HTML),
+        },
+        [WebsiteCandidate(url=VERIFIED_URL, source="search")],
+    ).enrich_organization(db_session, organization.id)
+
+    assert result.match_status is WebsiteMatchStatus.VERIFIED
+    staff_rows = db_session.scalars(
+        select(SourceEvidence).where(
+            SourceEvidence.organization_id == organization.id,
+            SourceEvidence.claim_type == WebsiteFactType.STAFF_MEMBER.value,
+        )
+    ).all()
+    values = {row.extracted_value for row in staff_rows}
+    assert "Jordan Blake | Practice Manager" in values
+    assert "Riley Chen | Office Manager" in values
+    assert not any("Jane Example" in (row.extracted_value or "") for row in staff_rows)
+    for row in staff_rows:
+        assert row.source_url
+        assert row.confidence is not None
+        assert row.evidence_snippet
+        assert row.metadata_json.get("fabricated") is False
+        assert row.metadata_json.get("full_name")
+        assert row.metadata_json.get("title")
+        assert row.created_at is not None
+        assert "@" not in (row.extracted_value or "")
+    assert db_session.scalar(select(Contact)) is None
+
+
+def test_staff_fallback_skips_portals_reviews_and_social(db_session: Session) -> None:
+    organization = _org(db_session)
+    result = _service(
+        {VERIFIED_URL: page(VERIFIED_URL, HOME_WITH_STAFF_LINK_HTML)},
+        [
+            WebsiteCandidate(url=VERIFIED_URL, source="search"),
+            WebsiteCandidate(url=f"{VERIFIED_URL}/reviews", source="search"),
+            WebsiteCandidate(url=f"{VERIFIED_URL}/patient-portal", source="search"),
+            WebsiteCandidate(url="https://www.linkedin.com/company/austin", source="search"),
+        ],
+    ).enrich_organization(db_session, organization.id)
+    assert result.match_status is WebsiteMatchStatus.VERIFIED
+    match_row = db_session.scalar(
+        select(SourceEvidence).where(SourceEvidence.claim_type == "website_match")
+    )
+    assert match_row is not None
+    errors = match_row.metadata_json["fetch_errors"]
+    assert any(item["error"] == "blocked_public_path" for item in errors)
+    assert any(item["error"] == "directory_host" for item in errors)
+    staff_rows = db_session.scalars(
+        select(SourceEvidence).where(
+            SourceEvidence.claim_type == WebsiteFactType.STAFF_MEMBER.value
+        )
+    ).all()
+    combined = " ".join(
+        f"{row.source_url} {row.extracted_value} {row.evidence_snippet}" for row in staff_rows
+    ).lower()
+    assert "linkedin" not in combined
+    assert "/reviews" not in combined
+    assert "patient-portal" not in combined

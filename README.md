@@ -191,8 +191,9 @@ When a site is verified, the extractor may persist only these public B2B facts, 
 - public business phone
 - public business email if present
 - billing/revenue-cycle signals only when explicitly stated
+- staff-member name + title pairs from public team/about/leadership pages when explicitly stated
 
-Patient portals, appointment flows, reviews, and other PHI-like pages are blocked. Tests use HTML fixtures and in-memory fetchers; CI does not call live websites.
+Patient portals, appointment flows, reviews, intake forms, and other PHI-like pages are blocked. Public staff pages such as `/about`, `/our-team`, `/staff`, `/meet-the-team`, and `/leadership` are prioritized after a verified match. Tests use HTML fixtures and in-memory fetchers; CI does not call live websites.
 
 Each run writes:
 
@@ -235,7 +236,7 @@ Each run writes:
 - an `enrichment_runs` audit row
 - an `activities` audit row
 
-A guarded live people-search adapter exists but is disabled by default and is not selected by `build_decision_maker_provider()`. The first mapping is a generic people-search JSON shape (Apollo-style fields such as `people`, `email_status`, and `phone_numbers`) so later Hunter/Clearbit adapters can reuse the same `DecisionMakerCandidate` parsing. Tests do not require provider credentials. Live HTTP is not opened unless a test injects a client. Env vars: `DECISION_MAKER_LIVE_ENABLED=false`, `DECISION_MAKER_API_KEY`, `DECISION_MAKER_API_BASE_URL`.
+A guarded live people-search adapter exists but is disabled by default and is not selected as the first waterfall stage. The default `build_decision_maker_provider()` sequence is the people-search stub plus a free website-staff fallback that reads stored `staff_member` facts. The first mapping is a generic people-search JSON shape (Apollo-style fields such as `people`, `email_status`, and `phone_numbers`) so later Hunter/Clearbit adapters can reuse the same `DecisionMakerCandidate` parsing. Tests do not require provider credentials. Live HTTP is not opened unless a test injects a client. Env vars: `DECISION_MAKER_LIVE_ENABLED=false`, `DECISION_MAKER_API_KEY`, `DECISION_MAKER_API_BASE_URL`.
 
 Sanitized hit-rate metrics are available without calling providers or exposing contact details:
 

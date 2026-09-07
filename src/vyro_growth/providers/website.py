@@ -4,7 +4,7 @@ import ipaddress
 import re
 import socket
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Protocol
 from urllib.parse import urlparse, urlunparse
@@ -101,7 +101,40 @@ BLOCKED_PATH_FRAGMENTS = (
     "/reviews",
     "/review",
     "testimonial",
+    "intake-form",
+    "intakeform",
+    "patient-form",
+    "patientform",
+    "new-patient",
+    "patient-intake",
+    "patientintake",
 )
+
+STAFF_PAGE_PATH_HINTS: tuple[str, ...] = (
+    "meet-the-team",
+    "meet-our-team",
+    "meettheteam",
+    "our-team",
+    "ourteam",
+    "our-staff",
+    "ourstaff",
+    "staff",
+    "leadership",
+    "our-leadership",
+    "executive-team",
+    "leadership-team",
+    "management-team",
+    "management",
+    "about-us",
+    "aboutus",
+    "about",
+    "who-we-are",
+    "whoweare",
+    "our-people",
+    "ourpeople",
+)
+STAFF_PAGE_SOURCE = "staff_page_heuristic"
+NON_STAFF_PAGE_RANK = len(STAFF_PAGE_PATH_HINTS) + 1
 
 BLOCKED_HOSTS = frozenset(
     {
@@ -220,6 +253,7 @@ class ExtractedFact:
     confidence: float
     snippet: str
     source_url: str
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -326,6 +360,82 @@ def _path_and_query(url: str) -> str:
 def is_blocked_public_path(url: str) -> bool:
     haystack = _path_and_query(url)
     return any(fragment in haystack for fragment in BLOCKED_PATH_FRAGMENTS)
+
+
+def path_segments(url: str) -> tuple[str, ...]:
+    parsed = urlparse(url)
+    return tuple(segment for segment in parsed.path.lower().strip("/").split("/") if segment)
+
+
+def staff_path_key(url: str) -> str:
+    return "/".join(path_segments(url))
+
+
+def staff_page_rank(url: str) -> int:
+    if is_directory_host(url) or is_blocked_public_path(url):
+        return NON_STAFF_PAGE_RANK + 1
+    key = staff_path_key(url)
+    segments = path_segments(url)
+    for index, hint in enumerate(STAFF_PAGE_PATH_HINTS):
+        if hint in segments or key.endswith(hint):
+            return index
+    return NON_STAFF_PAGE_RANK
+
+
+def is_staff_page_url(url: str) -> bool:
+    return staff_page_rank(url) < NON_STAFF_PAGE_RANK
+
+
+def same_registrable_host(left: str, right: str) -> bool:
+    left_host = hostname_of(left)
+    right_host = hostname_of(right)
+    if left_host is None or right_host is None:
+        return False
+    return registrable_host(left_host) == registrable_host(right_host)
+
+
+def origin_of(url: str) -> str | None:
+    parsed = urlparse(url.strip())
+    host = (parsed.hostname or "").lower()
+    if not host or parsed.scheme not in {"http", "https"}:
+        return None
+    netloc = host
+    if parsed.port and parsed.port not in {80, 443}:
+        netloc = f"{host}:{parsed.port}"
+    return urlunparse((parsed.scheme.lower(), netloc, "", "", "", ""))
+
+
+def generate_staff_page_candidates(base_url: str) -> tuple[WebsiteCandidate, ...]:
+    origin = origin_of(base_url)
+    if origin is None:
+        return ()
+    candidates: list[WebsiteCandidate] = []
+    seen: set[str] = set()
+    for hint in STAFF_PAGE_PATH_HINTS:
+        url = normalize_url(f"{origin}/{hint}")
+        if url in seen or is_blocked_public_path(url) or is_directory_host(url):
+            continue
+        seen.add(url)
+        candidates.append(
+            WebsiteCandidate(url=url, source=STAFF_PAGE_SOURCE, title=None, snippet=None)
+        )
+    return tuple(candidates)
+
+
+def prioritize_page_urls(urls: Sequence[str]) -> tuple[str, ...]:
+    unique: list[str] = []
+    seen: set[str] = set()
+    for url in urls:
+        if not url.strip():
+            continue
+        normalized = normalize_url(url)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        unique.append(normalized)
+    indexed = list(enumerate(unique))
+    ordered = sorted(indexed, key=lambda item: (staff_page_rank(item[1]), item[0]))
+    return tuple(url for _index, url in ordered)
 
 
 def _is_blocked_ip(value: str) -> bool:

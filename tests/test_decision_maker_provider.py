@@ -13,6 +13,7 @@ from vyro_growth.providers.decision_makers import (
     StubDecisionMakerEnrichmentProvider,
     WaterfallDecisionMakerProvider,
     WebsiteFactContext,
+    WebsiteStaffFallbackProvider,
     build_decision_maker_provider,
     classify_candidate,
     classify_title,
@@ -231,9 +232,14 @@ def test_stub_provider_does_not_invent_contacts() -> None:
     assert provider.requests == [request]
 
 
-def test_build_provider_is_stub() -> None:
+def test_build_provider_is_waterfall_with_website_staff_fallback() -> None:
     provider = build_decision_maker_provider()
-    assert isinstance(provider, StubDecisionMakerEnrichmentProvider)
+    assert isinstance(provider, WaterfallDecisionMakerProvider)
+    assert isinstance(provider.inner_providers[0], StubDecisionMakerEnrichmentProvider)
+    assert isinstance(provider.inner_providers[1], WebsiteStaffFallbackProvider)
+    assert provider.live is False
+    assert provider.inner_providers[0].live is False
+    assert provider.inner_providers[1].live is False
 
 
 def test_waterfall_returns_first_non_empty_without_inventing() -> None:
@@ -271,6 +277,57 @@ def test_waterfall_returns_first_non_empty_inner_result() -> None:
     assert third.requests == []
 
 
+def test_waterfall_keeps_first_empty_result_when_fallback_has_no_contacts() -> None:
+    first = StubDecisionMakerEnrichmentProvider()
+    second = WebsiteStaffFallbackProvider()
+    provider = WaterfallDecisionMakerProvider((first, second))
+    result = provider.enrich_decision_makers(DecisionMakerEnrichmentRequest(organization=_org()))
+    assert result.candidates == ()
+    assert result.provider_name == "stub"
+    assert first.requests
+    assert second.requests
+
+
+def test_website_staff_fallback_uses_stored_facts_without_inventing() -> None:
+    facts = (
+        WebsiteFactContext(
+            fact_type="staff_member",
+            value="Jordan Blake | Practice Manager",
+            confidence=0.84,
+            source_url="https://austinfamily.example/our-team",
+            snippet="Jordan Blake, Practice Manager",
+            metadata={
+                "full_name": "Jordan Blake",
+                "title": "Practice Manager",
+                "fabricated": False,
+                "extractor": "staff-page-v1",
+            },
+        ),
+        WebsiteFactContext(
+            fact_type="staff_member",
+            value="Not enough evidence",
+            confidence=0.84,
+            source_url="https://austinfamily.example/our-team",
+        ),
+        WebsiteFactContext(fact_type="ownership_signal", value="independent"),
+    )
+    provider = WebsiteStaffFallbackProvider()
+    result = provider.enrich_decision_makers(
+        DecisionMakerEnrichmentRequest(organization=_org(website_facts=facts))
+    )
+    assert result.provider_name == "website_staff"
+    assert result.raw_count == 2
+    assert len(result.candidates) == 1
+    person = result.candidates[0]
+    assert person.full_name == "Jordan Blake"
+    assert person.title == "Practice Manager"
+    assert person.business_email is None
+    assert person.business_phone is None
+    disposition = classify_candidate(person, organization=_org(website_facts=facts))
+    assert disposition.classified is not None
+    assert disposition.classified.role_category is ContactRoleCategory.PRACTICE_MANAGER
+
+
 def test_static_provider_records_request_and_drops_malformed() -> None:
     provider = StaticDecisionMakerEnrichmentProvider(
         (
@@ -302,6 +359,7 @@ def test_decision_maker_modules_have_no_network_client() -> None:
         Path(path).read_text(encoding="utf-8")
         for path in (
             "src/vyro_growth/providers/decision_makers.py",
+            "src/vyro_growth/providers/website_staff.py",
             "src/vyro_growth/services/contact_enrichment.py",
             "src/vyro_growth/workers/contact_enrichment_handler.py",
         )

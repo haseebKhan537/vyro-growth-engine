@@ -34,6 +34,7 @@ class WebsiteFactType(StrEnum):
     BUSINESS_PHONE = "business_phone"
     BUSINESS_EMAIL = "business_email"
     BILLING_SIGNAL = "billing_signal"
+    STAFF_MEMBER = "staff_member"
 
 
 class ContactRoleCategory(StrEnum):

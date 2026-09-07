@@ -24,22 +24,29 @@ from vyro_growth.providers.website import (
     WebsiteSearchQuery,
     WebsiteUrlError,
     clip_text,
+    generate_staff_page_candidates,
     hostname_of,
     is_blocked_public_path,
     is_directory_host,
+    is_staff_page_url,
     normalize_url,
+    prioritize_page_urls,
+    same_registrable_host,
 )
 from vyro_growth.providers.website_analyze import (
     decide_website_match,
     extract_business_facts,
+    extract_hrefs,
     match_status_label,
 )
+from vyro_growth.providers.website_staff import extract_staff_members
 
 logger = structlog.get_logger(__name__)
 
 WEBSITE_ENRICHMENT_ACTOR = "website_enrichment"
 BATCH_MAX = 200
 DEFAULT_MAX_PAGES = 5
+DEFAULT_MAX_STAFF_PAGES = 4
 
 
 class WebsiteEnrichmentError(ValueError):
@@ -65,10 +72,12 @@ class WebsiteEnrichmentService:
         page_fetcher: PublicPageFetcher,
         *,
         max_pages_per_org: int = DEFAULT_MAX_PAGES,
+        max_staff_pages_per_org: int = DEFAULT_MAX_STAFF_PAGES,
     ) -> None:
         self._search_provider = search_provider
         self._page_fetcher = page_fetcher
         self._max_pages_per_org = max(1, max_pages_per_org)
+        self._max_staff_pages_per_org = max(0, max_staff_pages_per_org)
 
     def enrich_organization(
         self,
@@ -209,7 +218,7 @@ class WebsiteEnrichmentService:
         candidates = self._collect_candidates(organization, candidate_url)
         run.candidates_considered = len(candidates)
         pages, fetch_errors = self._fetch_pages(candidates)
-        run.pages_fetched = len(pages)
+        staff_pages: list[PublicPage] = []
 
         match_input = OrganizationMatchInput(
             name=organization.name,
@@ -219,19 +228,33 @@ class WebsiteEnrichmentService:
             specialty=organization.specialty,
         )
         decision = decide_website_match(match_input, tuple(pages))
-        facts: tuple[ExtractedFact, ...] = ()
+        facts: list[ExtractedFact] = []
         if decision.status is WebsiteMatchStatus.VERIFIED and decision.official_website:
             winner = next(
                 (page for page in pages if page.url == decision.official_website),
                 None,
             )
             if winner is not None:
-                facts = extract_business_facts(winner)
+                facts.extend(extract_business_facts(winner))
+            staff_pages, staff_errors = self._fetch_staff_pages(
+                decision.official_website,
+                pages,
+            )
+            fetch_errors.extend(staff_errors)
+            extraction_pages = _unique_pages(
+                tuple(page for page in (winner, *staff_pages, *pages) if page is not None),
+                host_url=decision.official_website,
+            )
+            for page in extraction_pages:
+                facts.extend(extract_staff_members(page))
             self._apply_verified_website(organization, decision.official_website)
         organization.website_match_status = match_status_label(decision.status)
 
+        unique_facts = _dedupe_extracted_facts(facts)
+        fetched_pages = [*pages, *staff_pages]
+        run.pages_fetched = len(_unique_pages(tuple(fetched_pages)))
         self._persist_match_evidence(db, organization, run, decision, fetch_errors)
-        for fact in facts:
+        for fact in unique_facts:
             self._persist_fact(db, organization, run, fact)
 
         run.match_status = decision.status.value
@@ -240,7 +263,7 @@ class WebsiteEnrichmentService:
             if decision.official_website
             else None
         )
-        run.facts_extracted = len(facts)
+        run.facts_extracted = len(unique_facts)
         run.status = EnrichmentRunStatus.COMPLETED.value
         run.finished_at = datetime.now(tz=UTC)
 
@@ -252,8 +275,8 @@ class WebsiteEnrichmentService:
                 "organization_id": str(organization.id),
                 "match_status": decision.status.value,
                 "official_website": run.official_website,
-                "facts_extracted": len(facts),
-                "pages_fetched": len(pages),
+                "facts_extracted": len(unique_facts),
+                "pages_fetched": run.pages_fetched,
                 "candidates_considered": len(candidates),
                 "fetch_errors": fetch_errors,
                 "fabricated_facts": False,
@@ -264,8 +287,8 @@ class WebsiteEnrichmentService:
             organization_id=organization.id,
             match_status=decision.status,
             official_website=run.official_website,
-            facts_extracted=len(facts),
-            pages_fetched=len(pages),
+            facts_extracted=len(unique_facts),
+            pages_fetched=run.pages_fetched,
             candidates_considered=len(candidates),
             status=EnrichmentRunStatus.COMPLETED,
         )
@@ -329,6 +352,50 @@ class WebsiteEnrichmentService:
                 pages.append(self._page_fetcher.fetch(candidate.url))
             except (WebsiteFetchError, WebsiteUrlError) as exc:
                 errors.append({"url": candidate.url, "error": str(exc)})
+        return pages, errors
+
+    def _fetch_staff_pages(
+        self,
+        official_website: str,
+        already_fetched: list[PublicPage],
+    ) -> tuple[list[PublicPage], list[dict[str, str]]]:
+        if self._max_staff_pages_per_org <= 0:
+            return [], []
+        fetched_urls = {normalize_url(page.url) for page in already_fetched}
+        discovered: list[str] = []
+        for page in already_fetched:
+            if not same_registrable_host(page.url, official_website):
+                continue
+            for href in extract_hrefs(page):
+                if not href.startswith("http"):
+                    continue
+                if not same_registrable_host(href, official_website):
+                    continue
+                discovered.append(href)
+        heuristic = [item.url for item in generate_staff_page_candidates(official_website)]
+        ordered = prioritize_page_urls((*discovered, *heuristic))
+        pages: list[PublicPage] = []
+        errors: list[dict[str, str]] = []
+        for url in ordered:
+            if len(pages) >= self._max_staff_pages_per_org:
+                break
+            if url in fetched_urls:
+                continue
+            if not is_staff_page_url(url):
+                continue
+            if is_directory_host(url):
+                errors.append({"url": url, "error": "directory_host"})
+                continue
+            if is_blocked_public_path(url):
+                errors.append({"url": url, "error": "blocked_public_path"})
+                continue
+            try:
+                page = self._page_fetcher.fetch(url)
+            except (WebsiteFetchError, WebsiteUrlError) as exc:
+                errors.append({"url": url, "error": str(exc)})
+                continue
+            fetched_urls.add(normalize_url(page.url))
+            pages.append(page)
         return pages, errors
 
     def _apply_verified_website(self, organization: Organization, url: str) -> None:
@@ -398,7 +465,11 @@ class WebsiteEnrichmentService:
                 extracted_value=fact.value,
                 confidence=fact.confidence,
                 evidence_snippet=fact.snippet,
-                metadata_json={"fabricated": False, "extractor": "deterministic-v1"},
+                metadata_json={
+                    "fabricated": False,
+                    "extractor": str(fact.metadata.get("extractor") or "deterministic-v1"),
+                    **fact.metadata,
+                },
             )
         )
 
@@ -418,3 +489,34 @@ class WebsiteEnrichmentService:
             )
         )
 
+
+def _unique_pages(
+    pages: tuple[PublicPage, ...],
+    *,
+    host_url: str | None = None,
+) -> tuple[PublicPage, ...]:
+    unique: list[PublicPage] = []
+    seen: set[str] = set()
+    for page in pages:
+        key = normalize_url(page.url)
+        if key in seen:
+            continue
+        if host_url is not None and not same_registrable_host(page.url, host_url):
+            continue
+        if is_directory_host(page.url) or is_blocked_public_path(page.url):
+            continue
+        seen.add(key)
+        unique.append(page)
+    return tuple(unique)
+
+
+def _dedupe_extracted_facts(facts: list[ExtractedFact]) -> tuple[ExtractedFact, ...]:
+    seen: set[tuple[str, str]] = set()
+    unique: list[ExtractedFact] = []
+    for fact in facts:
+        key = (fact.fact_type.value, fact.value.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(fact)
+    return tuple(unique)

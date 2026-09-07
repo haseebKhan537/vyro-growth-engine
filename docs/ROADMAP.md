@@ -780,14 +780,14 @@ Internal operator HTML shell of the Phase 63 supervised pilot launch rehearsal c
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/send/contact controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 66 — Live decision-maker enrichment provider foundation and hit-rate metrics (current)
+## Phase 66 — Live decision-maker enrichment provider foundation and hit-rate metrics
 Dry-run / provider-plumbing / measurement only. Does not send email, enroll leads, call prospects, book meetings, spend money, publish content, execute packets, lift halt, or enable live outbound.
 - Guarded live people-search adapter (`LiveDecisionMakerProvider`) behind `DecisionMakerEnrichmentProvider`, disabled by default
 - `DECISION_MAKER_LIVE_ENABLED=false`; API key/base URL unused unless explicitly enabled with an injected HTTP client
 - Retry/backoff for 429/500/502/503/504; auth/client errors are non-retryable
 - Structured provider output parsed into existing `DecisionMakerCandidate` objects; no invented contacts
-- `build_decision_maker_provider()` remains the stub for CI and local smoke runs
-- Waterfall sequencing is a dry-run design hook only (people-search -> later domain verification / website fallback)
+- `build_decision_maker_provider()` remains dry-run only for CI and local smoke runs
+- Waterfall sequencing is people-search then a free website-staff fallback
 - Sanitized hit-rate metrics via `vyro-growth contact-enrichment-metrics` and `GET /internal/contact-enrichment/metrics`
 - Counts/rates only: organizations considered, with candidate, with business email, with provider-verified email, with decision-maker-role, with verified decision-maker-role email, plus safe role/verification/skip/error buckets
 - `NO_CONTACT_FOUND` is a normal outcome, not a failure
@@ -795,8 +795,19 @@ Dry-run / provider-plumbing / measurement only. Does not send email, enroll lead
 - No LinkedIn/Sales Navigator provider, AI voice cold-calling, list purchase, or job-response automation
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
+## Phase 67 — Person-level website staff extraction fallback (current)
+Dry-run website fallback only. Does not send email, enroll leads, call prospects, book meetings, spend money, publish content, execute packets, lift halt, or enable live outbound.
+- `STAFF_MEMBER` website fact type for evidence-backed public name + title pairs
+- Public business staff pages are prioritized: `/about`, `/our-team`, `/staff`, `/meet-the-team`, `/leadership`, and similar safe paths
+- Extraction runs only after a verified official-website match, from same-host public pages
+- Stored facts include source URL, extracted value, confidence, timestamp, and a safe evidence snippet
+- Website-staff candidates feed the existing decision-maker classification and role-ranking path unchanged
+- Names, titles, emails, phones, credentials, staff counts, and relationships are never invented
+- Patient portals, reviews, intake forms, authenticated areas, and social-network pages are not scraped
+- No LinkedIn/Sales Navigator automation
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
 Future contact-enrichment work (not in this phase):
-- person-level website extraction
 - email verification before send
 - email-pattern inference followed by verification
 - job-posting intent signals

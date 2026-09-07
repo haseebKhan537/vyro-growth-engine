@@ -51,16 +51,17 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Bound every request with timeout, max bytes, max redirects, and inter-request delay.
 - Do not send credentials, cookies, or authenticated session material.
 - Do not scrape, store, or process patient data, portal data, appointment data, or reviews that include health details.
-- Extract only allowlisted public B2B facts. Never invent a missing phone, email, count, or billing signal.
+- Extract only allowlisted public B2B facts. Never invent a missing phone, email, count, billing signal, staff name, or title.
 - Store source URL, extracted value, confidence, timestamp, and evidence snippet for each claim.
 - Official website is persisted only after a conservative NPPES match (`verified`). Ambiguous and no-match runs leave `organizations.website` unchanged.
+- After a verified match, public staff/about/team/leadership pages may be fetched. Patient portals, reviews, intake forms, authenticated paths, and social-network hosts remain blocked.
 
 ## Decision-maker contact enrichment
 - Do not call a live paid contact provider in CI or local tests. The stub returns no invented people.
-- `build_decision_maker_provider()` always returns the stub. The guarded live adapter requires `DECISION_MAKER_LIVE_ENABLED=true`, a configured key/base URL, and an injected HTTP client. Phase 66 does not open a default HTTP session.
+- `build_decision_maker_provider()` returns a dry-run waterfall: people-search stub first, then the free website-staff fallback over stored `staff_member` facts. The guarded live adapter requires `DECISION_MAKER_LIVE_ENABLED=true`, a configured key/base URL, and an injected HTTP client. It does not open a default HTTP session.
 - Do not scrape LinkedIn, Sales Navigator, or bypass provider terms.
 - Store professional/business contact fields only. Do not invent names, titles, emails, phones, roles, or confidence. Unknown stays unknown.
-- Drop irrelevant clinical contacts unless the record includes owner/operator evidence.
+- Drop irrelevant clinical contacts unless the record includes owner/operator evidence. Website-staff candidates use the existing `classify_candidate` / role-rank path unchanged.
 - Hit-rate metrics and JSON exports return sanitized counts/rates/status categories only. Never expose emails, phones, websites, NPI numbers, street addresses, practice names, provider names, evidence snippets, message bodies, outreach drafts, API keys, tokens, provider secrets, raw env values, or unsafe provider error text.
 - Contact enrichment is not outreach. `OUTBOUND_ENABLED` remains false by default and operator halt semantics are unchanged.
 
