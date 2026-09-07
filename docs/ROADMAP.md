@@ -743,7 +743,18 @@ Sanitized read-only CLI and internal JSON export that consolidates the supervise
 - HTTP responses return `Cache-Control: no-store`
 - This is a first-send preflight/export only, not permission to send, not permission to go live, and not an execution surface
 
-## Phase 63 — Supervised pilot launch rehearsal control map export
+## Phase 62 — Operator supervised pilot first-send preflight UI
+Internal operator HTML shell of the Phase 61 supervised pilot first-send preflight packet. Read-only, no execution.
+- `GET /internal/operator-supervised-pilot-first-send-preflight`
+- Reuses existing Phase 61 `SupervisedPilotFirstSendPreflightService` / payload and does not duplicate first-send readiness calculations
+- Linked from the operator dashboard, go-live readiness index, supervised pilot plan UI, supervised pilot candidate UI, supervised pilot go/no-go UI, launch blockers UI, staged rollout UI, owner launch dossier UI, provider setup checklist UI, rehearsal outcome UI, release/readiness pages, and related readiness surfaces
+- Renders overall status, generated timestamp, packet kind and purpose, read-only / no-execution / no-go-live / no-outbound / no-provider-calls / no-deployment / no-spend / dry-run-only / manual-review-only flags, first-send flags (`first_send_allowed=false`, `first_send_attempted=false`, `first_send_executed=0`, `sends_executed=0`), operator halt before/status/after and unchanged proof, first-send scope recommendation counts, candidate/queue counts, prerequisite / candidate-readiness / blocked-reason counts, expected safe assertion pass/fail counts and failed keys, preflight checks with code/status/label/blocking boolean/route/command names, abort/stop conditions as review text only, owner decision prerequisite type/code names only, missing credential/config names only, closed provider/live flag names only, blocker/gate codes, related safe routes and CLI commands, safe local git metadata, and non-executable owner next steps
+- Safe metadata only: statuses, codes, route names, command names, config names, flag names, missing credential variable names, specialty categories, state abbreviations, generic source names, sanitized timestamps, and counts
+- Page states this is a first-send preflight review view only, not permission to send, not permission to go live, and not an execution surface
+- No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/send/contact controls
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 63 — Supervised pilot launch rehearsal control map export (current)
 Sanitized read-only CLI and internal JSON export that maps existing readiness surfaces into one supervised-pilot launch rehearsal control map. Control-map/export only, no execution.
 - CLI `vyro-growth supervised-pilot-launch-rehearsal-control-map` with Markdown output and `--json` output
 - Internal JSON `GET /internal/supervised-pilot-launch-rehearsal-control-map`

@@ -39,6 +39,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH,
     OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+    OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
     OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
     OPERATOR_UI_STYLES,
@@ -51,6 +52,7 @@ from vyro_growth.api.operator_ui import (
     SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH,
     STAGED_ROLLOUT_PLAN_JSON_PATH,
     SUPERVISED_PILOT_CANDIDATES_JSON_PATH,
+    SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_JSON_PATH,
     SUPERVISED_PILOT_GO_NO_GO_JSON_PATH,
     SUPERVISED_PILOT_PLAN_JSON_PATH,
     format_dt,
@@ -237,6 +239,8 @@ def _render_related_links() -> str:
     candidates_href = escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
     candidates_json_href = escape(SUPERVISED_PILOT_CANDIDATES_JSON_PATH)
     go_no_go_json_href = escape(SUPERVISED_PILOT_GO_NO_GO_JSON_PATH)
+    first_send_json_href = escape(SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_JSON_PATH)
+    first_send_href = escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
     launch_href = escape(LAUNCH_READINESS_JSON_PATH)
     preflight_href = escape(OPERATOR_SETTINGS_EXECUTION_PREFLIGHT_PATH)
     preflight_json_href = escape(SETTINGS_EXECUTION_PREFLIGHT_JSON_PATH)
@@ -271,6 +275,8 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{candidates_href}">Pilot candidates</a>\n'
         f'      <a class="nav-link" href="{candidates_json_href}">JSON candidates</a>\n'
         f'      <a class="nav-link" href="{go_no_go_json_href}">JSON go/no-go</a>\n'
+        f'      <a class="nav-link" href="{first_send_href}">First-send preflight</a>\n'
+        f'      <a class="nav-link" href="{first_send_json_href}">JSON first-send</a>\n'
         f'      <a class="nav-link" href="{launch_href}">Launch readiness JSON</a>\n'
         f'      <a class="nav-link" href="{preflight_href}">Settings preflight</a>\n'
         f'      <a class="nav-link" href="{preflight_json_href}">JSON preflight</a>\n'

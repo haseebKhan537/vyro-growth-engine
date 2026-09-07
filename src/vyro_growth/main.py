@@ -138,6 +138,9 @@ from vyro_growth.api.operator_staged_rollout_plan import (
 from vyro_growth.api.operator_supervised_pilot_candidates import (
     build_operator_supervised_pilot_candidates_response,
 )
+from vyro_growth.api.operator_supervised_pilot_first_send_preflight import (
+    build_operator_supervised_pilot_first_send_preflight_response,
+)
 from vyro_growth.api.operator_supervised_pilot_go_no_go import (
     build_operator_supervised_pilot_go_no_go_response,
 )
@@ -714,6 +717,20 @@ def operator_supervised_pilot_go_no_go(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_operator_supervised_pilot_go_no_go_response(db, active_settings)
+
+
+@app.get(
+    "/internal/operator-supervised-pilot-first-send-preflight",
+    tags=["internal"],
+    response_class=HTMLResponse,
+)
+def operator_supervised_pilot_first_send_preflight(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> HTMLResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_operator_supervised_pilot_first_send_preflight_response(db, active_settings)
 
 
 @app.get(

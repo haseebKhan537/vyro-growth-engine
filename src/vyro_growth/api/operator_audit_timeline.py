@@ -29,6 +29,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_RELEASE_CANDIDATE_RUNBOOK_PATH,
     OPERATOR_STAGED_ROLLOUT_PLAN_PATH,
     OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
+    OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
     OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
     OPERATOR_UI_STYLES,
@@ -170,6 +171,7 @@ def _render_related_links() -> str:
     pilot_href = escape(OPERATOR_SUPERVISED_PILOT_PLAN_PATH)
     candidates_href = escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
     go_no_go_href = escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)
+    first_send_href = escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Related read-only surfaces">\n'
         f'      <a class="nav-link" href="{handoff_href}">Owner handoff</a>\n'
@@ -186,6 +188,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{pilot_href}">Supervised pilot</a>\n'
         f'      <a class="nav-link" href="{candidates_href}">Pilot candidates</a>\n'
         f'      <a class="nav-link" href="{go_no_go_href}">Pilot go/no-go</a>\n'
+        f'      <a class="nav-link" href="{first_send_href}">First-send preflight</a>\n'
         "    </nav>"
     )
 

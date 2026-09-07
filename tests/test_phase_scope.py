@@ -541,8 +541,10 @@ def test_supervised_pilot_first_send_preflight_does_not_execute_or_call_provider
     paths = [
         Path("src/vyro_growth/services/supervised_pilot_first_send_preflight.py"),
         Path("src/vyro_growth/api/supervised_pilot_first_send_preflight.py"),
+        Path("src/vyro_growth/api/operator_supervised_pilot_first_send_preflight.py"),
         Path("tests/test_supervised_pilot_first_send_preflight_service.py"),
         Path("tests/test_supervised_pilot_first_send_preflight_api.py"),
+        Path("tests/test_operator_supervised_pilot_first_send_preflight_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

@@ -732,6 +732,7 @@ def _remaining_checklist(
         command_name="supervised-pilot-first-send-preflight",
         label=(
             "Inspect the supervised pilot first-send preflight at "
+            "/internal/operator-supervised-pilot-first-send-preflight or "
             "/internal/supervised-pilot-first-send-preflight or via "
             "`vyro-growth supervised-pilot-first-send-preflight`. "
             "First-send preflight review only; it is not permission to "
