@@ -250,6 +250,10 @@ from vyro_growth.api.supervised_pilot_candidates import (
     SupervisedPilotCandidatesResponse,
     build_supervised_pilot_candidates_response,
 )
+from vyro_growth.api.supervised_pilot_first_send_owner_authorization_packet import (
+    SupervisedPilotFirstSendOwnerAuthorizationPacketResponse,
+    build_supervised_pilot_first_send_owner_authorization_packet_response,
+)
 from vyro_growth.api.supervised_pilot_first_send_preflight import (
     SupervisedPilotFirstSendPreflightResponse,
     build_supervised_pilot_first_send_preflight_response,
@@ -1451,6 +1455,23 @@ def supervised_pilot_launch_rehearsal_control_map(
     _require_internal_key(active_settings, x_internal_api_key)
     response.headers["Cache-Control"] = "no-store"
     return build_supervised_pilot_launch_rehearsal_control_map_response(
+        db, active_settings
+    )
+
+
+@app.get(
+    "/internal/supervised-pilot-first-send-owner-authorization-packet",
+    tags=["internal"],
+)
+def supervised_pilot_first_send_owner_authorization_packet(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> SupervisedPilotFirstSendOwnerAuthorizationPacketResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_supervised_pilot_first_send_owner_authorization_packet_response(
         db, active_settings
     )
 

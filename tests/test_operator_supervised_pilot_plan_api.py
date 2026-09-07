@@ -95,6 +95,7 @@ LINKED_SURFACES = (
     "/internal/supervised-pilot-first-send-preflight",
     "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
     "/internal/supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-first-send-owner-authorization-packet",
     "/internal/launch-readiness",
     "/internal/operator-settings-execution-preflight",
     "/internal/settings-execution-preflight",

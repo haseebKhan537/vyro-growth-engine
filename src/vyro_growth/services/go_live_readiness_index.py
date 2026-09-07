@@ -67,6 +67,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "supervised-pilot-go-no-go",
     "supervised-pilot-first-send-preflight",
     "supervised-pilot-launch-rehearsal-control-map",
+    "supervised-pilot-first-send-owner-authorization-packet",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -108,6 +109,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-first-send-preflight",
     "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
     "/internal/supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-first-send-owner-authorization-packet",
 )
 _SEVERITY_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -757,6 +759,22 @@ def _remaining_checklist(
             "execution surface."
         ),
     )
+    add(
+        NextActionCode.SUPERVISED_PILOT_FIRST_SEND_OWNER_AUTHORIZATION_PACKET_IS_NOT_GO_LIVE.value,
+        FindingSeverity.INFO.value,
+        "supervised_pilot_first_send_owner_authorization_packet",
+        json_route="/internal/supervised-pilot-first-send-owner-authorization-packet",
+        command_name="supervised-pilot-first-send-owner-authorization-packet",
+        label=(
+            "Inspect the supervised pilot first-send owner authorization "
+            "packet at /internal/supervised-pilot-first-send-owner-"
+            "authorization-packet or via `vyro-growth "
+            "supervised-pilot-first-send-owner-authorization-packet`. "
+            "Owner-authorization review only; it is not approval, not "
+            "permission to send, not permission to go live, and not an "
+            "execution surface."
+        ),
+    )
     for handoff_item in handoff.remaining_manual_owner_checklist:
         add(
             handoff_item.code,
@@ -855,6 +873,12 @@ def _routes_for_section(source_section: str) -> tuple[str | None, str | None, st
                 "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
                 "/internal/supervised-pilot-launch-rehearsal-control-map",
                 "supervised-pilot-launch-rehearsal-control-map",
+            )
+        case "supervised_pilot_first_send_owner_authorization_packet":
+            return (
+                "/internal/supervised-pilot-first-send-owner-authorization-packet",
+                "/internal/supervised-pilot-first-send-owner-authorization-packet",
+                "supervised-pilot-first-send-owner-authorization-packet",
             )
         case "owner_handoff" | "owner_handoff_packet":
             return (
