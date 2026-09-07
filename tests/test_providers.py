@@ -14,8 +14,15 @@ from vyro_growth.providers.calendar_booking import (
     LiveGoogleCalendarDisabledError,
     StubBookingCalendarProvider,
 )
+from vyro_growth.providers.decision_makers import (
+    DecisionMakerEnrichmentRequest,
+    LiveDecisionMakerDisabledError,
+    OrganizationContactContext,
+    StubDecisionMakerEnrichmentProvider,
+)
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
+    GuardedDecisionMakerEnrichmentProvider,
     GuardedEmailProvider,
     GuardedGoogleCalendarProvider,
     GuardedSmartleadProvider,
@@ -274,3 +281,34 @@ def test_guarded_voice_qualification_blocks_when_outbound_disabled(db_session: S
     with pytest.raises(OutboundBlockedError, match="global_outbound_disabled"):
         provider.plan_qualification(_voice_request())
     assert inner.requests == []
+
+
+def test_guarded_decision_maker_blocks_when_live_disabled() -> None:
+    inner = StubDecisionMakerEnrichmentProvider()
+    settings = Settings(decision_maker_live_enabled=False)
+    provider = GuardedDecisionMakerEnrichmentProvider(inner, settings)
+    request = DecisionMakerEnrichmentRequest(
+        organization=OrganizationContactContext(
+            organization_id=uuid4(),
+            name="Clinic",
+        )
+    )
+    with pytest.raises(LiveDecisionMakerDisabledError, match="decision_maker_live_disabled"):
+        provider.enrich_decision_makers(request)
+    assert inner.requests == []
+
+
+def test_guarded_decision_maker_delegates_when_live_enabled() -> None:
+    inner = StubDecisionMakerEnrichmentProvider()
+    settings = Settings(outbound_enabled=False, decision_maker_live_enabled=True)
+    provider = GuardedDecisionMakerEnrichmentProvider(inner, settings)
+    request = DecisionMakerEnrichmentRequest(
+        organization=OrganizationContactContext(
+            organization_id=uuid4(),
+            name="Clinic",
+        )
+    )
+    result = provider.enrich_decision_makers(request)
+    assert inner.requests == [request]
+    assert result.candidates == ()
+    assert result.provider_name == "stub"

@@ -16,6 +16,12 @@ from vyro_growth.providers.calendar_booking import (
     BookingPlanProviderResult,
     LiveGoogleCalendarDisabledError,
 )
+from vyro_growth.providers.decision_makers import (
+    DecisionMakerEnrichmentProvider,
+    DecisionMakerEnrichmentRequest,
+    DecisionMakerEnrichmentResult,
+    LiveDecisionMakerDisabledError,
+)
 from vyro_growth.providers.smartlead import (
     LiveSmartleadDisabledError,
     SmartleadLeadPayload,
@@ -204,3 +210,28 @@ class GuardedVoiceQualificationProvider:
             consent_to_call=True,
         )
         return self._inner.plan_qualification(request)
+
+
+class GuardedDecisionMakerEnrichmentProvider:
+    """Live people-search boundary that enforces the decision-maker live-enablement gate.
+
+    Contact enrichment is not outbound. This wrapper does not send email, enroll
+    campaigns, place calls, or book meetings. The live flag is the kill switch.
+    """
+
+    live = True
+
+    def __init__(
+        self,
+        inner: DecisionMakerEnrichmentProvider,
+        settings: Settings,
+    ) -> None:
+        self._inner = inner
+        self._settings = settings
+
+    def enrich_decision_makers(
+        self, request: DecisionMakerEnrichmentRequest
+    ) -> DecisionMakerEnrichmentResult:
+        if not self._settings.decision_maker_live_enabled:
+            raise LiveDecisionMakerDisabledError("decision_maker_live_disabled")
+        return self._inner.enrich_decision_makers(request)

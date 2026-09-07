@@ -42,6 +42,7 @@ from vyro_growth.services.command_center import (
     PipelineCounts,
 )
 from vyro_growth.services.contact_enrichment import ContactEnrichmentResult
+from vyro_growth.services.contact_enrichment_metrics import ContactEnrichmentHitRate
 from vyro_growth.services.content_brief import ContentBriefRunResult, ContentBriefView
 from vyro_growth.services.dashboard import (
     BookingPlanSummary,
@@ -242,6 +243,90 @@ def test_parser_accepts_enrich_contacts() -> None:
     assert args.command == "enrich-contacts"
     assert args.limit == 3
     assert args.state is None
+
+
+def test_parser_accepts_contact_enrichment_metrics() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["contact-enrichment-metrics", "--json"])
+
+    assert args.command == "contact-enrichment-metrics"
+    assert args.json is True
+
+
+def test_cli_main_runs_contact_enrichment_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    metrics = ContactEnrichmentHitRate(
+        generated_at=datetime.now(tz=UTC),
+        packet_kind="contact_enrichment_hit_rate",
+        purpose="contact_enrichment_validation_only",
+        read_only=True,
+        dry_run_only=True,
+        no_execution=True,
+        outbound_attempted=False,
+        live_call_attempted=False,
+        execution_allowed=False,
+        owner_approved=False,
+        spend_attempted=False,
+        campaign_launched=False,
+        halt_changed=False,
+        outbound_enabled=False,
+        operator_halt_status="halted",
+        operator_halt_before="halted",
+        operator_halt_after="halted",
+        live_providers_enabled=False,
+        live_providers={"decision_maker": False},
+        decision_maker_live_enabled=False,
+        contact_enrichment_is_not_outbound=True,
+        organizations_considered=2,
+        organizations_with_candidate=1,
+        organizations_with_business_email=1,
+        organizations_with_provider_verified_email=1,
+        organizations_with_decision_maker_role=1,
+        organizations_with_verified_decision_maker_email=1,
+        no_contact_found_count=1,
+        provider_error_count=0,
+        candidate_count=1,
+        organizations_with_candidate_rate=0.5,
+        organizations_with_business_email_rate=0.5,
+        organizations_with_provider_verified_email_rate=0.5,
+        organizations_with_decision_maker_role_rate=0.5,
+        organizations_with_verified_decision_maker_email_rate=0.5,
+        no_contact_found_rate=0.5,
+        provider_error_rate=0.0,
+        candidates_by_role_category={"practice_manager": 1},
+        candidates_by_verification_status={"provider_verified": 1},
+        skipped_by_reason={"no_contact_found": 1},
+        provider_errors_by_category={},
+        cli_command="contact-enrichment-metrics",
+        http_route="/internal/contact-enrichment/metrics",
+    )
+
+    class DummyService:
+        def summarize(self, _db: object, _settings: object) -> ContactEnrichmentHitRate:
+            return metrics
+
+    class DummySession:
+        def __enter__(self) -> DummySession:
+            return self
+
+        def __exit__(self, *_exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("vyro_growth.cli.ContactEnrichmentMetricsService", DummyService)
+    monkeypatch.setattr("vyro_growth.cli.SessionLocal", lambda: DummySession())
+    monkeypatch.setattr("vyro_growth.cli.get_settings", lambda: object())
+
+    exit_code = main(["contact-enrichment-metrics", "--json"])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert '"organizations_considered": 2' in output
+    assert '"organizations_with_verified_decision_maker_email": 1' in output
+    assert '"outbound_attempted": false' in output
+    assert '"live_call_attempted": false' in output
+    assert "owner@austinfamily.example" not in output
 
 
 def test_cli_main_runs_website_enrichment(
@@ -777,6 +862,7 @@ def test_cli_main_runs_dashboard_summary(
             smartlead_live_enabled=False,
             google_calendar_live_enabled=False,
             voice_live_enabled=False,
+            decision_maker_live_enabled=False,
             planned_count=2,
             skipped_count=1,
             suppressed_count=0,

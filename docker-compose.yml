@@ -6,6 +6,7 @@ x-safe-app-env: &safe-app-env
   OPENAI_REPLY_CLASSIFICATION_ENABLED: "false"
   GOOGLE_CALENDAR_LIVE_ENABLED: "false"
   VOICE_LIVE_ENABLED: "false"
+  DECISION_MAKER_LIVE_ENABLED: "false"
 
 services:
   postgres:

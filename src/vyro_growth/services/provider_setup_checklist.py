@@ -197,12 +197,9 @@ CATEGORY_SPECS: tuple[_CategorySpec, ...] = (
     _CategorySpec(
         key="enrichment",
         label="Enrichment",
-        credential_names=(),
-        flag_names=(),
-        planned_config_names=(
-            "CONTACT_ENRICHMENT_API_KEY",
-            "CONTACT_ENRICHMENT_API_BASE_URL",
-        ),
+        credential_names=(SecretName.DECISION_MAKER_API_KEY.value,),
+        flag_names=("DECISION_MAKER_LIVE_ENABLED",),
+        planned_config_names=("DECISION_MAKER_API_BASE_URL",),
         default_approval="live_enablement_review",
         command_name=LAUNCH_READINESS_COMMAND,
         json_route=LAUNCH_READINESS_ROUTE,

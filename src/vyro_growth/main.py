@@ -32,6 +32,10 @@ from vyro_growth.api.compliance_evidence_binder import (
     ComplianceEvidenceBinderResponse,
     build_compliance_evidence_binder_response,
 )
+from vyro_growth.api.contact_enrichment_metrics import (
+    ContactEnrichmentMetricsResponse,
+    build_contact_enrichment_metrics_response,
+)
 from vyro_growth.api.content_briefs import (
     ContentBriefRunResponse,
     GenerateContentBriefsRequest,
@@ -302,6 +306,16 @@ def monitoring_status(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_monitoring_status_response(db, active_settings)
+
+
+@app.get("/internal/contact-enrichment/metrics", tags=["internal"])
+def contact_enrichment_metrics(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> ContactEnrichmentMetricsResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_contact_enrichment_metrics_response(db, active_settings)
 
 
 @app.get("/internal/operator-command-center", tags=["internal"])

@@ -52,6 +52,7 @@ LIVE_PROVIDER_FLAG_SETTINGS: frozenset[str] = frozenset(
         "OPENAI_REPLY_CLASSIFICATION_ENABLED",
         "GOOGLE_CALENDAR_LIVE_ENABLED",
         "VOICE_LIVE_ENABLED",
+        "DECISION_MAKER_LIVE_ENABLED",
     }
 )
 FLAG_SETTINGS: frozenset[str] = frozenset(

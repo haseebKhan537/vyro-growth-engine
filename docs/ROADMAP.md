@@ -33,7 +33,8 @@ A qualified decision-maker at a US medical practice expresses genuine interest i
 - billing/revenue-cycle signals only when explicitly stated
 - evidence-backed enrichment only, with source URL, confidence, timestamp, and snippet
 - confidence scoring
-- decision-maker/contact enrichment provider foundation (stub only; no live paid provider, no outreach)
+- decision-maker/contact enrichment provider foundation (stub default; guarded live people-search adapter disabled and unused in CI)
+- sanitized contact-enrichment hit-rate metrics (counts/rates only; no live sending)
 
 ## Phase 4 — Advanced ICP qualification
 - explainable deterministic scoring from stored NPPES, website, contact, and public-business evidence
@@ -768,7 +769,7 @@ Sanitized read-only CLI and internal JSON export that maps existing readiness su
 - HTTP responses return `Cache-Control: no-store`
 - This is a control-map/export only, not a script runner, not permission to send, not permission to go live, and not an execution surface
 
-## Phase 64 — Operator supervised pilot launch rehearsal control map UI (current)
+## Phase 64 — Operator supervised pilot launch rehearsal control map UI
 Internal operator HTML shell of the Phase 63 supervised pilot launch rehearsal control map. Read-only, no execution.
 - `GET /internal/operator-supervised-pilot-launch-rehearsal-control-map`
 - Reuses existing Phase 63 `SupervisedPilotLaunchRehearsalControlMapService` / payload and does not duplicate control-map readiness calculations
@@ -778,6 +779,29 @@ Internal operator HTML shell of the Phase 63 supervised pilot launch rehearsal c
 - Page states this is a control-map review view only, not a script runner, not permission to send, not permission to go live, and not an execution surface
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/send/contact controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
+
+## Phase 66 — Live decision-maker enrichment provider foundation and hit-rate metrics (current)
+Dry-run / provider-plumbing / measurement only. Does not send email, enroll leads, call prospects, book meetings, spend money, publish content, execute packets, lift halt, or enable live outbound.
+- Guarded live people-search adapter (`LiveDecisionMakerProvider`) behind `DecisionMakerEnrichmentProvider`, disabled by default
+- `DECISION_MAKER_LIVE_ENABLED=false`; API key/base URL unused unless explicitly enabled with an injected HTTP client
+- Retry/backoff for 429/500/502/503/504; auth/client errors are non-retryable
+- Structured provider output parsed into existing `DecisionMakerCandidate` objects; no invented contacts
+- `build_decision_maker_provider()` remains the stub for CI and local smoke runs
+- Waterfall sequencing is a dry-run design hook only (people-search -> later domain verification / website fallback)
+- Sanitized hit-rate metrics via `vyro-growth contact-enrichment-metrics` and `GET /internal/contact-enrichment/metrics`
+- Counts/rates only: organizations considered, with candidate, with business email, with provider-verified email, with decision-maker-role, with verified decision-maker-role email, plus safe role/verification/skip/error buckets
+- `NO_CONTACT_FOUND` is a normal outcome, not a failure
+- Never expose emails, phones, websites, NPI, addresses, practice/provider names, evidence snippets, message bodies, secrets, tokens, raw env values, or unsafe errors
+- No LinkedIn/Sales Navigator provider, AI voice cold-calling, list purchase, or job-response automation
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
+Future contact-enrichment work (not in this phase):
+- person-level website extraction
+- email verification before send
+- email-pattern inference followed by verification
+- job-posting intent signals
+- human phone-verification queue for `NO_CONTACT_FOUND`
+- live sending or campaign enrollment
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

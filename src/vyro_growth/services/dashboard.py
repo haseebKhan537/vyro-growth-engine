@@ -61,6 +61,7 @@ class SafetyCard:
     smartlead_live_enabled: bool
     google_calendar_live_enabled: bool
     voice_live_enabled: bool
+    decision_maker_live_enabled: bool
     planned_count: int
     skipped_count: int
     suppressed_count: int
@@ -417,6 +418,7 @@ class DashboardAnalyticsService:
             smartlead_live_enabled=settings.smartlead_live_enabled,
             google_calendar_live_enabled=settings.google_calendar_live_enabled,
             voice_live_enabled=settings.voice_live_enabled,
+            decision_maker_live_enabled=settings.decision_maker_live_enabled,
             planned_count=(
                 outreach.planned_count + booking.planned_count + voice.planned_count
             ),

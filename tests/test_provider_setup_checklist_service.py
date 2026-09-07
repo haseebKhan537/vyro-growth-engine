@@ -284,7 +284,8 @@ def test_checklist_reuses_sources_and_does_not_leak_or_write(db_session: Session
     enrichment = next(
         item for item in categories if isinstance(item, dict) and item["key"] == "enrichment"
     )
-    assert "CONTACT_ENRICHMENT_API_KEY" in enrichment["config_names"]
+    assert "DECISION_MAKER_API_KEY" in enrichment["config_names"]
+    assert "DECISION_MAKER_LIVE_ENABLED" in enrichment["config_names"]
     assert SECRET_VALUE not in str(enrichment)
     assert _strip_volatile(checklist_payload(first)) == _strip_volatile(checklist_payload(second))
     assert _counts(db_session) == before

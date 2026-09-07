@@ -17,6 +17,20 @@ from vyro_growth.domain import (
 
 DECISION_MAKER_SOURCE = "decision_maker"
 STUB_PROVIDER_NAME = "stub"
+LIVE_PROVIDER_NAME = "decision_maker_guarded"
+NO_CONTACT_FOUND = "no_contact_found"
+FUTURE_WATERFALL_STAGES: tuple[str, ...] = (
+    "people_search",
+    "domain_verification",
+    "website_fallback",
+)
+FUTURE_HOOKS: tuple[str, ...] = (
+    "person_level_website_extraction",
+    "email_verification_provider",
+    "email_pattern_inference",
+    "job_posting_intent",
+    "human_phone_verification_queue",
+)
 
 FULL_NAME_MAX_LENGTH = 255
 TITLE_MAX_LENGTH = 255
@@ -124,6 +138,28 @@ class ContactSkipReason(StrEnum):
 
 class DecisionMakerProviderError(RuntimeError):
     """Raised when a decision-maker provider cannot complete a lookup."""
+
+    retryable: bool = False
+
+
+class RetryableDecisionMakerError(DecisionMakerProviderError):
+    retryable = True
+
+
+class NonRetryableDecisionMakerError(DecisionMakerProviderError):
+    retryable = False
+
+
+class MalformedDecisionMakerOutput(NonRetryableDecisionMakerError):
+    """Raised when provider output cannot be parsed into professional candidates."""
+
+
+class LiveDecisionMakerDisabledError(NonRetryableDecisionMakerError):
+    """Raised when the live decision-maker boundary is not explicitly enabled."""
+
+
+class LiveDecisionMakerNotImplementedError(NonRetryableDecisionMakerError):
+    """Raised when Phase 66 refuses to open a live people-search HTTP session."""
 
 
 @dataclass(frozen=True)
@@ -613,6 +649,8 @@ def rank_classified(
 class StubDecisionMakerEnrichmentProvider:
     """CI/local default. Does not call paid providers or invent contacts."""
 
+    live = False
+
     def __init__(self) -> None:
         self.requests: list[DecisionMakerEnrichmentRequest] = []
 
@@ -630,6 +668,8 @@ class StubDecisionMakerEnrichmentProvider:
 
 class StaticDecisionMakerEnrichmentProvider:
     """Test adapter that returns configured records. Does not invent or call a network."""
+
+    live = False
 
     def __init__(self, candidates: Sequence[object] = ()) -> None:
         self._candidates = tuple(candidates)
@@ -654,8 +694,65 @@ class StaticDecisionMakerEnrichmentProvider:
         )
 
 
-def build_decision_maker_provider() -> DecisionMakerEnrichmentProvider:
+class WaterfallDecisionMakerProvider:
+    """Dry-run design hook. Sequences inner providers and never invents contacts.
+
+    Phase 66 does not add social-network scraping, list-purchase, voice, or live paid calls.
+    Later stages (domain verification, website person extraction) can be added
+    as additional inner providers without changing classify/rank logic.
+    """
+
+    live = False
+    planned_stages = FUTURE_WATERFALL_STAGES
+    planned_hooks = FUTURE_HOOKS
+
+    def __init__(self, providers: Sequence[DecisionMakerEnrichmentProvider] = ()) -> None:
+        self._providers = tuple(providers)
+        self.requests: list[DecisionMakerEnrichmentRequest] = []
+        self.stage_errors: list[str] = []
+
+    def enrich_decision_makers(
+        self, request: DecisionMakerEnrichmentRequest
+    ) -> DecisionMakerEnrichmentResult:
+        self.requests.append(request)
+        self.stage_errors = []
+        if not self._providers:
+            return DecisionMakerEnrichmentResult(
+                candidates=(),
+                provider_name="waterfall",
+                fetched_at=datetime.now(tz=UTC),
+                raw_count=0,
+            )
+        last_result: DecisionMakerEnrichmentResult | None = None
+        last_error: Exception | None = None
+        for provider in self._providers:
+            try:
+                result = provider.enrich_decision_makers(request)
+            except DecisionMakerProviderError as exc:
+                last_error = exc
+                category = "retryable" if exc.retryable else "non_retryable"
+                self.stage_errors.append(category)
+                continue
+            last_result = result
+            if result.candidates:
+                return result
+        if last_result is not None:
+            return last_result
+        if last_error is not None:
+            raise last_error
+        return DecisionMakerEnrichmentResult(
+            candidates=(),
+            provider_name="waterfall",
+            fetched_at=datetime.now(tz=UTC),
+            raw_count=0,
+        )
+
+
+def build_decision_maker_provider(
+    settings: object | None = None,
+) -> DecisionMakerEnrichmentProvider:
     """Always the stub. Live paid adapters are not wired and must not be called in CI."""
+    _ = settings
     return StubDecisionMakerEnrichmentProvider()
 
 

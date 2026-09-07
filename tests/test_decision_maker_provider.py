@@ -11,6 +11,7 @@ from vyro_growth.providers.decision_makers import (
     OrganizationContactContext,
     StaticDecisionMakerEnrichmentProvider,
     StubDecisionMakerEnrichmentProvider,
+    WaterfallDecisionMakerProvider,
     WebsiteFactContext,
     build_decision_maker_provider,
     classify_candidate,
@@ -233,6 +234,41 @@ def test_stub_provider_does_not_invent_contacts() -> None:
 def test_build_provider_is_stub() -> None:
     provider = build_decision_maker_provider()
     assert isinstance(provider, StubDecisionMakerEnrichmentProvider)
+
+
+def test_waterfall_returns_first_non_empty_without_inventing() -> None:
+    empty = StubDecisionMakerEnrichmentProvider()
+    populated = StaticDecisionMakerEnrichmentProvider((candidate(),))
+    provider = WaterfallDecisionMakerProvider((empty, populated))
+    request = DecisionMakerEnrichmentRequest(organization=_org())
+    result = provider.enrich_decision_makers(request)
+    assert len(result.candidates) == 1
+    assert result.candidates[0].full_name == "Jordan Blake"
+    assert empty.requests == [request]
+    assert populated.requests == [request]
+
+
+def test_waterfall_empty_providers_return_no_contacts() -> None:
+    provider = WaterfallDecisionMakerProvider(())
+    result = provider.enrich_decision_makers(DecisionMakerEnrichmentRequest(organization=_org()))
+    assert result.candidates == ()
+    assert result.raw_count == 0
+    assert result.provider_name == "waterfall"
+
+
+def test_waterfall_returns_first_non_empty_inner_result() -> None:
+    first = StubDecisionMakerEnrichmentProvider()
+    second = StaticDecisionMakerEnrichmentProvider((candidate(),))
+    third = StaticDecisionMakerEnrichmentProvider(
+        (candidate(full_name="Later Person", title="Office Manager"),)
+    )
+    provider = WaterfallDecisionMakerProvider((first, second, third))
+    result = provider.enrich_decision_makers(DecisionMakerEnrichmentRequest(organization=_org()))
+    assert len(result.candidates) == 1
+    assert result.candidates[0].full_name == candidate().full_name
+    assert first.requests
+    assert second.requests
+    assert third.requests == []
 
 
 def test_static_provider_records_request_and_drops_malformed() -> None:

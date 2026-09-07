@@ -23,10 +23,12 @@ from vyro_growth.providers.decision_makers import (
     DecisionMakerEnrichmentResult,
     StaticDecisionMakerEnrichmentProvider,
     StubDecisionMakerEnrichmentProvider,
+    WaterfallDecisionMakerProvider,
     build_decision_maker_provider,
 )
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
+    GuardedDecisionMakerEnrichmentProvider,
     GuardedEmailProvider,
     GuardedGoogleCalendarProvider,
     GuardedSmartleadProvider,
@@ -110,6 +112,7 @@ __all__ = [
     "EmailProvider",
     "EnrichmentProvider",
     "GuardedCalendarProvider",
+    "GuardedDecisionMakerEnrichmentProvider",
     "GuardedEmailProvider",
     "GuardedGoogleCalendarProvider",
     "GuardedSmartleadProvider",
@@ -157,6 +160,7 @@ __all__ = [
     "StaticVoiceQualificationProvider",
     "StubVoiceProvider",
     "StubVoiceQualificationProvider",
+    "WaterfallDecisionMakerProvider",
     "VoiceProvider",
     "VoiceQualificationProvider",
     "VoiceQualificationRequest",
