@@ -106,7 +106,7 @@ def test_supervised_pilot_first_send_owner_authorization_packet_rejects_non_deve
     assert response.json()["detail"] == "Internal operator route requires INTERNAL_API_KEY"
 
 
-def test_supervised_pilot_first_send_owner_authorization_packet_rejects_invalid_key_and_disallows_post(
+def test_owner_authorization_packet_rejects_invalid_key_and_disallows_post(
     api_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -128,7 +128,7 @@ def test_supervised_pilot_first_send_owner_authorization_packet_rejects_invalid_
     assert post.status_code == 405
 
 
-def test_supervised_pilot_first_send_owner_authorization_packet_api_redacts_secrets_and_stays_read_only(
+def test_owner_authorization_packet_api_redacts_secrets_and_stays_read_only(
     api_client: TestClient,
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,

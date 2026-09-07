@@ -14,7 +14,9 @@ def test_phase_65_docs_describe_read_only_owner_authorization_packet() -> None:
     assert "/internal/supervised-pilot-first-send-owner-authorization-packet" in readme
     assert "this_packet_is_not_approval" in readme
     assert "first_send_allowed=false" in readme
-    assert "approval_records_mutated" in readme or "does not create or mutate approval" in readme.lower()
+    assert "approval_records_mutated" in readme or (
+        "does not create or mutate approval" in readme.lower()
+    )
 
     assert "Phase 65" in architecture
     assert "supervised-pilot-first-send-owner-authorization-packet" in architecture

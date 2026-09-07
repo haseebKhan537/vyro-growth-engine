@@ -83,7 +83,6 @@ LINKED_SURFACES = (
     "/internal/operator-supervised-pilot-go-no-go",
     "/internal/operator-supervised-pilot-first-send-preflight",
     "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
-    "/internal/supervised-pilot-first-send-owner-authorization-packet",
     "/internal/operator-audit-timeline",
 )
 

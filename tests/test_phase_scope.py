@@ -582,7 +582,7 @@ def test_supervised_pilot_first_send_preflight_does_not_execute_or_call_provider
     assert "OUTBOUND_ENABLED=false" in env_example
 
 
-def test_supervised_pilot_first_send_owner_authorization_packet_does_not_execute_or_call_providers() -> None:
+def test_first_send_owner_authorization_packet_does_not_call_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/supervised_pilot_first_send_owner_authorization_packet.py"),
         Path("src/vyro_growth/api/supervised_pilot_first_send_owner_authorization_packet.py"),
