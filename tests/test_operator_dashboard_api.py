@@ -257,6 +257,7 @@ def test_renderer_populated_section_filter_hides_other_panels() -> None:
     assert "/internal/operator-supervised-pilot-first-send-preflight" in html
     assert "/internal/operator-supervised-pilot-launch-rehearsal-control-map" in html
     assert "/internal/operator-contact-validation" in html
+    assert "/internal/operator-supervised-validation-run-packet" in html
     for marker in ACTION_MARKERS:
         assert marker not in html.lower()
 

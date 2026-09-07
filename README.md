@@ -368,6 +368,25 @@ curl "http://localhost:8000/internal/supervised-validation-run-packet?state=TX&m
 
 The packet shows overall status and generated timestamp, target segment and planned cohort size, a prerequisite checklist for a later owner-approved validation run, required owner decisions by code/name only, required credential/config names with present/missing booleans only, no-execution / no-outbound / no-provider-call / no-send / no-call / no-book / no-spend / no-deploy flags, operator halt before/status/after and unchanged proof, Phase 71 funnel counts/rates and threshold statuses, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` as normal outcomes, planned existing safe route/command names, blocked/warning/info code counts, safe local git metadata, and non-executable owner next-step labels. It states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, and `OUTBOUND_ENABLED=false`. Output is deterministic except timestamps and safe local git metadata. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+Internal HTML: `GET /internal/operator-supervised-validation-run-packet`
+
+## Phase 74 — Operator supervised validation run packet UI (read-only)
+
+Open an internal HTML view of the Phase 73 supervised validation owner approval/run packet. The owner can inspect the later bounded 200-practice contact-enrichment validation run prerequisites using aggregate counts, rates, statuses, codes, and present/missing booleans only. This page does not execute the run, grant approval, call providers, select or contact prospects, send email, enroll campaigns, place calls, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift operator halt, enable outbound, or set live `owner_approved`. It is an aggregate-only review view, not permission to run a supervised validation and not an execution surface.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-supervised-validation-run-packet \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/operator-supervised-validation-run-packet?state=TX&max_cohort_size=200" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard and related operator surfaces link to this page. The page reuses `SupervisedValidationRunPacketService` and shows generated timestamp, packet kind, purpose, overall status, target segment and planned cohort size, prerequisite checklist, required owner decisions by code/name only with `granted=false`, required credential/config names with present/missing booleans only, no-execution / no-outbound / no-provider-call / no-send / no-call / no-book / no-spend / no-deploy flags, operator halt before/status/after and unchanged proof, Phase 71 funnel counts/rates and threshold statuses, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` as normal outcomes, related route/command names, blocked/warning/info code counts, safe local git metadata, and non-executable owner next-step labels. Fields are statuses, codes, route names, command names, flag names, specialty/city/state labels, sanitized timestamps, and counts. The page states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, `OUTBOUND_ENABLED=false`, `no_outbound=true`, `no_provider_calls=true`, `no_send=true`, `no_call=true`, `no_book=true`, `no_spend=true`, `no_deploy=true`, `contact_validation_is_not_outbound=true`, `contact_validation_is_not_live_send=true`, `supervised_validation_run_packet_is_not_execution=true`, `export_is_not_permission_to_run=true`, and that this is an aggregate-only review view. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, spend, candidate selection, send, approval, or contact controls.
+
+Rendered HTML is statuses, codes, timestamps, counts, route names, command names, specialty/city/state labels, and flags only: no practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 
 Generate structured personalization drafts for scored/enriched leads using only stored public/business evidence. Output is evidence-grounded and outbound-disabled. CI and default local development use a deterministic stub and do not require a live OpenAI API key.

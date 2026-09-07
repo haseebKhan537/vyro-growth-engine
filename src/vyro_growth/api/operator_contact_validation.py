@@ -27,7 +27,9 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_CONTACT_VALIDATION_PATH,
     OPERATOR_DASHBOARD_PATH,
     OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH,
+    OPERATOR_SUPERVISED_VALIDATION_RUN_PACKET_PATH,
     OPERATOR_UI_STYLES,
+    SUPERVISED_VALIDATION_RUN_PACKET_JSON_PATH,
     filter_link,
     format_dt,
     html_escape,
@@ -331,11 +333,15 @@ def _render_related_links() -> str:
     email_metrics_href = escape("/internal/email-verification/metrics")
     phone_href = escape("/internal/phone-verification/tasks")
     control_map_href = escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)
+    packet_href = escape(OPERATOR_SUPERVISED_VALIDATION_RUN_PACKET_PATH)
+    packet_json_href = escape(SUPERVISED_VALIDATION_RUN_PACKET_JSON_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Linked readiness surfaces">\n'
         f'      <a class="nav-link" href="{dashboard_href}">Dashboard</a>\n'
         f'      <a class="nav-link" href="{plan_json_href}">JSON plan</a>\n'
         f'      <a class="nav-link" href="{report_json_href}">JSON report</a>\n'
+        f'      <a class="nav-link" href="{packet_href}">Run packet</a>\n'
+        f'      <a class="nav-link" href="{packet_json_href}">JSON run packet</a>\n'
         f'      <a class="nav-link" href="{metrics_href}">Contact metrics JSON</a>\n'
         f'      <a class="nav-link" href="{email_metrics_href}">Email metrics JSON</a>\n'
         f'      <a class="nav-link" href="{phone_href}">Phone verification JSON</a>\n'

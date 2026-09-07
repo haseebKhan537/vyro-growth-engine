@@ -41,6 +41,9 @@ OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH = (
     "/internal/operator-supervised-pilot-launch-rehearsal-control-map"
 )
 OPERATOR_CONTACT_VALIDATION_PATH = "/internal/operator-contact-validation"
+OPERATOR_SUPERVISED_VALIDATION_RUN_PACKET_PATH = (
+    "/internal/operator-supervised-validation-run-packet"
+)
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -68,6 +71,7 @@ SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_JSON_PATH = (
 )
 CONTACT_VALIDATION_PLAN_JSON_PATH = "/internal/contact-validation/plan"
 CONTACT_VALIDATION_REPORT_JSON_PATH = "/internal/contact-validation/report"
+SUPERVISED_VALIDATION_RUN_PACKET_JSON_PATH = "/internal/supervised-validation-run-packet"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -95,6 +99,7 @@ OperatorSurface = Literal[
     "supervised-pilot-first-send-preflight",
     "supervised-pilot-launch-rehearsal-control-map",
     "contact-validation",
+    "supervised-validation-run-packet",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -122,6 +127,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "supervised-pilot-first-send-preflight": "First-send preflight",
     "supervised-pilot-launch-rehearsal-control-map": "Rehearsal control map",
     "contact-validation": "Contact validation",
+    "supervised-validation-run-packet": "Validation run packet",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -150,6 +156,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
         OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH
     ),
     "contact-validation": OPERATOR_CONTACT_VALIDATION_PATH,
+    "supervised-validation-run-packet": OPERATOR_SUPERVISED_VALIDATION_RUN_PACKET_PATH,
 }
 
 
@@ -226,6 +233,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "supervised-pilot-first-send-preflight",
         "supervised-pilot-launch-rehearsal-control-map",
         "contact-validation",
+        "supervised-validation-run-packet",
     )
     links = []
     for name in surfaces:

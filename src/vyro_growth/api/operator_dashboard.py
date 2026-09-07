@@ -58,6 +58,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
     OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
+    OPERATOR_SUPERVISED_VALIDATION_RUN_PACKET_PATH,
 )
 from vyro_growth.config import Settings
 from vyro_growth.observability import sanitize_operator_text
@@ -306,7 +307,9 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'{escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}">'
         "Rehearsal control map</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_CONTACT_VALIDATION_PATH)}">'
-        "Contact validation</a>\n"
+        "Contact validation</a> "
+        f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_VALIDATION_RUN_PACKET_PATH)}">'
+        "Validation run packet</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'

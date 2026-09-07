@@ -11,9 +11,7 @@ def test_phase_73_docs_describe_read_only_owner_run_packet() -> None:
     deployment = Path("docs/DEPLOYMENT.md").read_text(encoding="utf-8")
     health = Path("docs/OPERATOR_HEALTH.md").read_text(encoding="utf-8")
 
-    heading = (
-        "## Phase 73 — Supervised validation owner approval/run packet (current)"
-    )
+    heading = "## Phase 73 — Supervised validation owner approval/run packet"
     assert heading in roadmap
     assert "supervised-validation-run-packet" in roadmap
     assert "GET /internal/supervised-validation-run-packet" in roadmap
