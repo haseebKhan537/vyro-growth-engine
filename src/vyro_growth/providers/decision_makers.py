@@ -14,6 +14,11 @@ from vyro_growth.domain import (
     WebsiteFactType,
     WebsiteMatchStatus,
 )
+from vyro_growth.providers.website_staff import (
+    WEBSITE_STAFF_PROVIDER_NAME,
+    format_staff_member_value,
+    parse_staff_member_value,
+)
 
 DECISION_MAKER_SOURCE = "decision_maker"
 STUB_PROVIDER_NAME = "stub"
@@ -25,7 +30,6 @@ FUTURE_WATERFALL_STAGES: tuple[str, ...] = (
     "website_fallback",
 )
 FUTURE_HOOKS: tuple[str, ...] = (
-    "person_level_website_extraction",
     "email_verification_provider",
     "email_pattern_inference",
     "job_posting_intent",
@@ -169,6 +173,7 @@ class WebsiteFactContext:
     confidence: float | None = None
     source_url: str | None = None
     snippet: str | None = None
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -695,11 +700,10 @@ class StaticDecisionMakerEnrichmentProvider:
 
 
 class WaterfallDecisionMakerProvider:
-    """Dry-run design hook. Sequences inner providers and never invents contacts.
+    """Sequences inner providers and never invents contacts.
 
-    Phase 66 does not add social-network scraping, list-purchase, voice, or live paid calls.
-    Later stages (domain verification, website person extraction) can be added
-    as additional inner providers without changing classify/rank logic.
+    Default order is people-search stub, then the free website-staff fallback.
+    This does not add social-network scraping, list-purchase, voice, or live paid calls.
     """
 
     live = False
@@ -710,6 +714,10 @@ class WaterfallDecisionMakerProvider:
         self._providers = tuple(providers)
         self.requests: list[DecisionMakerEnrichmentRequest] = []
         self.stage_errors: list[str] = []
+
+    @property
+    def inner_providers(self) -> tuple[DecisionMakerEnrichmentProvider, ...]:
+        return self._providers
 
     def enrich_decision_makers(
         self, request: DecisionMakerEnrichmentRequest
@@ -723,7 +731,7 @@ class WaterfallDecisionMakerProvider:
                 fetched_at=datetime.now(tz=UTC),
                 raw_count=0,
             )
-        last_result: DecisionMakerEnrichmentResult | None = None
+        first_result: DecisionMakerEnrichmentResult | None = None
         last_error: Exception | None = None
         for provider in self._providers:
             try:
@@ -733,11 +741,12 @@ class WaterfallDecisionMakerProvider:
                 category = "retryable" if exc.retryable else "non_retryable"
                 self.stage_errors.append(category)
                 continue
-            last_result = result
+            if first_result is None:
+                first_result = result
             if result.candidates:
                 return result
-        if last_result is not None:
-            return last_result
+        if first_result is not None:
+            return first_result
         if last_error is not None:
             raise last_error
         return DecisionMakerEnrichmentResult(
@@ -748,12 +757,98 @@ class WaterfallDecisionMakerProvider:
         )
 
 
+class WebsiteStaffFallbackProvider:
+    """Convert stored public website staff facts into decision-maker candidates.
+
+    Does not fetch pages, invent contacts, or call paid/social providers.
+    """
+
+    live = False
+
+    def __init__(self) -> None:
+        self.requests: list[DecisionMakerEnrichmentRequest] = []
+
+    def enrich_decision_makers(
+        self, request: DecisionMakerEnrichmentRequest
+    ) -> DecisionMakerEnrichmentResult:
+        self.requests.append(request)
+        fetched_at = datetime.now(tz=UTC)
+        candidates: list[DecisionMakerCandidate] = []
+        considered = 0
+        for fact in request.organization.website_facts:
+            if fact.fact_type != WebsiteFactType.STAFF_MEMBER.value:
+                continue
+            considered += 1
+            candidate = _candidate_from_staff_fact(fact, fetched_at=fetched_at)
+            if candidate is not None:
+                candidates.append(candidate)
+        return DecisionMakerEnrichmentResult(
+            candidates=tuple(candidates),
+            provider_name=WEBSITE_STAFF_PROVIDER_NAME,
+            fetched_at=fetched_at,
+            raw_count=considered,
+        )
+
+
+def _candidate_from_staff_fact(
+    fact: WebsiteFactContext,
+    *,
+    fetched_at: datetime,
+) -> DecisionMakerCandidate | None:
+    metadata = fact.metadata
+    raw_name = metadata.get("full_name")
+    raw_title = metadata.get("title")
+    name = clean_optional_text(raw_name if isinstance(raw_name, str) else None)
+    title = clean_optional_text(raw_title if isinstance(raw_title, str) else None)
+    parsed = parse_staff_member_value(fact.value)
+    if name is None or title is None:
+        if parsed is None:
+            return None
+        name, title = parsed
+    validated = parse_staff_member_value(format_staff_member_value(name, title))
+    if validated is None:
+        if parsed is None:
+            return None
+        name, title = parsed
+    else:
+        name, title = validated
+    confidence = fact.confidence
+    if confidence is not None and not 0.0 <= confidence <= 1.0:
+        return None
+    snippet = clean_optional_text(fact.snippet)
+    source_url = clean_optional_text(fact.source_url)
+    return DecisionMakerCandidate(
+        full_name=clip_text(name, FULL_NAME_MAX_LENGTH),
+        title=clip_text(title, TITLE_MAX_LENGTH),
+        business_email=None,
+        business_phone=None,
+        source_provider=WEBSITE_STAFF_PROVIDER_NAME,
+        source_timestamp=fetched_at,
+        confidence=confidence,
+        verification_status=ContactVerificationStatus.UNVERIFIED,
+        provenance=ContactProvenance(
+            source_url=clip_text(source_url, SOURCE_URL_MAX_LENGTH) if source_url else None,
+            evidence_snippet=clip_text(snippet, EVIDENCE_SNIPPET_MAX_LENGTH) if snippet else None,
+            metadata={
+                "fact_type": WebsiteFactType.STAFF_MEMBER.value,
+                "fabricated": False,
+                "extractor": metadata.get("extractor"),
+            },
+        ),
+    )
+
+
 def build_decision_maker_provider(
     settings: object | None = None,
 ) -> DecisionMakerEnrichmentProvider:
-    """Always the stub. Live paid adapters are not wired and must not be called in CI."""
+    """Stub people-search plus free website-staff fallback. No live paid calls."""
     _ = settings
-    return StubDecisionMakerEnrichmentProvider()
+    return WaterfallDecisionMakerProvider(
+        (
+            StubDecisionMakerEnrichmentProvider(),
+            WebsiteStaffFallbackProvider(),
+        )
+    )
 
 
 def website_match_status_value(value: str | None) -> str | None:

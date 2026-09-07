@@ -271,6 +271,7 @@ class ContactEnrichmentService:
                 WebsiteFactType.OFFICIAL_WEBSITE.value,
                 WebsiteFactType.BUSINESS_EMAIL.value,
                 WebsiteFactType.BUSINESS_PHONE.value,
+                WebsiteFactType.STAFF_MEMBER.value,
             }:
                 continue
             facts.append(
@@ -280,6 +281,7 @@ class ContactEnrichmentService:
                     confidence=row.confidence,
                     source_url=row.source_url,
                     snippet=row.evidence_snippet,
+                    metadata=dict(row.metadata_json or {}),
                 )
             )
         return OrganizationContactContext(
@@ -308,9 +310,7 @@ class ContactEnrichmentService:
         )
         provenance = _provenance_payload(item)
         name = clip_text(item.candidate.full_name.strip(), FULL_NAME_MAX_LENGTH)
-        title = (
-            clip_text(item.candidate.title, TITLE_MAX_LENGTH) if item.candidate.title else None
-        )
+        title = clip_text(item.candidate.title, TITLE_MAX_LENGTH) if item.candidate.title else None
         if existing is None:
             contact = Contact(
                 organization_id=organization.id,
@@ -408,9 +408,7 @@ class ContactEnrichmentService:
         provider_label = item.candidate.source_provider
         source_url = item.candidate.provenance.source_url or f"provider:{provider_label}"
         snippet = item.candidate.provenance.evidence_snippet
-        evidence_snippet = (
-            clip_text(snippet, EVIDENCE_SNIPPET_MAX_LENGTH) if snippet else None
-        )
+        evidence_snippet = clip_text(snippet, EVIDENCE_SNIPPET_MAX_LENGTH) if snippet else None
         db.add(
             SourceEvidence(
                 organization_id=organization.id,

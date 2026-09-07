@@ -1027,6 +1027,7 @@ def test_monitoring_does_not_call_live_providers() -> None:
 def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:
     paths = [
         Path("src/vyro_growth/providers/decision_makers.py"),
+        Path("src/vyro_growth/providers/website_staff.py"),
         Path("src/vyro_growth/services/contact_enrichment.py"),
         Path("src/vyro_growth/workers/contact_enrichment_handler.py"),
         Path("src/vyro_growth/services/contact_enrichment_metrics.py"),
@@ -1036,23 +1037,29 @@ def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:
     assert "httpx" not in source
     assert "linkedin" not in source
     assert "apollo" not in source
+    assert "sales navigator" not in source
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
 
 
-def test_default_decision_maker_provider_is_stub() -> None:
+def test_default_decision_maker_provider_is_stub_plus_website_staff_fallback() -> None:
     settings = Settings(
         decision_maker_live_enabled=True,
         decision_maker_api_key="placeholder",
     )
     from vyro_growth.providers.decision_makers import (
         StubDecisionMakerEnrichmentProvider,
+        WaterfallDecisionMakerProvider,
+        WebsiteStaffFallbackProvider,
         build_decision_maker_provider,
     )
 
     provider = build_decision_maker_provider(settings)
-    assert isinstance(provider, StubDecisionMakerEnrichmentProvider)
+    assert isinstance(provider, WaterfallDecisionMakerProvider)
+    assert isinstance(provider.inner_providers[0], StubDecisionMakerEnrichmentProvider)
+    assert isinstance(provider.inner_providers[1], WebsiteStaffFallbackProvider)
+    assert provider.live is False
 
 
 def test_decision_maker_live_adapter_is_guarded_and_unused_by_default() -> None:

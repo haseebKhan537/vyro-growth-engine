@@ -80,6 +80,78 @@ ROSTER_HTML = """
 </html>
 """
 
+STAFF_TEAM_HTML = """
+<html>
+  <head><title>Our Team | Austin Family Medicine PLLC</title></head>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Serving families in Austin, TX.</p>
+    <h2>Meet the Team</h2>
+    <ul>
+      <li>Jordan Blake, Practice Manager</li>
+      <li>Riley Chen, Office Manager</li>
+      <li>Jane Example, MD</li>
+    </ul>
+  </body>
+</html>
+"""
+
+STAFF_CARD_HTML = """
+<html>
+  <body>
+    <h1>Leadership</h1>
+    <div class="team-member">
+      <span class="name">Jordan Blake</span>
+      <span class="title">Practice Manager</span>
+    </div>
+    <div class="team-member">
+      <span class="name">Avery Stone</span>
+      <span class="title">Billing Manager</span>
+    </div>
+  </body>
+</html>
+"""
+
+HOME_WITH_STAFF_LINK_HTML = """
+<html>
+  <head><title>Austin Family Medicine PLLC</title></head>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Serving families in Austin, TX.</p>
+    <p>Our services include family medicine and pediatrics.</p>
+    <p>We are an independently owned practice with 3 physicians.</p>
+    <p>Call us at <a href="tel:5125550100">(512) 555-0100</a></p>
+    <p>Email <a href="mailto:info@austinfamilymedicine.com">info@austinfamilymedicine.com</a></p>
+    <p><a href="/contact">Contact us</a></p>
+    <p><a href="/our-team">Our Team</a></p>
+    <p>In-house billing questions can be sent to the front desk.</p>
+  </body>
+</html>
+"""
+
+PHI_REVIEW_STAFF_HTML = """
+<html>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <h2>Patient Reviews</h2>
+    <ul>
+      <li>Jordan Blake, Practice Manager helped the patient with diabetes.</li>
+    </ul>
+  </body>
+</html>
+"""
+
+EMPTY_ABOUT_HTML = """
+<html>
+  <body>
+    <h1>Austin Family Medicine PLLC</h1>
+    <p>Proudly serving Austin, TX.</p>
+    <h2>About Us</h2>
+    <p>We are a local independent practice.</p>
+  </body>
+</html>
+"""
+
 REVIEW_HTML = """
 <html>
   <body>

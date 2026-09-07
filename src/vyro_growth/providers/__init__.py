@@ -24,6 +24,7 @@ from vyro_growth.providers.decision_makers import (
     StaticDecisionMakerEnrichmentProvider,
     StubDecisionMakerEnrichmentProvider,
     WaterfallDecisionMakerProvider,
+    WebsiteStaffFallbackProvider,
     build_decision_maker_provider,
 )
 from vyro_growth.providers.guarded import (
@@ -161,6 +162,7 @@ __all__ = [
     "StubVoiceProvider",
     "StubVoiceQualificationProvider",
     "WaterfallDecisionMakerProvider",
+    "WebsiteStaffFallbackProvider",
     "VoiceProvider",
     "VoiceQualificationProvider",
     "VoiceQualificationRequest",

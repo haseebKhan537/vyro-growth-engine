@@ -54,6 +54,10 @@ def test_blocked_paths_cover_phi_and_reviews() -> None:
     assert is_blocked_public_path("https://clinic.example/reviews")
     assert is_blocked_public_path("https://clinic.example/appointments")
     assert not is_blocked_public_path("https://clinic.example/contact")
+    assert is_blocked_public_path("https://clinic.example/patient-intake")
+    assert is_blocked_public_path("https://clinic.example/intake-form")
+    assert not is_blocked_public_path("https://clinic.example/about")
+    assert not is_blocked_public_path("https://clinic.example/our-team")
 
 
 def test_directory_hosts_are_recognized() -> None:

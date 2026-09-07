@@ -12,6 +12,7 @@ from vyro_growth.domain import (
     ContactRoleCategory,
     ContactVerificationStatus,
     EnrichmentRunStatus,
+    WebsiteFactType,
 )
 from vyro_growth.models import (
     Activity,
@@ -24,6 +25,7 @@ from vyro_growth.models import (
 from vyro_growth.providers.decision_makers import (
     StaticDecisionMakerEnrichmentProvider,
     StubDecisionMakerEnrichmentProvider,
+    build_decision_maker_provider,
 )
 from vyro_growth.services.contact_enrichment import (
     ContactEnrichmentError,
@@ -333,3 +335,67 @@ def test_batch_respects_limit(db_session: Session) -> None:
     results = _service([candidate()]).enrich_batch(db_session, limit=1)
     assert len(results) == 1
     assert results[0].organization_id == first.id
+
+
+def test_website_staff_facts_feed_existing_classification_path(db_session: Session) -> None:
+    organization = _org(db_session)
+    db_session.add(
+        SourceEvidence(
+            organization_id=organization.id,
+            source_url="https://austinfamily.example/our-team",
+            claim_type=WebsiteFactType.STAFF_MEMBER.value,
+            extracted_value="Jordan Blake | Practice Manager",
+            confidence=0.84,
+            evidence_snippet="Jordan Blake, Practice Manager",
+            metadata_json={
+                "full_name": "Jordan Blake",
+                "title": "Practice Manager",
+                "fabricated": False,
+                "extractor": "staff-page-v1",
+            },
+        )
+    )
+    db_session.add(
+        SourceEvidence(
+            organization_id=organization.id,
+            source_url="https://austinfamily.example/our-team",
+            claim_type=WebsiteFactType.STAFF_MEMBER.value,
+            extracted_value="Casey Rivers | Physician Manager",
+            confidence=0.8,
+            evidence_snippet="Casey Rivers, Physician Manager",
+            metadata_json={
+                "full_name": "Casey Rivers",
+                "title": "Physician Manager",
+                "fabricated": False,
+                "extractor": "staff-page-v1",
+            },
+        )
+    )
+    db_session.flush()
+
+    result = ContactEnrichmentService(build_decision_maker_provider()).enrich_organization(
+        db_session,
+        organization.id,
+    )
+
+    assert result.status is EnrichmentRunStatus.COMPLETED
+    assert result.provider_name == "website_staff"
+    assert result.contacts_upserted == 1
+    assert result.contacts_skipped >= 1
+    contacts = db_session.scalars(select(Contact)).all()
+    assert len(contacts) == 1
+    contact = contacts[0]
+    assert contact.full_name == "Jordan Blake"
+    assert contact.title == "Practice Manager"
+    assert contact.role_category == ContactRoleCategory.PRACTICE_MANAGER.value
+    assert contact.email is None
+    assert contact.phone is None
+    assert contact.source_provider == "website_staff"
+    assert contact.email_verified is False
+    evidence = db_session.scalars(
+        select(SourceEvidence).where(
+            SourceEvidence.claim_type == ContactFactType.DECISION_MAKER_CONTACT.value
+        )
+    ).all()
+    assert evidence
+    assert all(row.metadata_json.get("fabricated") is False for row in evidence)
