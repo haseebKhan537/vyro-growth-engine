@@ -97,6 +97,7 @@ def test_present_secrets_are_redacted_and_never_printed(db_session: Session) -> 
         smartlead_api_key=SECRET_VALUE,
         google_calendar_api_key=SECRET_VALUE,
         voice_api_key=SECRET_VALUE,
+        decision_maker_api_key=SECRET_VALUE,
         internal_api_key=SECRET_VALUE,
         database_url=DB_SECRET_URL,
     )

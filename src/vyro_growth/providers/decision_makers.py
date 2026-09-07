@@ -697,7 +697,7 @@ class StaticDecisionMakerEnrichmentProvider:
 class WaterfallDecisionMakerProvider:
     """Dry-run design hook. Sequences inner providers and never invents contacts.
 
-    Phase 66 does not add LinkedIn, list-purchase, voice, or live paid calls.
+    Phase 66 does not add social-network scraping, list-purchase, voice, or live paid calls.
     Later stages (domain verification, website person extraction) can be added
     as additional inner providers without changing classify/rank logic.
     """

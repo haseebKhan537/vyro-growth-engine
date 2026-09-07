@@ -115,7 +115,7 @@ class ContactEnrichmentMetricsService:
             latest_by_org[run.organization_id] = run
         latest_runs = tuple(latest_by_org.values())
         considered_ids = tuple(latest_by_org)
-        contacts = ()
+        contacts: tuple[Contact, ...] = ()
         if considered_ids:
             contacts = tuple(
                 db.scalars(

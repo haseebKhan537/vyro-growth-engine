@@ -165,6 +165,8 @@ def test_metrics_do_not_create_activity_or_change_halt(db_session: Session) -> N
 
     ContactEnrichmentMetricsService().summarize(db_session, Settings())
 
-    assert int(db_session.scalar(select(func.count()).select_from(Activity)) or 0) == activity_before
-    assert int(db_session.scalar(select(func.count()).select_from(Contact)) or 0) == contact_before
+    activity_after = int(db_session.scalar(select(func.count()).select_from(Activity)) or 0)
+    contact_after = int(db_session.scalar(select(func.count()).select_from(Contact)) or 0)
+    assert activity_after == activity_before
+    assert contact_after == contact_before
     assert read_operator_halt(db_session) is HaltStatus.HALTED
