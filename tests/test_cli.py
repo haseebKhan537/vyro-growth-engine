@@ -534,6 +534,9 @@ def test_parser_accepts_contact_validation_plan_and_report() -> None:
     assert packet.json is True
     assert packet.state == "TX"
     assert packet.max_cohort_size == 200
+    audit = parser.parse_args(["final-safety-audit", "--json"])
+    assert audit.command == "final-safety-audit"
+    assert audit.json is True
 
 
 def _phone_task_view() -> PhoneVerificationTaskView:
@@ -2309,6 +2312,9 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     validation_packet = parser.parse_args(["supervised-validation-run-packet", "--json"])
     assert validation_packet.command == "supervised-validation-run-packet"
     assert validation_packet.json is True
+    final_audit = parser.parse_args(["final-safety-audit", "--json"])
+    assert final_audit.command == "final-safety-audit"
+    assert final_audit.json is True
 
 
 def test_parser_accepts_check_config_and_worker() -> None:

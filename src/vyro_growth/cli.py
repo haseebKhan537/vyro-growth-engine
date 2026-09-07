@@ -90,6 +90,10 @@ from vyro_growth.services.execution_planning import (
     ExecutionPlanningService,
     ExecutionPlanRunResult,
 )
+from vyro_growth.services.final_safety_audit import (
+    FinalSafetyAuditService,
+    format_final_safety_audit,
+)
 from vyro_growth.services.go_live_readiness_index import (
     GoLiveReadinessIndexService,
     format_go_live_readiness_index,
@@ -348,6 +352,18 @@ def build_parser() -> argparse.ArgumentParser:
         "supervised-validation-run-packet",
         "Export a sanitized supervised validation owner approval/run packet "
         "(read-only review only; does not execute the run or grant approval)",
+    )
+    final_audit = subparsers.add_parser(
+        "final-safety-audit",
+        help=(
+            "Export a sanitized final repository and safety audit packet "
+            "(read-only; does not execute validation or grant approval)"
+        ),
+    )
+    final_audit.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the sanitized final safety audit as JSON",
     )
 
     phone_queue = subparsers.add_parser(
@@ -1079,6 +1095,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "supervised-validation-run-packet":
         return _run_supervised_validation_run_packet(args)
 
+    if args.command == "final-safety-audit":
+        return _run_final_safety_audit(args)
+
     if args.command == "queue-phone-verification":
         return _run_queue_phone_verification(args)
 
@@ -1434,6 +1453,14 @@ def _run_supervised_validation_run_packet(args: argparse.Namespace) -> int:
             print(f"Supervised validation run packet error: {exc.message}")
             return 1
     print(format_supervised_validation_run_packet(packet, as_json=args.json))
+    return 0
+
+
+def _run_final_safety_audit(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        packet = FinalSafetyAuditService().build(db, settings)
+    print(format_final_safety_audit(packet, as_json=args.json))
     return 0
 
 
