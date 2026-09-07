@@ -838,7 +838,7 @@ Human-in-the-loop review/task records only. Does not place calls, autodial, use 
 - `do_not_contact` outcomes create durable suppression records that the outbound kill-switch honors
 - Review-queue approve/reject is audit-only (`executable_later=false`); no execution/call path exists from this task type
 - Do not route through `VoiceProvider`
-- Outputs expose IDs, status codes, and `has_phone` / `has_email` flags only — never real phones, emails, names, evidence snippets, or secrets
+- Outputs expose IDs, status codes, and `has_phone` / `has_email` / `has_operator_notes` flags only — never real phones, emails, names, operator notes, evidence snippets, or secrets
 - No AI voice cold calling
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 

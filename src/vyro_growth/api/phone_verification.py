@@ -51,8 +51,8 @@ class PhoneVerificationTaskResponse(BaseModel):
     has_phone: bool = False
     has_email: bool = False
     role_category: str | None = None
-    operator_label: str | None = None
-    operator_notes: str | None = None
+    has_operator_label: bool = False
+    has_operator_notes: bool = False
     queued_at: datetime
     completed_at: datetime | None = None
 
@@ -118,8 +118,8 @@ def task_view_to_response(item: PhoneVerificationTaskView) -> PhoneVerificationT
         has_phone=item.has_phone,
         has_email=item.has_email,
         role_category=item.role_category,
-        operator_label=item.operator_label,
-        operator_notes=item.operator_notes,
+        has_operator_label=item.has_operator_label,
+        has_operator_notes=item.has_operator_notes,
         queued_at=item.queued_at,
         completed_at=item.completed_at,
     )

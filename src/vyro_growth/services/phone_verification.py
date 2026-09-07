@@ -109,8 +109,8 @@ class PhoneVerificationTaskView:
     has_phone: bool
     has_email: bool
     role_category: str | None
-    operator_label: str | None
-    operator_notes: str | None
+    has_operator_label: bool
+    has_operator_notes: bool
     queued_at: datetime
     completed_at: datetime | None
 
@@ -616,8 +616,8 @@ def _task_payload(item: PhoneVerificationTaskView) -> dict[str, object]:
         "has_phone": item.has_phone,
         "has_email": item.has_email,
         "role_category": item.role_category,
-        "operator_label": item.operator_label,
-        "operator_notes": item.operator_notes,
+        "has_operator_label": item.has_operator_label,
+        "has_operator_notes": item.has_operator_notes,
         "queued_at": item.queued_at.isoformat(),
         "completed_at": item.completed_at.isoformat() if item.completed_at else None,
     }
@@ -650,8 +650,8 @@ def _task_view(row: ContactDiscoveryCall, *, reused: bool) -> PhoneVerificationT
         has_phone=bool(details.get("has_phone")),
         has_email=bool(details.get("has_email")),
         role_category=_safe_role_label(details.get("role_category")),
-        operator_label=row.operator_label,
-        operator_notes=row.operator_notes,
+        has_operator_label=bool(row.operator_label),
+        has_operator_notes=bool(row.operator_notes),
         queued_at=row.queued_at,
         completed_at=row.completed_at,
     )

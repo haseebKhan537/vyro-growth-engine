@@ -82,7 +82,7 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 - Human-entered `decision_maker_identified` results persist as evidence-backed contact facts with `source_provider="phone_verification"`. Unknown values stay unknown; names/phones/emails are never invented.
 - `do_not_contact` outcomes create durable suppressions (`reason="do_not_contact"`) that the outbound kill-switch honors for phone, email, and organization targets.
 - Review-queue approve/reject is audit-only. There is no execution/call path from this task type.
-- Logs, metrics, API, CLI, and UI never expose real phones, emails, names, message bodies, outreach drafts, evidence snippets, secrets, tokens, or unsafe provider errors.
+- Logs, metrics, API, CLI, and UI never expose real phones, emails, names, operator notes, message bodies, outreach drafts, evidence snippets, secrets, tokens, or unsafe provider errors.
 - No LinkedIn/Sales Navigator automation and no AI voice cold calling.
 - `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 

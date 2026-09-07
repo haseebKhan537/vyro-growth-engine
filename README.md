@@ -295,7 +295,7 @@ Internal JSON: `GET /internal/phone-verification/tasks` and `POST /internal/phon
 
 Statuses: `queued`, `completed`, `no_answer`, `refused`, `wrong_number`, `decision_maker_identified`, `do_not_contact`.
 
-Human-entered `decision_maker_identified` results are stored as evidence-backed contact facts with `source_provider="phone_verification"`. `do_not_contact` creates a durable suppression that later outbound guards honor. Review-queue approve/reject is audit-only and never dials. Outputs expose IDs, status codes, and `has_phone` / `has_email` flags only. `OUTBOUND_ENABLED` remains false by default.
+Human-entered `decision_maker_identified` results are stored as evidence-backed contact facts with `source_provider="phone_verification"`. `do_not_contact` creates a durable suppression that later outbound guards honor. Review-queue approve/reject is audit-only and never dials. Outputs expose IDs, status codes, and `has_phone` / `has_email` / `has_operator_notes` flags only. `OUTBOUND_ENABLED` remains false by default.
 
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 

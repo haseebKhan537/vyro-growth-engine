@@ -288,20 +288,39 @@ def test_sanitized_list_omits_unsafe_fields(db_session: Session) -> None:
         queued.task_id,
         PhoneVerificationOutcomeInput(
             outcome=ContactDiscoveryCallStatus.WRONG_NUMBER.value,
-            notes=f"Number {PROSPECT_PHONE} was a fax",
+            operator=PROSPECT_NAME,
+            notes=(
+                f"Spoke with {PROSPECT_NAME} at {organization.name}; "
+                f"{PROSPECT_PHONE} / {PROSPECT_EMAIL}"
+            ),
         ),
     )
     listed = PhoneVerificationService().list_tasks(
         db_session, _settings(), include_completed=True
     )
     payload = format_phone_verification_queue(listed, as_json=True)
+    item = listed.items[0]
     assert PROSPECT_PHONE not in payload
+    assert PROSPECT_EMAIL not in payload
+    assert PROSPECT_NAME not in payload
     assert organization.name not in payload
-    assert listed.items[0].status == ContactDiscoveryCallStatus.WRONG_NUMBER.value
+    assert '"operator_notes"' not in payload
+    assert '"operator_label"' not in payload
+    assert item.status == ContactDiscoveryCallStatus.WRONG_NUMBER.value
+    assert item.has_operator_notes is True
+    assert item.has_operator_label is True
+    assert item.has_phone is False
+    assert item.has_email is False
     assert listed.live_call_attempted is False
     assert listed.voice_provider_used is False
     assert listed.outbound_attempted is False
     assert listed.outbound_enabled is False
+    stored = db_session.get(ContactDiscoveryCall, queued.task_id)
+    assert stored is not None
+    assert stored.operator_notes is not None
+    assert stored.operator_label is not None
+    assert PROSPECT_PHONE not in (stored.operator_notes or "")
+    assert PROSPECT_EMAIL not in (stored.operator_notes or "")
 
 
 def test_refused_and_completed_are_terminal_without_side_effects(db_session: Session) -> None:

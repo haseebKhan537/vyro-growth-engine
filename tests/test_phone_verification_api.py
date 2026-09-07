@@ -82,7 +82,11 @@ def test_outcome_endpoint_stores_dnc_without_exposing_phone(
             "outcome": ContactDiscoveryCallStatus.DO_NOT_CONTACT.value,
             "phone": PROSPECT_PHONE,
             "email": PROSPECT_EMAIL,
-            "notes": "Asked not to be contacted",
+            "operator": "Jordan Blake",
+            "notes": (
+                "Asked Jordan Blake at AUSTIN FAMILY MEDICINE PLLC "
+                f"not to use {PROSPECT_PHONE} or {PROSPECT_EMAIL}"
+            ),
         },
     )
 
@@ -96,11 +100,29 @@ def test_outcome_endpoint_stores_dnc_without_exposing_phone(
     assert body["live_call_attempted"] is False
     assert body["voice_provider_used"] is False
     assert body["has_phone"] is True
+    assert body["has_email"] is True
+    assert body["has_operator_notes"] is True
+    assert body["has_operator_label"] is True
+    assert "operator_notes" not in body
+    assert "operator_label" not in body
+    assert "Jordan Blake" not in dumped
+    assert "AUSTIN FAMILY MEDICINE" not in dumped
     task = db_session.get(ContactDiscoveryCall, queued.task_id)
     assert task is not None
     assert task.live_call_attempted is False
+    assert task.operator_notes is not None
+    assert task.operator_label is not None
     assert read_operator_halt(db_session) is HaltStatus.HALTED
     listed = api_client.get(f"{LIST_PATH}?include_completed=true")
     assert listed.status_code == 200
-    assert PROSPECT_PHONE not in listed.text
-    assert PROSPECT_EMAIL not in listed.text
+    listed_body = listed.json()
+    listed_text = listed.text
+    assert PROSPECT_PHONE not in listed_text
+    assert PROSPECT_EMAIL not in listed_text
+    assert "Jordan Blake" not in listed_text
+    assert "AUSTIN FAMILY MEDICINE" not in listed_text
+    assert "operator_notes" not in listed_body["items"][0]
+    assert "operator_label" not in listed_body["items"][0]
+    assert listed_body["items"][0]["has_operator_notes"] is True
+    assert listed_body["items"][0]["has_phone"] is True
+    assert listed_body["items"][0]["has_email"] is True

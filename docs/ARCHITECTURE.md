@@ -81,7 +81,7 @@ Human phone verification is a review/task queue only. It does not place calls, a
 3. Operators record outcomes through `vyro-growth record-phone-verification` or `POST /internal/phone-verification/tasks/{task_id}/outcome`. Listings use `vyro-growth list-phone-verification` / `GET /internal/phone-verification/tasks`.
 4. Statuses are `queued`, `completed`, `no_answer`, `refused`, `wrong_number`, `decision_maker_identified`, and `do_not_contact`.
 5. `decision_maker_identified` stores an evidence-backed contact with `source_provider="phone_verification"`. `do_not_contact` creates a durable suppression that blocks later dial/email/org actions.
-6. JSON, CLI, logs, and review-queue copy never include real phones, emails, names, evidence snippets, secrets, or provider errors.
+6. JSON, CLI, logs, and review-queue copy never include real phones, emails, names, operator notes, evidence snippets, secrets, or provider errors.
 7. `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 
 ### Phase 5: evidence-grounded personalization

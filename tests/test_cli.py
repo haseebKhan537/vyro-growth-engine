@@ -516,8 +516,8 @@ def _phone_task_view() -> PhoneVerificationTaskView:
         has_phone=False,
         has_email=False,
         role_category=None,
-        operator_label=None,
-        operator_notes=None,
+        has_operator_label=False,
+        has_operator_notes=False,
         queued_at=now,
         completed_at=None,
     )
