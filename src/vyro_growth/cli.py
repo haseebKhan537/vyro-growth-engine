@@ -183,6 +183,10 @@ from vyro_growth.services.supervised_pilot_candidates import (
     SupervisedPilotCandidateService,
     format_supervised_pilot_candidates,
 )
+from vyro_growth.services.supervised_pilot_first_send_owner_authorization_packet import (
+    SupervisedPilotFirstSendOwnerAuthorizationPacketService,
+    format_supervised_pilot_first_send_owner_authorization_packet,
+)
 from vyro_growth.services.supervised_pilot_first_send_preflight import (
     SupervisedPilotFirstSendPreflightService,
     format_supervised_pilot_first_send_preflight,
@@ -1073,6 +1077,22 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the sanitized supervised pilot launch rehearsal control map as JSON",
     )
+    owner_auth = subparsers.add_parser(
+        "supervised-pilot-first-send-owner-authorization-packet",
+        help=(
+            "Export a sanitized supervised pilot first-send owner "
+            "authorization packet (read-only; does not approve, execute, "
+            "send, deploy, apply settings, or go live)"
+        ),
+    )
+    owner_auth.add_argument(
+        "--json",
+        action="store_true",
+        help=(
+            "Print the sanitized supervised pilot first-send owner "
+            "authorization packet as JSON"
+        ),
+    )
     subparsers.add_parser(
         "check-config",
         help="Validate runtime settings without connecting to live providers",
@@ -1305,6 +1325,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "supervised-pilot-launch-rehearsal-control-map":
         return _run_supervised_pilot_launch_rehearsal_control_map(args)
+
+    if args.command == "supervised-pilot-first-send-owner-authorization-packet":
+        return _run_supervised_pilot_first_send_owner_authorization_packet(args)
 
     if args.command == "check-config":
         return _run_check_config()
@@ -2829,6 +2852,22 @@ def _run_supervised_pilot_launch_rehearsal_control_map(args: argparse.Namespace)
     with SessionLocal() as db:
         packet = SupervisedPilotLaunchRehearsalControlMapService().build(db, settings)
     print(format_supervised_pilot_launch_rehearsal_control_map(packet, as_json=args.json))
+    return 0
+
+
+def _run_supervised_pilot_first_send_owner_authorization_packet(
+    args: argparse.Namespace,
+) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        packet = SupervisedPilotFirstSendOwnerAuthorizationPacketService().build(
+            db, settings
+        )
+    print(
+        format_supervised_pilot_first_send_owner_authorization_packet(
+            packet, as_json=args.json
+        )
+    )
     return 0
 
 

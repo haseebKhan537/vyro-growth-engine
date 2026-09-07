@@ -85,6 +85,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "rehearsal-outcome-report",
     "supervised-pilot-plan",
     "supervised-pilot-candidates",
+    "supervised-pilot-first-send-owner-authorization-packet",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -126,6 +127,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-first-send-preflight",
     "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
     "/internal/supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-first-send-owner-authorization-packet",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,
@@ -1012,6 +1014,19 @@ _ADVICE_CATALOG: dict[str, RemediationAdvice] = {
             "/internal/supervised-pilot-launch-rehearsal-control-map or via "
             "`vyro-growth supervised-pilot-launch-rehearsal-control-map`. "
             "Control map review only; it is not a script runner, not "
+            "permission to send, not permission to go live, and not an "
+            "execution surface.",
+        )
+    ),
+    NextActionCode.SUPERVISED_PILOT_FIRST_SEND_OWNER_AUTHORIZATION_PACKET_IS_NOT_GO_LIVE.value: (
+        RemediationAdvice(
+            "manual_review",
+            "none",
+            "Inspect the supervised pilot first-send owner authorization "
+            "packet at /internal/supervised-pilot-first-send-owner-"
+            "authorization-packet or via `vyro-growth "
+            "supervised-pilot-first-send-owner-authorization-packet`. "
+            "Owner-authorization review only; it is not approval, not "
             "permission to send, not permission to go live, and not an "
             "execution surface.",
         )

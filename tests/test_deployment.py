@@ -144,6 +144,8 @@ def test_deployment_runbook_covers_operator_topics() -> None:
     assert "/internal/supervised-pilot-launch-rehearsal-control-map" in runbook
     assert "operator-supervised-pilot-launch-rehearsal-control-map" in runbook
     assert "vyro-growth supervised-pilot-launch-rehearsal-control-map" in runbook
+    assert "/internal/supervised-pilot-first-send-owner-authorization-packet" in runbook
+    assert "vyro-growth supervised-pilot-first-send-owner-authorization-packet" in runbook
     assert "/internal/supervised-validation-run-packet" in runbook
     assert "vyro-growth supervised-validation-run-packet" in runbook
     assert "/internal/final-safety-audit" in runbook

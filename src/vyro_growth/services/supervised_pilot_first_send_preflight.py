@@ -87,6 +87,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     "smoke-dry-run",
     CLI_COMMAND,
     "supervised-pilot-launch-rehearsal-control-map",
+    "supervised-pilot-first-send-owner-authorization-packet",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -121,6 +122,7 @@ RELATED_ROUTES: tuple[str, ...] = (
     HTTP_ROUTE,
     "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
     "/internal/supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-first-send-owner-authorization-packet",
 )
 
 

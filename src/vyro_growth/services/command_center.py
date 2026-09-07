@@ -231,6 +231,15 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
         "permission to send, not permission to go live, and not an "
         "execution surface."
     ),
+    NextActionCode.SUPERVISED_PILOT_FIRST_SEND_OWNER_AUTHORIZATION_PACKET_IS_NOT_GO_LIVE: (
+        "Inspect the supervised pilot first-send owner authorization "
+        "packet at /internal/supervised-pilot-first-send-owner-"
+        "authorization-packet or via `vyro-growth "
+        "supervised-pilot-first-send-owner-authorization-packet`. "
+        "Owner-authorization review only; it is not approval, not "
+        "permission to send, not permission to go live, and not an "
+        "execution surface."
+    ),
     NextActionCode.LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE: (
         "Inspect the owner live-provider setup checklist at "
         "/internal/live-provider-setup-checklist or via "
@@ -678,6 +687,11 @@ def _next_actions(
         NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE,
         FindingSeverity.INFO,
         phase="supervised_pilot_launch_rehearsal_control_map",
+    )
+    add(
+        NextActionCode.SUPERVISED_PILOT_FIRST_SEND_OWNER_AUTHORIZATION_PACKET_IS_NOT_GO_LIVE,
+        FindingSeverity.INFO,
+        phase="supervised_pilot_first_send_owner_authorization_packet",
     )
     add(
         NextActionCode.LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE,

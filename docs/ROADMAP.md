@@ -780,6 +780,20 @@ Internal operator HTML shell of the Phase 63 supervised pilot launch rehearsal c
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/send/contact controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
+## Phase 65 — Supervised pilot first-send owner authorization packet export
+Sanitized read-only CLI and internal JSON export that assembles owner-review evidence for a future supervised pilot first-send. Authorization-packet/export only, no execution.
+- CLI `vyro-growth supervised-pilot-first-send-owner-authorization-packet` with Markdown output and `--json` output
+- Internal JSON `GET /internal/supervised-pilot-first-send-owner-authorization-packet`
+- Reuses existing Phase 61 `SupervisedPilotFirstSendPreflightService` and Phase 63 `SupervisedPilotLaunchRehearsalControlMapService` as source material and does not recalculate readiness independently
+- Reuses supervised pilot go/no-go, plan, and candidates, owner approval packet and settings request rollups, launch blockers, readiness index, rehearsal checklist/outcome, provider setup checklist, compliance binder, release runbook, release artifact manifest, operator halt, and `OUTBOUND_ENABLED=false` proof
+- Safe metadata only: generated timestamp, packet kind/purpose, overall status rollup, explicit no-execution / no-send / no-approval flags, unchanged halt proof, source status rollups and safe route/command names, control-map readiness counts and blocking codes, remaining approval type/code names only, missing credential/config names only, closed live/provider flag names only, related routes/commands, and safe local git metadata
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_outbound=true`, `no_provider_calls=true`, `no_spend=true`, `no_first_send=true`, `dry_run_only=true`, `manual_review_only=true`, `execution_allowed=false`, `first_send_allowed=false`, `first_send_attempted=false`, `first_send_executed=0`, `sends_executed=0`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, `this_packet_is_not_approval=true`, `authorization_granted=false`, `approval_records_created=false`, `approval_records_mutated=false`, `supervised_pilot_first_send_owner_authorization_packet_is_not_go_live=true`, `owner_authorization_packet_is_not_a_send=true`, `export_is_not_permission_to_send=true`, and `export_is_not_execution=true`
+- Does not expose practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, secrets, env values, or unsafe errors
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is an owner-authorization review export only, not approval, not permission to send, not permission to go live, and not an execution surface
+
 ## Phase 66 — Live decision-maker enrichment provider foundation and hit-rate metrics
 Dry-run / provider-plumbing / measurement only. Does not send email, enroll leads, call prospects, book meetings, spend money, publish content, execute packets, lift halt, or enable live outbound.
 - Guarded live people-search adapter (`LiveDecisionMakerProvider`) behind `DecisionMakerEnrichmentProvider`, disabled by default

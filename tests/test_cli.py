@@ -2332,6 +2332,11 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     )
     assert control_map.command == "supervised-pilot-launch-rehearsal-control-map"
     assert control_map.json is True
+    owner_auth = parser.parse_args(
+        ["supervised-pilot-first-send-owner-authorization-packet", "--json"]
+    )
+    assert owner_auth.command == "supervised-pilot-first-send-owner-authorization-packet"
+    assert owner_auth.json is True
     validation_packet = parser.parse_args(["supervised-validation-run-packet", "--json"])
     assert validation_packet.command == "supervised-validation-run-packet"
     assert validation_packet.json is True
