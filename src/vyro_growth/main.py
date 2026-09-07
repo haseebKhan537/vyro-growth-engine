@@ -68,6 +68,10 @@ from vyro_growth.api.execution_plans import (
     build_latest_execution_plan_response,
     execution_planning_http_error,
 )
+from vyro_growth.api.final_safety_audit import (
+    FinalSafetyAuditResponse,
+    build_final_safety_audit_response,
+)
 from vyro_growth.api.go_live_readiness_index import (
     GoLiveReadinessIndexResponse,
     build_go_live_readiness_index_response,
@@ -447,6 +451,18 @@ def supervised_validation_run_packet(
     except ContactValidationError as exc:
         status_code, detail = contact_validation_http_error(exc)
         raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.get("/internal/final-safety-audit", tags=["internal"])
+def final_safety_audit(
+    db: DbSession,
+    response: Response,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> FinalSafetyAuditResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    response.headers["Cache-Control"] = "no-store"
+    return build_final_safety_audit_response(db, active_settings)
 
 
 @app.get("/internal/phone-verification/tasks", tags=["internal"])

@@ -883,7 +883,7 @@ Read-only owner approval/run packet for a later supervised 200-practice contact-
 - CI/defaults run against empty/local fixtures with no live provider traffic
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 74 — Operator supervised validation run packet UI shell (current)
+## Phase 74 — Operator supervised validation run packet UI shell
 Internal operator HTML shell of the Phase 73 supervised validation owner approval/run packet. Read-only, aggregate-only, no execution.
 - `GET /internal/operator-supervised-validation-run-packet`
 - Reuses existing Phase 73 `SupervisedValidationRunPacketService` and packet payload. Does not duplicate readiness calculations
@@ -895,6 +895,26 @@ Internal operator HTML shell of the Phase 73 supervised validation owner approva
 - Does not expose real emails, phones, websites, NPI numbers, street addresses, practice names, provider names, contact names, evidence snippets, message bodies, outreach drafts, API keys, tokens, provider secrets, raw env values, or unsafe error text
 - Packet may describe what the owner would need to approve later, but keeps `owner_approved=false` and `supervised_validation_run_permitted=false`
 - No LinkedIn/Sales Navigator automation, no restricted job-board scraping, and no AI voice cold calling
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
+## Phase 75 — Final safety and repository audit packet (current)
+Read-only repository and safety audit before any owner-approved real-world validation. Export/review only. Does not execute validation or grant approval.
+- Deterministic CLI/JSON `final-safety-audit` plus `GET /internal/final-safety-audit`
+- Reuses existing `LaunchReadinessService`, `ContactValidationService`, provider-setup, manifest, runbook, and dossier command/route inventories. Does not duplicate readiness calculations
+- Generated timestamp, packet kind, purpose, and overall status from existing launch-readiness
+- Current phase/route/command inventory by name only
+- Migration/schema inventory by revision/filename only
+- Provider/live flag inventory with booleans only, never values
+- Kill-switch / operator-halt / outbound-disabled proof
+- Test/CI command inventory and last-known safe commands
+- Open blocking/warning/info code rollups
+- Documentation/readme/roadmap coverage checklist
+- Stale/open issue checklist by issue number/title only
+- Explicit list of actions still requiring owner approval, all `granted=false`
+- Safe local git metadata
+- Packet may describe what remains before real validation, but keeps `owner_approved=false` and `supervised_validation_run_permitted=false`
+- Same `INTERNAL_API_KEY` gate as other internal JSON routes; `Cache-Control: no-store`
+- CI/defaults run against empty/local fixtures with no live provider traffic
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
 Future contact-enrichment work (not in this phase):

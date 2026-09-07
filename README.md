@@ -71,6 +71,7 @@ vyro-growth email-verification-metrics --json
 vyro-growth contact-validation-plan --json
 vyro-growth contact-validation-report --json
 vyro-growth supervised-validation-run-packet --json
+vyro-growth final-safety-audit --json
 vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
 vyro-growth owner-handoff-packet --json
@@ -386,6 +387,25 @@ curl "http://localhost:8000/internal/operator-supervised-validation-run-packet?s
 The Phase 20 dashboard and related operator surfaces link to this page. The page reuses `SupervisedValidationRunPacketService` and shows generated timestamp, packet kind, purpose, overall status, target segment and planned cohort size, prerequisite checklist, required owner decisions by code/name only with `granted=false`, required credential/config names with present/missing booleans only, no-execution / no-outbound / no-provider-call / no-send / no-call / no-book / no-spend / no-deploy flags, operator halt before/status/after and unchanged proof, Phase 71 funnel counts/rates and threshold statuses, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` as normal outcomes, related route/command names, blocked/warning/info code counts, safe local git metadata, and non-executable owner next-step labels. Fields are statuses, codes, route names, command names, flag names, specialty/city/state labels, sanitized timestamps, and counts. The page states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, `OUTBOUND_ENABLED=false`, `no_outbound=true`, `no_provider_calls=true`, `no_send=true`, `no_call=true`, `no_book=true`, `no_spend=true`, `no_deploy=true`, `contact_validation_is_not_outbound=true`, `contact_validation_is_not_live_send=true`, `supervised_validation_run_packet_is_not_execution=true`, `export_is_not_permission_to_run=true`, and that this is an aggregate-only review view. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, spend, candidate selection, send, approval, or contact controls.
 
 Rendered HTML is statuses, codes, timestamps, counts, route names, command names, specialty/city/state labels, and flags only: no practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 75 — Final safety and repository audit packet
+
+Export a sanitized repository and safety audit before any owner-approved real-world validation. This packet reuses existing launch-readiness, contact-validation, provider-setup, manifest, runbook, and dossier surfaces. It does not execute validation, grant approval, call providers, send email, enroll campaigns, place calls, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift operator halt, enable outbound, or set live `owner_approved`. It is a planning/review artifact only, not permission to run real-world validation and not an execution surface.
+
+CLI:
+```bash
+vyro-growth final-safety-audit --json
+vyro-growth final-safety-audit
+```
+
+Internal JSON: `GET /internal/final-safety-audit`
+
+```bash
+curl http://localhost:8000/internal/final-safety-audit \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The packet shows overall status and generated timestamp, current phase/route/command inventory by name only, migration/schema inventory by revision/filename only, provider/live flag booleans, kill-switch / operator-halt / outbound-disabled proof, test/CI command inventory, blocked/warning/info code rollups, documentation coverage, open issues by number/title only, remaining owner-approval actions with `granted=false`, and safe local git metadata. It states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, and `OUTBOUND_ENABLED=false`. Output is deterministic except timestamps and safe local git metadata. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 
