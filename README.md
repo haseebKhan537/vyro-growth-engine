@@ -70,6 +70,7 @@ vyro-growth contact-enrichment-metrics --json
 vyro-growth email-verification-metrics --json
 vyro-growth contact-validation-plan --json
 vyro-growth contact-validation-report --json
+vyro-growth supervised-validation-run-packet --json
 vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
 vyro-growth owner-handoff-packet --json
@@ -345,6 +346,27 @@ curl "http://localhost:8000/internal/operator-contact-validation?state=TX&max_co
 The Phase 20 dashboard and related operator surfaces link to this page. The page reuses `ContactValidationService` and shows overall status, generated timestamp, target segment and planned cohort size, read-only / dry-run / no-execution / no-outbound / no-provider-call flags, operator halt before/status/after and unchanged proof, live provider flag booleans only, planned existing-stage list with route/command names only, funnel counts and rates, threshold comparison rows with metric/code/status only, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` / queued human phone-verification summaries, related safe routes and CLI commands, safe local git metadata, and non-executable owner next-step labels. Fields are statuses, codes, route names, command names, flag names, specialty/city/state labels, sanitized timestamps, and counts. The page states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, `OUTBOUND_ENABLED=false`, `no_outbound=true`, `no_provider_calls=true`, `contact_validation_is_not_outbound=true`, `contact_validation_is_not_live_send=true`, and that this is an aggregate-only review view. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, spend, candidate selection, send, or contact controls.
 
 Rendered HTML is statuses, codes, timestamps, counts, route names, command names, specialty/city/state labels, and flags only: no practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
+## Phase 73 — Supervised validation owner approval/run packet
+
+Export a sanitized owner-review packet for a later supervised 200-practice contact-enrichment validation run. This packet reuses the Phase 71 `ContactValidationService` plan/report and Phase 72 UI route names. It does not execute that run, grant approval, call providers, send email, enroll campaigns, place calls, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift operator halt, enable outbound, or set live `owner_approved`. It is a planning/review artifact only, not permission to run a supervised validation and not an execution surface.
+
+CLI:
+```bash
+vyro-growth supervised-validation-run-packet --json --state TX --max-cohort-size 200
+vyro-growth supervised-validation-run-packet --state TX
+```
+
+Internal JSON: `GET /internal/supervised-validation-run-packet`
+
+```bash
+curl http://localhost:8000/internal/supervised-validation-run-packet \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/supervised-validation-run-packet?state=TX&max_cohort_size=200" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The packet shows overall status and generated timestamp, target segment and planned cohort size, a prerequisite checklist for a later owner-approved validation run, required owner decisions by code/name only, required credential/config names with present/missing booleans only, no-execution / no-outbound / no-provider-call / no-send / no-call / no-book / no-spend / no-deploy flags, operator halt before/status/after and unchanged proof, Phase 71 funnel counts/rates and threshold statuses, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` as normal outcomes, planned existing safe route/command names, blocked/warning/info code counts, safe local git metadata, and non-executable owner next-step labels. It states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, and `OUTBOUND_ENABLED=false`. Output is deterministic except timestamps and safe local git metadata. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 

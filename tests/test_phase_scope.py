@@ -1193,6 +1193,8 @@ def test_contact_validation_does_not_call_live_or_linkedin_providers() -> None:
     paths = [
         Path("src/vyro_growth/services/contact_validation.py"),
         Path("src/vyro_growth/api/contact_validation.py"),
+        Path("src/vyro_growth/services/supervised_validation_run_packet.py"),
+        Path("src/vyro_growth/api/supervised_validation_run_packet.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
