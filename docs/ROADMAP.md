@@ -829,7 +829,7 @@ Dry-run / verification-planning only. Does not send email, enroll campaigns, cal
 - No LinkedIn/Sales Navigator automation and no AI voice cold-calling
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 70 — Human phone-verification task queue for NO_CONTACT_FOUND (current)
+## Phase 70 — Human phone-verification task queue for NO_CONTACT_FOUND
 Human-in-the-loop review/task records only. Does not place calls, autodial, use AI voice, route through `VoiceProvider`, call phone APIs, send email, enroll campaigns, book meetings, spend money, publish, deploy, or change live settings.
 - Adds a `contact_discovery_call` review/task type for organizations where contact enrichment returns `NO_CONTACT_FOUND`
 - Queue sanitized tasks for human operators; CLI `queue-phone-verification` / `list-phone-verification` / `record-phone-verification` and worker job `queue_phone_verification_tasks`
@@ -840,6 +840,18 @@ Human-in-the-loop review/task records only. Does not place calls, autodial, use 
 - Do not route through `VoiceProvider`
 - Outputs expose IDs, status codes, and `has_phone` / `has_email` / `has_operator_notes` flags only — never real phones, emails, names, operator notes, evidence snippets, or secrets
 - No AI voice cold calling
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
+## Phase 71 — Contact-enrichment validation harness and 200-practice measurement plan (current)
+Dry-run / read-only measurement only. Does not send email, enroll campaigns, call prospects, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift halt, or enable outbound.
+- Deterministic CLI/JSON `contact-validation-plan` and `contact-validation-report` plus `GET /internal/contact-validation/plan` and `GET /internal/contact-validation/report`
+- Planned validation cohort of up to 200 organizations, represented by counts, filters, run IDs, and safe status/code rollups only
+- Reuses existing NPPES discovery, website enrichment, staff/job-posting facts, decision-maker enrichment, email verification, phone-verification queue, and contact-enrichment metrics surfaces
+- Funnel aggregates: organizations considered, official website verified/ambiguous/no-match, staff facts found, job-posting intent, decision-maker candidates found, business email found, verified email, verified decision-maker-role email, `NO_CONTACT_FOUND`, `NO_VERIFIED_EMAIL`, queued human phone-verification
+- Target-segment metadata: state, city, specialty/taxonomy, max cohort size, run timestamp, and safe local git metadata
+- `NO_CONTACT_FOUND` is a normal path, not a failure
+- Safe go/no-go threshold fields for owner review; they are not applied to live settings or scoring thresholds
+- CI/defaults run against empty/local fixtures with no live provider traffic
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
 Future contact-enrichment work (not in this phase):
