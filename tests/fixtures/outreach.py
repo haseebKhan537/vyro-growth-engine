@@ -33,7 +33,10 @@ def sample_contact(db: Session, organization: Organization, **overrides: object)
         "email": "jordan.blake@austinfamily.example",
         "role_category": "practice_manager",
         "role_rank": 3,
-        "email_verified": False,
+        "email_verified": True,
+        "email_origin": "stored",
+        "email_verification_verdict": "valid",
+        "email_verification_provider": "stub",
         "dedupe_key": "email:jordan.blake@austinfamily.example",
     }
     values.update(overrides)

@@ -89,6 +89,12 @@ class Contact(TimestampMixin, Base):
     email: Mapped[str | None] = mapped_column(String(320), index=True)
     phone: Mapped[str | None] = mapped_column(String(50))
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    email_origin: Mapped[str | None] = mapped_column(String(32))
+    email_verification_verdict: Mapped[str | None] = mapped_column(String(32), index=True)
+    email_verification_provider: Mapped[str | None] = mapped_column(String(64))
+    email_verification_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
     role_category: Mapped[str | None] = mapped_column(String(64), index=True)
     role_rank: Mapped[int | None] = mapped_column(Integer)
     source_provider: Mapped[str | None] = mapped_column(String(64), index=True)
@@ -97,6 +103,33 @@ class Contact(TimestampMixin, Base):
     verification_status: Mapped[str | None] = mapped_column(String(32))
     provenance_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
     dedupe_key: Mapped[str | None] = mapped_column(String(512))
+
+
+class EmailPatternCandidate(TimestampMixin, Base):
+    """Inferred/unverified email candidate. Never treated as sendable until verified."""
+
+    __tablename__ = "email_pattern_candidates"
+    __table_args__ = (
+        UniqueConstraint(
+            "idempotency_key",
+            name="uq_email_pattern_candidates_idempotency_key",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    contact_id: Mapped[UUID] = mapped_column(ForeignKey("contacts.id"), index=True)
+    source_contact_id: Mapped[UUID | None] = mapped_column(ForeignKey("contacts.id"), index=True)
+    candidate_email: Mapped[str] = mapped_column(String(320))
+    pattern_name: Mapped[str] = mapped_column(String(32))
+    origin: Mapped[str] = mapped_column(String(32), default="inferred")
+    promoted: Mapped[bool] = mapped_column(Boolean, default=False)
+    verification_verdict: Mapped[str | None] = mapped_column(String(32))
+    verification_status: Mapped[str] = mapped_column(String(32), default="inferred")
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    dry_run: Mapped[bool] = mapped_column(Boolean, default=True)
+    live_call_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    smtp_attempted: Mapped[bool] = mapped_column(Boolean, default=False)
+    details_json: Mapped[dict[str, object]] = mapped_column(JSONB, default=dict)
 
 
 class Lead(TimestampMixin, Base):

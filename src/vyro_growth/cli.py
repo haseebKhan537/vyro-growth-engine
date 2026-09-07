@@ -24,6 +24,7 @@ from vyro_growth.domain import (
 )
 from vyro_growth.providers.calendar_booking import build_booking_calendar_provider
 from vyro_growth.providers.decision_makers import build_decision_maker_provider
+from vyro_growth.providers.email_verification import build_email_verification_provider
 from vyro_growth.providers.nppes import NARROW_FILTER_ERROR, NppesSearchQuery
 from vyro_growth.providers.personalization import build_personalization_provider
 from vyro_growth.providers.reply_classification import build_reply_classifier
@@ -71,6 +72,11 @@ from vyro_growth.services.content_brief import (
     ContentBriefService,
 )
 from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
+from vyro_growth.services.email_verification import EmailVerificationService
+from vyro_growth.services.email_verification_metrics import (
+    EmailVerificationMetricsService,
+    format_email_verification_metrics,
+)
 from vyro_growth.services.execution_planning import (
     ExecutionPlanFilters,
     ExecutionPlanningError,
@@ -252,6 +258,34 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     metrics.add_argument("--json", action="store_true", help="Print sanitized JSON")
+
+    verify_emails = subparsers.add_parser(
+        "verify-emails",
+        help=(
+            "Dry-run email verification and same-domain pattern inference "
+            "(no send, no SMTP, no live verifier by default)"
+        ),
+    )
+    verify_emails.add_argument("--organization-id", help="Organization UUID")
+    verify_emails.add_argument(
+        "--state",
+        help="Limit batch verification to a two-letter state code",
+    )
+    verify_emails.add_argument("--city", help="Limit batch verification to a city")
+    verify_emails.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum organizations to verify when no organization id is provided",
+    )
+    email_metrics = subparsers.add_parser(
+        "email-verification-metrics",
+        help=(
+            "Print sanitized email-verification funnel counts "
+            "(dry-run validation only; no outbound or live verifier calls)"
+        ),
+    )
+    email_metrics.add_argument("--json", action="store_true", help="Print sanitized JSON")
 
     personalize = subparsers.add_parser(
         "personalize-leads",
@@ -908,6 +942,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "contact-enrichment-metrics":
         return _run_contact_enrichment_metrics(args)
 
+    if args.command == "verify-emails":
+        return _run_verify_emails(args)
+
+    if args.command == "email-verification-metrics":
+        return _run_email_verification_metrics(args)
+
     if args.command == "personalize-leads":
         return _run_personalize_leads(parser, args)
 
@@ -1157,6 +1197,44 @@ def _run_contact_enrichment_metrics(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         metrics = ContactEnrichmentMetricsService().summarize(db, settings)
     print(format_contact_enrichment_metrics(metrics, as_json=args.json))
+    return 0
+
+
+def _run_verify_emails(args: argparse.Namespace) -> int:
+    service = EmailVerificationService(build_email_verification_provider())
+    with SessionLocal() as db:
+        if args.organization_id:
+            results = [service.verify_organization(db, UUID(args.organization_id))]
+        else:
+            results = list(
+                service.verify_batch(
+                    db,
+                    limit=args.limit,
+                    state=args.state,
+                    city=args.city,
+                )
+            )
+    for item in results:
+        print(
+            "Email verification:",
+            f"organization_id={item.organization_id}",
+            f"considered={item.contacts_considered}",
+            f"verified={item.verified_count}",
+            f"no_verified_email={item.no_verified_email_count}",
+            f"inferred={item.inferred_count}",
+            f"promoted={item.promoted_count}",
+            f"provider={item.provider_name}",
+            f"status={item.status.value}",
+        )
+    print(f"verified_runs={len(results)}")
+    return 0
+
+
+def _run_email_verification_metrics(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        metrics = EmailVerificationMetricsService().summarize(db, settings)
+    print(format_email_verification_metrics(metrics, as_json=args.json))
     return 0
 
 

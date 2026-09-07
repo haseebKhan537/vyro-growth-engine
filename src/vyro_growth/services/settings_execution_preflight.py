@@ -48,6 +48,7 @@ LIVE_CREDENTIAL_NAMES: frozenset[str] = frozenset(
         SecretName.GOOGLE_CALENDAR_API_KEY.value,
         SecretName.VOICE_API_KEY.value,
         SecretName.DECISION_MAKER_API_KEY.value,
+        SecretName.EMAIL_VERIFICATION_API_KEY.value,
     }
 )
 FLAG_CREDENTIALS: dict[str, str] = {
@@ -57,6 +58,7 @@ FLAG_CREDENTIALS: dict[str, str] = {
     "GOOGLE_CALENDAR_LIVE_ENABLED": SecretName.GOOGLE_CALENDAR_API_KEY.value,
     "VOICE_LIVE_ENABLED": SecretName.VOICE_API_KEY.value,
     "DECISION_MAKER_LIVE_ENABLED": SecretName.DECISION_MAKER_API_KEY.value,
+    "EMAIL_VERIFICATION_LIVE_ENABLED": SecretName.EMAIL_VERIFICATION_API_KEY.value,
 }
 EXECUTION_STATUSES: frozenset[str] = frozenset(
     item.value for item in SettingsExecutionPreflightStatus
@@ -682,6 +684,8 @@ def _secret_present(name: str, settings: Settings) -> bool:
             return bool(settings.voice_api_key.strip())
         case SecretName.DECISION_MAKER_API_KEY:
             return bool(settings.decision_maker_api_key.strip())
+        case SecretName.EMAIL_VERIFICATION_API_KEY:
+            return bool(settings.email_verification_api_key.strip())
         case _:
             return _unreachable(secret)
 
@@ -703,6 +707,7 @@ def _flag_enabled(name: str, settings: Settings) -> bool | None:
         "GOOGLE_CALENDAR_LIVE_ENABLED": settings.google_calendar_live_enabled,
         "VOICE_LIVE_ENABLED": settings.voice_live_enabled,
         "DECISION_MAKER_LIVE_ENABLED": settings.decision_maker_live_enabled,
+        "EMAIL_VERIFICATION_LIVE_ENABLED": settings.email_verification_live_enabled,
     }
     return mapping.get(name)
 

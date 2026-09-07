@@ -20,10 +20,17 @@ from vyro_growth.providers.decision_makers import (
     OrganizationContactContext,
     StubDecisionMakerEnrichmentProvider,
 )
+from vyro_growth.providers.email_verification import (
+    EmailVerificationRequest,
+    LiveEmailVerificationDisabledError,
+    LiveEmailVerificationNotImplementedError,
+    StubEmailVerificationProvider,
+)
 from vyro_growth.providers.guarded import (
     GuardedCalendarProvider,
     GuardedDecisionMakerEnrichmentProvider,
     GuardedEmailProvider,
+    GuardedEmailVerificationProvider,
     GuardedGoogleCalendarProvider,
     GuardedSmartleadProvider,
     GuardedVoiceProvider,
@@ -311,4 +318,44 @@ def test_guarded_decision_maker_delegates_when_live_enabled() -> None:
     result = provider.enrich_decision_makers(request)
     assert inner.requests == [request]
     assert result.candidates == ()
+    assert result.provider_name == "stub"
+
+
+def test_guarded_email_verification_blocks_when_live_disabled() -> None:
+    inner = StubEmailVerificationProvider()
+    settings = Settings(email_verification_live_enabled=False)
+    provider = GuardedEmailVerificationProvider(inner, settings)
+    request = EmailVerificationRequest(email="owner@austinfamily.example")
+    with pytest.raises(
+        LiveEmailVerificationDisabledError,
+        match="email_verification_live_disabled",
+    ):
+        provider.verify_email(request)
+    assert inner.requests == []
+
+
+def test_guarded_email_verification_blocks_smtp_even_when_live_enabled() -> None:
+    inner = StubEmailVerificationProvider()
+    settings = Settings(
+        outbound_enabled=False,
+        email_verification_live_enabled=True,
+        email_verification_smtp_enabled=True,
+    )
+    provider = GuardedEmailVerificationProvider(inner, settings)
+    request = EmailVerificationRequest(email="owner@austinfamily.example")
+    with pytest.raises(LiveEmailVerificationNotImplementedError, match="SMTP"):
+        provider.verify_email(request)
+    assert inner.requests == []
+
+
+def test_guarded_email_verification_delegates_when_live_enabled() -> None:
+    inner = StubEmailVerificationProvider()
+    settings = Settings(outbound_enabled=False, email_verification_live_enabled=True)
+    provider = GuardedEmailVerificationProvider(inner, settings)
+    request = EmailVerificationRequest(email="owner@austinfamily.example")
+    result = provider.verify_email(request)
+    assert inner.requests == [request]
+    assert result.dry_run is True
+    assert result.live_call_attempted is False
+    assert result.smtp_attempted is False
     assert result.provider_name == "stub"

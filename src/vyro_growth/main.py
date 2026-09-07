@@ -49,6 +49,10 @@ from vyro_growth.api.dashboard import (
     build_dashboard_summary_response,
 )
 from vyro_growth.api.discovery import NppesDiscoveryRequest, run_nppes_discovery
+from vyro_growth.api.email_verification_metrics import (
+    EmailVerificationMetricsResponse,
+    build_email_verification_metrics_response,
+)
 from vyro_growth.api.execution_plans import (
     ExecutionPlanRunRequest,
     ExecutionPlanRunResponse,
@@ -316,6 +320,16 @@ def contact_enrichment_metrics(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_contact_enrichment_metrics_response(db, active_settings)
+
+
+@app.get("/internal/email-verification/metrics", tags=["internal"])
+def email_verification_metrics(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+) -> EmailVerificationMetricsResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    return build_email_verification_metrics_response(db, active_settings)
 
 
 @app.get("/internal/operator-command-center", tags=["internal"])

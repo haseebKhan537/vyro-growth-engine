@@ -36,6 +36,7 @@ class SafetyCardResponse(BaseModel):
     google_calendar_live_enabled: bool
     voice_live_enabled: bool
     decision_maker_live_enabled: bool
+    email_verification_live_enabled: bool = False
     planned_count: int
     skipped_count: int
     suppressed_count: int

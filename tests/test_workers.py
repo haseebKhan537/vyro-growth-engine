@@ -22,6 +22,7 @@ from vyro_growth.workers.booking_plan_handler import PLAN_BOOKING_SLOTS_JOB
 from vyro_growth.workers.channel_planning_handler import GENERATE_CHANNEL_PLANS_JOB
 from vyro_growth.workers.contact_enrichment_handler import ENRICH_DECISION_MAKERS_JOB
 from vyro_growth.workers.content_brief_handler import GENERATE_CONTENT_BRIEFS_JOB
+from vyro_growth.workers.email_verification_handler import VERIFY_CONTACT_EMAILS_JOB
 from vyro_growth.workers.execution_planning_handler import GENERATE_EXECUTION_PLANS_JOB
 from vyro_growth.workers.growth_optimizer_handler import GENERATE_GROWTH_RECOMMENDATIONS_JOB
 from vyro_growth.workers.outbound import (
@@ -372,6 +373,7 @@ def test_deployable_catalog_excludes_outbound_guard_jobs() -> None:
     assert GENERATE_EXECUTION_PLANS_JOB in names
     assert GENERATE_APPROVAL_PACKETS_JOB in names
     assert SCORE_DISCOVERED_LEADS_JOB in names
+    assert VERIFY_CONTACT_EMAILS_JOB in names
     assert set(undeployed_outbound_job_names()) == {
         SEND_EMAIL_JOB,
         SCHEDULE_MEETING_JOB,

@@ -807,7 +807,7 @@ Dry-run website fallback only. Does not send email, enroll leads, call prospects
 - No LinkedIn/Sales Navigator automation
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 68 — Job-posting billing intent signal (current)
+## Phase 68 — Job-posting billing intent signal
 Read-only targeting/timing signal only. Does not apply to jobs, respond to postings, contact hiring managers, send outreach, enroll campaigns, call, book meetings, spend money, publish, deploy, or change halt/outbound settings.
 - Parses public schema.org `JobPosting` JSON-LD from a verified practice website using the existing safe public-page fetcher
 - Extracts only evidence-backed facts: role/category, posting date if present, source URL, recency, billing/RCM/coding/denials intent code, confidence, and timestamp
@@ -817,12 +817,22 @@ Read-only targeting/timing signal only. Does not apply to jobs, respond to posti
 - Metrics and activity details expose sanitized counts/statuses/codes only
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
+## Phase 69 — Email verification gate and email-pattern inference design (current)
+Dry-run / verification-planning only. Does not send email, enroll campaigns, call SMTP recipient servers, place calls, book meetings, spend money, publish, deploy, or change live settings.
+- Email verification provider abstraction for Hunter / NeverBounce / ZeroBounce-style verifiers
+- `EMAIL_VERIFICATION_LIVE_ENABLED=false`; API key/base URL unused unless explicitly enabled with an injected HTTP client
+- `EMAIL_VERIFICATION_SMTP_ENABLED=false`; recipient-server SMTP validation is forbidden
+- Store verification verdicts as contact facts/statuses and audit records; stub behavior is deterministic
+- Future outreach enrollment requires a verified-safe verdict and skips `NO_VERIFIED_EMAIL` as a normal outcome
+- Pattern inference from one verified same-domain business email plus known public names; inferred emails stay unverified until a verifier confirms them
+- Sanitized funnel metrics for verified-email rate and inference outcomes
+- No LinkedIn/Sales Navigator automation and no AI voice cold-calling
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
 Future contact-enrichment work (not in this phase):
-- email verification before send
-- email-pattern inference followed by verification
-- job-posting intent signals (Phase 68: read-only website JSON-LD scoring signal; board scraping and apply/response automation remain out of scope)
 - human phone-verification queue for `NO_CONTACT_FOUND`
 - live sending or campaign enrollment
+- live email-verifier HTTP with an injected owner-approved client
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request

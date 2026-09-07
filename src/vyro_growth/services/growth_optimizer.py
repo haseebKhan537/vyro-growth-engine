@@ -374,6 +374,7 @@ def _safety_recommendations(summary: DashboardSummary) -> list[RecommendationDra
         "google_calendar_live_enabled": safety.google_calendar_live_enabled,
         "voice_live_enabled": safety.voice_live_enabled,
         "decision_maker_live_enabled": safety.decision_maker_live_enabled,
+        "email_verification_live_enabled": safety.email_verification_live_enabled,
     }
     enabled_live = [name for name, enabled in live_flags.items() if enabled]
     if enabled_live:

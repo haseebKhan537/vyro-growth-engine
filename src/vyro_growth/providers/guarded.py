@@ -22,6 +22,13 @@ from vyro_growth.providers.decision_makers import (
     DecisionMakerEnrichmentResult,
     LiveDecisionMakerDisabledError,
 )
+from vyro_growth.providers.email_verification import (
+    EmailVerificationProvider,
+    EmailVerificationRequest,
+    EmailVerificationResult,
+    LiveEmailVerificationDisabledError,
+    LiveEmailVerificationNotImplementedError,
+)
 from vyro_growth.providers.smartlead import (
     LiveSmartleadDisabledError,
     SmartleadLeadPayload,
@@ -235,3 +242,31 @@ class GuardedDecisionMakerEnrichmentProvider:
         if not self._settings.decision_maker_live_enabled:
             raise LiveDecisionMakerDisabledError("decision_maker_live_disabled")
         return self._inner.enrich_decision_makers(request)
+
+
+class GuardedEmailVerificationProvider:
+    """Live email-verifier boundary that enforces live-enablement and no-SMTP gates.
+
+    Email verification is not outreach. This wrapper does not send email, enroll
+    campaigns, place calls, or book meetings. The live flag is the kill switch.
+    SMTP recipient-server validation remains forbidden.
+    """
+
+    live = True
+
+    def __init__(
+        self,
+        inner: EmailVerificationProvider,
+        settings: Settings,
+    ) -> None:
+        self._inner = inner
+        self._settings = settings
+
+    def verify_email(self, request: EmailVerificationRequest) -> EmailVerificationResult:
+        if not self._settings.email_verification_live_enabled:
+            raise LiveEmailVerificationDisabledError("email_verification_live_disabled")
+        if self._settings.email_verification_smtp_enabled or request.allow_smtp:
+            raise LiveEmailVerificationNotImplementedError(
+                "Phase 69 does not perform SMTP recipient-server validation"
+            )
+        return self._inner.verify_email(request)
