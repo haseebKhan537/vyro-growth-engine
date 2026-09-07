@@ -1187,3 +1187,28 @@ def test_phone_verification_does_not_place_calls_or_use_voice_provider() -> None
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "VOICE_LIVE_ENABLED=false" in env_example
+
+
+def test_contact_validation_does_not_call_live_or_linkedin_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/contact_validation.py"),
+        Path("src/vyro_growth/api/contact_validation.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "linkedin" not in source
+    assert "sales navigator" not in source
+    assert "apollo" not in source
+    assert "hunter" not in source
+    assert "neverbounce" not in source
+    assert "zerobounce" not in source
+    assert "smartlead" not in source
+    assert "openai" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    assert "smtplib" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in env_example

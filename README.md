@@ -68,6 +68,8 @@ pytest -q
 vyro-growth smoke-dry-run --local-only --json
 vyro-growth contact-enrichment-metrics --json
 vyro-growth email-verification-metrics --json
+vyro-growth contact-validation-plan --json
+vyro-growth contact-validation-report --json
 vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
 vyro-growth owner-handoff-packet --json
@@ -296,6 +298,34 @@ Internal JSON: `GET /internal/phone-verification/tasks` and `POST /internal/phon
 Statuses: `queued`, `completed`, `no_answer`, `refused`, `wrong_number`, `decision_maker_identified`, `do_not_contact`.
 
 Human-entered `decision_maker_identified` results are stored as evidence-backed contact facts with `source_provider="phone_verification"`. `do_not_contact` creates a durable suppression that later outbound guards honor. Review-queue approve/reject is audit-only and never dials. Outputs expose IDs, status codes, and `has_phone` / `has_email` / `has_operator_notes` flags only. `OUTBOUND_ENABLED` remains false by default.
+
+## Phase 71 — Contact-enrichment validation harness (dry-run measurement)
+
+Measure whether the existing discovery → website → staff/job-signal → decision-maker → email-verification → human phone-queue funnel is strong enough for a later owner-supervised 200-practice validation run. This phase does not send email, enroll campaigns, place calls, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift halt, or enable outbound.
+
+CLI:
+```bash
+vyro-growth contact-validation-plan --json --state TX --city Austin --specialty "Family Medicine"
+vyro-growth contact-validation-report --json --state TX --max-cohort-size 200
+```
+
+Internal JSON: `GET /internal/contact-validation/plan` and `GET /internal/contact-validation/report`
+
+The plan names the bounded target segment (state, city, specialty/taxonomy, max cohort size 200) and the existing safe stages to reuse. The report reads stored local data only and prints aggregate counts/rates/status codes:
+
+- organizations considered
+- official website verified / ambiguous / no-match
+- staff facts found
+- job-posting intent
+- decision-maker candidates found
+- business email found
+- verified email
+- verified decision-maker-role email
+- `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` / queued human phone-verification
+
+`NO_CONTACT_FOUND` is a normal path, not a failure. Go/no-go threshold fields are owner-review metadata only and do not change scoring or live settings. `supervised_validation_run_permitted` stays false. Output is deterministic except timestamps and safe local git metadata. CI and default local runs use empty or fixture data and never open live paid-provider HTTP.
+
+After the owner explicitly approves live provider credentials, run the existing safe CLIs (`discover-nppes`, `enrich-websites`, `enrich-contacts`, `verify-emails`, `queue-phone-verification`) against a bounded segment, then re-run `contact-validation-report`. Live flags and keys remain unused unless that later owner-approved step injects them. This measurement still does not send. `OUTBOUND_ENABLED` remains false by default.
 
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 

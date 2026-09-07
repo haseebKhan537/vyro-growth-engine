@@ -36,6 +36,14 @@ from vyro_growth.api.contact_enrichment_metrics import (
     ContactEnrichmentMetricsResponse,
     build_contact_enrichment_metrics_response,
 )
+from vyro_growth.api.contact_validation import (
+    ContactValidationPlanResponse,
+    ContactValidationReportResponse,
+    build_contact_validation_plan_response,
+    build_contact_validation_report_response,
+    contact_validation_http_error,
+    filters_from_query,
+)
 from vyro_growth.api.content_briefs import (
     ContentBriefRunResponse,
     GenerateContentBriefsRequest,
@@ -248,6 +256,7 @@ from vyro_growth.config import Settings, get_settings, require_valid_runtime_set
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
 from vyro_growth.services.approval_packets import ApprovalPacketError
+from vyro_growth.services.contact_validation import ContactValidationError
 from vyro_growth.services.content_brief import ContentBriefError
 from vyro_growth.services.execution_planning import ExecutionPlanningError
 from vyro_growth.services.launch_readiness import LaunchReadinessService
@@ -339,6 +348,64 @@ def email_verification_metrics(
     active_settings = get_settings()
     _require_internal_key(active_settings, x_internal_api_key)
     return build_email_verification_metrics_response(db, active_settings)
+
+
+@app.get("/internal/contact-validation/plan", tags=["internal"])
+def contact_validation_plan(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    state: Annotated[str | None, Query()] = None,
+    city: Annotated[str | None, Query()] = None,
+    specialty: Annotated[str | None, Query()] = None,
+    taxonomy_description: Annotated[str | None, Query()] = None,
+    max_cohort_size: Annotated[int, Query(ge=1, le=200)] = 200,
+) -> ContactValidationPlanResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_contact_validation_plan_response(
+            db,
+            active_settings,
+            filters=filters_from_query(
+                state=state,
+                city=city,
+                specialty=specialty,
+                taxonomy_description=taxonomy_description,
+                max_cohort_size=max_cohort_size,
+            ),
+        )
+    except ContactValidationError as exc:
+        status_code, detail = contact_validation_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
+
+
+@app.get("/internal/contact-validation/report", tags=["internal"])
+def contact_validation_report(
+    db: DbSession,
+    x_internal_api_key: Annotated[str | None, Header()] = None,
+    state: Annotated[str | None, Query()] = None,
+    city: Annotated[str | None, Query()] = None,
+    specialty: Annotated[str | None, Query()] = None,
+    taxonomy_description: Annotated[str | None, Query()] = None,
+    max_cohort_size: Annotated[int, Query(ge=1, le=200)] = 200,
+) -> ContactValidationReportResponse:
+    active_settings = get_settings()
+    _require_internal_key(active_settings, x_internal_api_key)
+    try:
+        return build_contact_validation_report_response(
+            db,
+            active_settings,
+            filters=filters_from_query(
+                state=state,
+                city=city,
+                specialty=specialty,
+                taxonomy_description=taxonomy_description,
+                max_cohort_size=max_cohort_size,
+            ),
+        )
+    except ContactValidationError as exc:
+        status_code, detail = contact_validation_http_error(exc)
+        raise HTTPException(status_code=status_code, detail=detail) from exc
 
 
 @app.get("/internal/phone-verification/tasks", tags=["internal"])

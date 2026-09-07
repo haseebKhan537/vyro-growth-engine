@@ -489,6 +489,39 @@ def test_cli_main_runs_email_verification_metrics(
     assert "owner@austinfamily.example" not in output
 
 
+def test_parser_accepts_contact_validation_plan_and_report() -> None:
+    parser = build_parser()
+    plan = parser.parse_args(
+        [
+            "contact-validation-plan",
+            "--json",
+            "--state",
+            "TX",
+            "--city",
+            "Austin",
+            "--specialty",
+            "Family Medicine",
+            "--max-cohort-size",
+            "200",
+        ]
+    )
+    report = parser.parse_args(
+        [
+            "contact-validation-report",
+            "--json",
+            "--taxonomy-description",
+            "Family Medicine",
+        ]
+    )
+
+    assert plan.command == "contact-validation-plan"
+    assert plan.json is True
+    assert plan.state == "TX"
+    assert plan.max_cohort_size == 200
+    assert report.command == "contact-validation-report"
+    assert report.taxonomy_description == "Family Medicine"
+
+
 def _phone_task_view() -> PhoneVerificationTaskView:
     now = datetime.now(tz=UTC)
     return PhoneVerificationTaskView(

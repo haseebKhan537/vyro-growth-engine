@@ -65,6 +65,13 @@ from vyro_growth.services.contact_enrichment_metrics import (
     ContactEnrichmentMetricsService,
     format_contact_enrichment_metrics,
 )
+from vyro_growth.services.contact_validation import (
+    ContactValidationError,
+    ContactValidationFilters,
+    ContactValidationService,
+    format_contact_validation_plan,
+    format_contact_validation_report,
+)
 from vyro_growth.services.content_brief import (
     ContentBriefError,
     ContentBriefRunResult,
@@ -197,6 +204,32 @@ from vyro_growth.smoke_ci_gate import (
 from vyro_growth.workers.catalog import DEPLOYABLE_JOBS, UNDEPLOYED_OUTBOUND_JOBS
 
 
+def _add_contact_validation_parser(
+    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
+    command: str,
+    help_text: str,
+) -> argparse.ArgumentParser:
+    parser = subparsers.add_parser(command, help=help_text)
+    parser.add_argument("--state", help="Limit the validation cohort to a two-letter state code")
+    parser.add_argument("--city", help="Limit the validation cohort to a city")
+    parser.add_argument(
+        "--specialty",
+        help="Limit the validation cohort to a specialty/taxonomy label",
+    )
+    parser.add_argument(
+        "--taxonomy-description",
+        help="Alias for --specialty using the NPPES taxonomy description filter",
+    )
+    parser.add_argument(
+        "--max-cohort-size",
+        type=int,
+        default=200,
+        help="Maximum organizations in the planned 200-practice validation cohort",
+    )
+    parser.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    return parser
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vyro-growth")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -293,6 +326,19 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     email_metrics.add_argument("--json", action="store_true", help="Print sanitized JSON")
+
+    _add_contact_validation_parser(
+        subparsers,
+        "contact-validation-plan",
+        "Print a sanitized 200-practice contact-enrichment validation plan "
+        "(dry-run measurement only; no outbound or live provider calls)",
+    )
+    _add_contact_validation_parser(
+        subparsers,
+        "contact-validation-report",
+        "Print a sanitized 200-practice contact-enrichment validation report "
+        "(aggregate counts only; no outbound or live provider calls)",
+    )
 
     phone_queue = subparsers.add_parser(
         "queue-phone-verification",
@@ -1014,6 +1060,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "email-verification-metrics":
         return _run_email_verification_metrics(args)
 
+    if args.command == "contact-validation-plan":
+        return _run_contact_validation_plan(args)
+
+    if args.command == "contact-validation-report":
+        return _run_contact_validation_report(args)
+
     if args.command == "queue-phone-verification":
         return _run_queue_phone_verification(args)
 
@@ -1311,6 +1363,48 @@ def _run_email_verification_metrics(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         metrics = EmailVerificationMetricsService().summarize(db, settings)
     print(format_email_verification_metrics(metrics, as_json=args.json))
+    return 0
+
+
+def _contact_validation_filters(args: argparse.Namespace) -> ContactValidationFilters:
+    return ContactValidationFilters(
+        state=args.state,
+        city=args.city,
+        specialty=args.specialty,
+        taxonomy_description=args.taxonomy_description,
+        max_cohort_size=args.max_cohort_size,
+    )
+
+
+def _run_contact_validation_plan(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            plan = ContactValidationService().build_plan(
+                db,
+                settings,
+                _contact_validation_filters(args),
+            )
+        except ContactValidationError as exc:
+            print(f"Contact validation error: {exc.message}")
+            return 1
+    print(format_contact_validation_plan(plan, as_json=args.json))
+    return 0
+
+
+def _run_contact_validation_report(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            report = ContactValidationService().build_report(
+                db,
+                settings,
+                _contact_validation_filters(args),
+            )
+        except ContactValidationError as exc:
+            print(f"Contact validation error: {exc.message}")
+            return 1
+    print(format_contact_validation_report(report, as_json=args.json))
     return 0
 
 
