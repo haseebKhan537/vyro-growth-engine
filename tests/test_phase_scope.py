@@ -1246,3 +1246,29 @@ def test_final_safety_audit_does_not_call_live_or_linkedin_providers() -> None:
     assert "smtplib" not in source
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
+
+
+def test_supervised_validation_run_gate_does_not_call_live_or_linkedin_providers() -> None:
+    paths = [
+        Path("src/vyro_growth/services/supervised_validation_run_gate.py"),
+        Path("src/vyro_growth/api/supervised_validation_run_gate.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "from vyro_growth.providers" not in source
+    assert "linkedin" not in source
+    assert "sales navigator" not in source
+    assert "apollo" not in source
+    assert "hunter" not in source
+    assert "neverbounce" not in source
+    assert "zerobounce" not in source
+    assert "smartlead" not in source
+    assert "openai" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    assert "smtplib" not in source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
+    assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in env_example

@@ -137,6 +137,15 @@ The owner live-provider setup checklist is a sanitized read-only export over exi
 4. The packet may describe what the owner would need later, but keeps `owner_approved=false`, `validation_permitted=false`, and `supervised_validation_run_permitted=false`. It is not permission to run a supervised 200-practice validation and not an execution surface.
 5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
 
+### Phase 77: supervised 200-practice validation run gate
+The supervised validation run gate is a sanitized owner-approval-required refusal/preflight over existing live-provider setup, supervised-validation packet, contact-validation, launch-readiness, settings-preflight, and compliance-binder surfaces. It does not execute the validation run, grant approval, call providers, send email, enroll campaigns, place calls, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift halt, or enable outbound.
+
+1. Operator submits `vyro-growth supervised-validation-run --dry-run` or `GET /internal/supervised-validation-run` with optional state, specialty/taxonomy, and max cohort size (1–200). HTTP uses the same `INTERNAL_API_KEY` gate as other internal operator routes. CLI does not. HTTP responses return `Cache-Control: no-store`.
+2. `SupervisedValidationRunGateService` reuses `LiveProviderSetupChecklistService`, `SupervisedValidationRunPacketService`, and Phase 71 plan/report payloads. It does not recalculate those sources of truth, write pipeline rows, change operator halt state, or call live providers.
+3. Output is a deterministic gate packet: generated timestamp, packet kind/purpose, overall status `blocked`, requested mode, gate rows with blocking/passed flags, refusal reason codes, required owner decisions with `granted=false`, credential names with present/missing booleans only, compliance prerequisites, validation constraints, operator halt before/status/after and unchanged proof, and non-executable owner next-step labels.
+4. CLI `--execute` still refuses. The packet keeps `owner_approved=false`, `validation_permitted=false`, and `supervised_validation_run_permitted=false`. The actual 200-practice validation requires separate owner approval before execution. This gate is not permission to run a supervised validation and not an execution surface.
+5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default.
+
 ### Phase 5: evidence-grounded personalization
 Personalization is dry-run only. It does not send email, place calls, book meetings, enroll leads, or call live paid providers by default.
 

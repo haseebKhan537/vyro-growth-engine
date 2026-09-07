@@ -23,6 +23,7 @@ vyro-growth action-readiness
 vyro-growth supervised-pilot-first-send-preflight
 vyro-growth supervised-pilot-launch-rehearsal-control-map
 vyro-growth live-provider-setup-checklist
+vyro-growth supervised-validation-run --dry-run
 vyro-growth system-status
 ```
 
@@ -85,6 +86,8 @@ curl http://localhost:8000/internal/supervised-validation-run-packet \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/final-safety-audit \
 curl http://localhost:8000/internal/live-provider-setup-checklist \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl http://localhost:8000/internal/supervised-validation-run \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
 curl http://localhost:8000/internal/launch-readiness \
   -H "X-Internal-Api-Key: $INTERNAL_API_KEY"

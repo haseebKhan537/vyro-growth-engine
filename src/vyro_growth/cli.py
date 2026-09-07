@@ -199,6 +199,12 @@ from vyro_growth.services.supervised_pilot_plan import (
     SupervisedPilotPlanService,
     format_supervised_pilot_plan,
 )
+from vyro_growth.services.supervised_validation_run_gate import (
+    SupervisedValidationRunGateOptions,
+    SupervisedValidationRunGateService,
+    format_supervised_validation_run_gate,
+    owner_approval_code_present,
+)
 from vyro_growth.services.supervised_validation_run_packet import (
     SupervisedValidationRunPacketService,
     format_supervised_validation_run_packet,
@@ -380,6 +386,43 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Print the sanitized live-provider setup checklist as JSON",
+    )
+    run_gate = _add_contact_validation_parser(
+        subparsers,
+        "supervised-validation-run",
+        "Evaluate whether a future supervised 200-practice validation run is allowed "
+        "(default dry-run/refusal only; does not execute the run or call providers)",
+    )
+    run_mode = run_gate.add_mutually_exclusive_group()
+    run_mode.add_argument(
+        "--dry-run",
+        dest="run_mode",
+        action="store_const",
+        const="dry_run",
+        help="Evaluate the gate and refuse execution (default)",
+    )
+    run_mode.add_argument(
+        "--execute",
+        dest="run_mode",
+        action="store_const",
+        const="execute",
+        help=(
+            "Request live execution (refused in this phase; requires a later "
+            "owner-approved executor)"
+        ),
+    )
+    run_gate.set_defaults(run_mode="dry_run")
+    run_gate.add_argument(
+        "--owner-approval-code",
+        help=(
+            "Owner approval record/code. Presence is recorded as a boolean only; "
+            "the value is never exported"
+        ),
+    )
+    run_gate.add_argument(
+        "--confirm-operator-halt-unchanged",
+        action="store_true",
+        help="Confirm operator halt must remain unchanged. This command never lifts halt",
     )
 
     phone_queue = subparsers.add_parser(
@@ -1116,6 +1159,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "live-provider-setup-checklist":
         return _run_live_provider_setup_checklist(args)
 
+    if args.command == "supervised-validation-run":
+        return _run_supervised_validation_run(args)
+
     if args.command == "queue-phone-verification":
         return _run_queue_phone_verification(args)
 
@@ -1488,6 +1534,30 @@ def _run_live_provider_setup_checklist(args: argparse.Namespace) -> int:
         checklist = LiveProviderSetupChecklistService().build(db, settings)
     print(format_live_provider_setup_checklist(checklist, as_json=args.json))
     return 0
+
+
+def _run_supervised_validation_run(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    execute_requested = args.run_mode == "execute"
+    options = SupervisedValidationRunGateOptions(
+        dry_run=not execute_requested,
+        execute_requested=execute_requested,
+        owner_approval_code_present=owner_approval_code_present(args.owner_approval_code),
+        confirm_operator_halt_unchanged=bool(args.confirm_operator_halt_unchanged),
+    )
+    with SessionLocal() as db:
+        try:
+            packet = SupervisedValidationRunGateService().evaluate(
+                db,
+                settings,
+                _contact_validation_filters(args),
+                options,
+            )
+        except ContactValidationError as exc:
+            print(f"Supervised validation run gate error: {exc.message}")
+            return 1
+    print(format_supervised_validation_run_gate(packet, as_json=args.json))
+    return 1 if execute_requested else 0
 
 
 def _run_queue_phone_verification(args: argparse.Namespace) -> int:

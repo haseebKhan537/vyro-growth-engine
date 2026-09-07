@@ -537,6 +537,29 @@ def test_parser_accepts_contact_validation_plan_and_report() -> None:
     audit = parser.parse_args(["final-safety-audit", "--json"])
     assert audit.command == "final-safety-audit"
     assert audit.json is True
+    run_gate = parser.parse_args(
+        [
+            "supervised-validation-run",
+            "--dry-run",
+            "--json",
+            "--state",
+            "TX",
+            "--specialty",
+            "Family Medicine",
+            "--max-cohort-size",
+            "200",
+            "--confirm-operator-halt-unchanged",
+        ]
+    )
+    assert run_gate.command == "supervised-validation-run"
+    assert run_gate.json is True
+    assert run_gate.run_mode == "dry_run"
+    assert run_gate.state == "TX"
+    assert run_gate.max_cohort_size == 200
+    assert run_gate.confirm_operator_halt_unchanged is True
+    execute_gate = parser.parse_args(["supervised-validation-run", "--execute"])
+    assert execute_gate.command == "supervised-validation-run"
+    assert execute_gate.run_mode == "execute"
 
 
 def _phone_task_view() -> PhoneVerificationTaskView:
@@ -2315,6 +2338,10 @@ def test_parser_accepts_settings_change_request_commands() -> None:
     final_audit = parser.parse_args(["final-safety-audit", "--json"])
     assert final_audit.command == "final-safety-audit"
     assert final_audit.json is True
+    run_gate = parser.parse_args(["supervised-validation-run", "--dry-run", "--json"])
+    assert run_gate.command == "supervised-validation-run"
+    assert run_gate.json is True
+    assert run_gate.run_mode == "dry_run"
 
 
 def test_parser_accepts_check_config_and_worker() -> None:
