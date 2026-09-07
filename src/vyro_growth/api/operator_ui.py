@@ -40,6 +40,7 @@ OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH = (
 OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH = (
     "/internal/operator-supervised-pilot-launch-rehearsal-control-map"
 )
+OPERATOR_CONTACT_VALIDATION_PATH = "/internal/operator-contact-validation"
 COMMAND_CENTER_JSON_PATH = "/internal/operator-command-center"
 REVIEW_QUEUE_JSON_PATH = "/internal/review-queue"
 APPROVAL_PACKETS_JSON_PATH = "/internal/approval-packets"
@@ -65,6 +66,8 @@ SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_JSON_PATH = "/internal/supervised-pilot-fi
 SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_JSON_PATH = (
     "/internal/supervised-pilot-launch-rehearsal-control-map"
 )
+CONTACT_VALIDATION_PLAN_JSON_PATH = "/internal/contact-validation/plan"
+CONTACT_VALIDATION_REPORT_JSON_PATH = "/internal/contact-validation/report"
 NO_STORE_HEADERS = {"Cache-Control": "no-store"}
 
 OperatorSurface = Literal[
@@ -91,6 +94,7 @@ OperatorSurface = Literal[
     "supervised-pilot-go-no-go",
     "supervised-pilot-first-send-preflight",
     "supervised-pilot-launch-rehearsal-control-map",
+    "contact-validation",
 ]
 
 _SURFACE_LABELS: dict[OperatorSurface, str] = {
@@ -117,6 +121,7 @@ _SURFACE_LABELS: dict[OperatorSurface, str] = {
     "supervised-pilot-go-no-go": "Pilot go/no-go",
     "supervised-pilot-first-send-preflight": "First-send preflight",
     "supervised-pilot-launch-rehearsal-control-map": "Rehearsal control map",
+    "contact-validation": "Contact validation",
 }
 _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "dashboard": OPERATOR_DASHBOARD_PATH,
@@ -144,6 +149,7 @@ _SURFACE_HREFS: dict[OperatorSurface, str] = {
     "supervised-pilot-launch-rehearsal-control-map": (
         OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH
     ),
+    "contact-validation": OPERATOR_CONTACT_VALIDATION_PATH,
 }
 
 
@@ -219,6 +225,7 @@ def render_operator_nav(current: OperatorSurface) -> str:
         "supervised-pilot-go-no-go",
         "supervised-pilot-first-send-preflight",
         "supervised-pilot-launch-rehearsal-control-map",
+        "contact-validation",
     )
     links = []
     for name in surfaces:

@@ -11,7 +11,7 @@ def test_phase_71_docs_describe_dry_run_measurement_without_live_send() -> None:
 
     heading = (
         "## Phase 71 — Contact-enrichment validation harness and 200-practice "
-        "measurement plan (current)"
+        "measurement plan"
     )
     assert heading in roadmap
     assert "contact-validation-plan" in roadmap
@@ -34,3 +34,33 @@ def test_phase_71_docs_describe_dry_run_measurement_without_live_send() -> None:
     assert "contact-validation-report" in readme
     assert "OUTBOUND_ENABLED=false" in readme
     assert "owner explicitly approves" in readme.lower() or "owner-approved" in readme.lower()
+
+
+def test_phase_72_docs_describe_read_only_operator_ui() -> None:
+    roadmap = Path("docs/ROADMAP.md").read_text(encoding="utf-8")
+    architecture = Path("docs/ARCHITECTURE.md").read_text(encoding="utf-8")
+    security = Path("docs/SECURITY.md").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
+    deployment = Path("docs/DEPLOYMENT.md").read_text(encoding="utf-8")
+    health = Path("docs/OPERATOR_HEALTH.md").read_text(encoding="utf-8")
+
+    heading = "## Phase 72 — Operator contact-validation UI shell (current)"
+    assert heading in roadmap
+    assert "GET /internal/operator-contact-validation" in roadmap
+    assert "ContactValidationService" in roadmap
+    assert "max_cohort_size" in roadmap
+    assert "OUTBOUND_ENABLED=false" in roadmap.split("## Phase 72")[1].split("## ")[0]
+
+    assert "### Phase 72: operator contact-validation UI" in architecture
+    assert "GET /internal/operator-contact-validation" in architecture
+    assert "Cache-Control: no-store" in architecture.split("### Phase 72")[1].split("### ")[0]
+
+    assert "GET /internal/operator-contact-validation" in security
+    assert "operator contact-validation UI" in security.lower()
+
+    assert "## Phase 72 — Operator contact-validation UI (read-only)" in readme
+    assert "GET /internal/operator-contact-validation" in readme
+    assert "OUTBOUND_ENABLED=false" in readme
+
+    assert "operator-contact-validation" in deployment
+    assert "operator-contact-validation" in health

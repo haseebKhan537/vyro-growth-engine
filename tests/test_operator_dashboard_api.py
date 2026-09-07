@@ -256,6 +256,7 @@ def test_renderer_populated_section_filter_hides_other_panels() -> None:
     assert "/internal/operator-supervised-pilot-go-no-go" in html
     assert "/internal/operator-supervised-pilot-first-send-preflight" in html
     assert "/internal/operator-supervised-pilot-launch-rehearsal-control-map" in html
+    assert "/internal/operator-contact-validation" in html
     for marker in ACTION_MARKERS:
         assert marker not in html.lower()
 
@@ -290,6 +291,8 @@ def test_operator_dashboard_open_in_development(
     assert "Open settings execution preflight" in body
     assert "Open owner go-live handoff packet" in body
     assert "Open activity audit timeline" in body
+    assert "Open rehearsal control map" in body
+    assert "Open contact validation" in body
     assert "read-only" in body.lower()
     assert "Outbound" in body
     assert "disabled" in body

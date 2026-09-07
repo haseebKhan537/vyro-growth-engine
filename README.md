@@ -327,6 +327,25 @@ The plan names the bounded target segment (state, city, specialty/taxonomy, max 
 
 After the owner explicitly approves live provider credentials, run the existing safe CLIs (`discover-nppes`, `enrich-websites`, `enrich-contacts`, `verify-emails`, `queue-phone-verification`) against a bounded segment, then re-run `contact-validation-report`. Live flags and keys remain unused unless that later owner-approved step injects them. This measurement still does not send. `OUTBOUND_ENABLED` remains false by default.
 
+Internal HTML: `GET /internal/operator-contact-validation`
+
+## Phase 72 — Operator contact-validation UI (read-only)
+
+Open an internal HTML view of the Phase 71 contact-enrichment validation plan and report. The owner can inspect whether the discovery → website → staff/job-signal → decision-maker → email-verification → human phone-queue funnel is strong enough for a later supervised 200-practice validation run using aggregate counts, rates, statuses, and codes only. This page does not execute validation stages, call providers, select or contact prospects, send email, enroll campaigns, place calls, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift operator halt, enable outbound, or set live `owner_approved`. It is an aggregate-only review view, not permission to run a supervised validation and not an execution surface.
+
+Internal HTTP (not a public API). In local development it may run without a key. Outside development it is fail-closed unless `INTERNAL_API_KEY` is set and the request sends a matching `X-Internal-Api-Key` header.
+
+```bash
+curl http://localhost:8000/internal/operator-contact-validation \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+curl "http://localhost:8000/internal/operator-contact-validation?state=TX&max_cohort_size=200" \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The Phase 20 dashboard and related operator surfaces link to this page. The page reuses `ContactValidationService` and shows overall status, generated timestamp, target segment and planned cohort size, read-only / dry-run / no-execution / no-outbound / no-provider-call flags, operator halt before/status/after and unchanged proof, live provider flag booleans only, planned existing-stage list with route/command names only, funnel counts and rates, threshold comparison rows with metric/code/status only, `NO_CONTACT_FOUND` / `NO_VERIFIED_EMAIL` / queued human phone-verification summaries, related safe routes and CLI commands, safe local git metadata, and non-executable owner next-step labels. Fields are statuses, codes, route names, command names, flag names, specialty/city/state labels, sanitized timestamps, and counts. The page states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, `OUTBOUND_ENABLED=false`, `no_outbound=true`, `no_provider_calls=true`, `contact_validation_is_not_outbound=true`, `contact_validation_is_not_live_send=true`, and that this is an aggregate-only review view. There are no apply, execute, lift-halt, enable-outbound, provider, build, publish, deploy, campaign, booking, call, spend, candidate selection, send, or contact controls.
+
+Rendered HTML is statuses, codes, timestamps, counts, route names, command names, specialty/city/state labels, and flags only: no practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 
 Generate structured personalization drafts for scored/enriched leads using only stored public/business evidence. Output is evidence-grounded and outbound-disabled. CI and default local development use a deterministic stub and do not require a live OpenAI API key.
