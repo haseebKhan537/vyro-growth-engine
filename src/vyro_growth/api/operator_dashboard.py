@@ -55,6 +55,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
     OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
     OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
+    OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
 )
 from vyro_growth.config import Settings
@@ -299,7 +300,10 @@ def _render_header(summary: CommandCenterResponse, section: DashboardSection) ->
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)}">'
         "Pilot go/no-go</a> "
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)}">'
-        "First-send preflight</a>\n"
+        "First-send preflight</a> "
+        f'<a class="nav-link" href="'
+        f'{escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}">'
+        "Rehearsal control map</a>\n"
         "    </nav>\n"
         f'    <nav class="section-nav" aria-label="Dashboard sections">{" ".join(links)}\n'
         f'      <a class="nav-link nav-json" href="{json_href}">JSON summary</a>\n'
@@ -400,7 +404,11 @@ def _render_safety(
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)}">'
         "Open first-send preflight</a> — read-only review view. "
-        "No execute controls. Not permission to send or go live.</p>\n"
+        "No execute controls. Not permission to send or go live. "
+        f'<a class="nav-link" href="'
+        f'{escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}">'
+        "Open rehearsal control map</a> — read-only review view. "
+        "No execute controls. Not a script runner. Not permission to send or go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Outbound', 'disabled' if not safety.outbound_enabled else 'enabled')}\n"
         f"        {_metric('Settings halt', _flag(safety.outbound_halted_settings))}\n"
@@ -624,7 +632,11 @@ def _render_packets(packets: ApprovalPacketSummaryResponse) -> str:
         "No execute controls. Not permission to go live. "
         f'<a class="nav-link" href="{escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)}">'
         "Open first-send preflight</a> — read-only review view. "
-        "No execute controls. Not permission to send or go live.</p>\n"
+        "No execute controls. Not permission to send or go live. "
+        f'<a class="nav-link" href="'
+        f'{escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)}">'
+        "Open rehearsal control map</a> — read-only review view. "
+        "No execute controls. Not a script runner. Not permission to send or go live.</p>\n"
         '      <div class="metric-grid">\n'
         f"        {_metric('Packets', packets.packets)}\n"
         f"        {_metric('Owner approved', packets.owner_approved)}\n"

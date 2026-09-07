@@ -224,6 +224,7 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
     ),
     NextActionCode.SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE: (
         "Inspect the supervised pilot launch rehearsal control map at "
+        "/internal/operator-supervised-pilot-launch-rehearsal-control-map or "
         "/internal/supervised-pilot-launch-rehearsal-control-map or via "
         "`vyro-growth supervised-pilot-launch-rehearsal-control-map`. "
         "Control map review only; it is not a script runner, not "

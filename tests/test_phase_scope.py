@@ -569,8 +569,10 @@ def test_supervised_pilot_launch_rehearsal_control_map_does_not_execute_or_call_
     paths = [
         Path("src/vyro_growth/services/supervised_pilot_launch_rehearsal_control_map.py"),
         Path("src/vyro_growth/api/supervised_pilot_launch_rehearsal_control_map.py"),
+        Path("src/vyro_growth/api/operator_supervised_pilot_launch_rehearsal_control_map.py"),
         Path("tests/test_supervised_pilot_launch_rehearsal_control_map_service.py"),
         Path("tests/test_supervised_pilot_launch_rehearsal_control_map_api.py"),
+        Path("tests/test_operator_supervised_pilot_launch_rehearsal_control_map_api.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source

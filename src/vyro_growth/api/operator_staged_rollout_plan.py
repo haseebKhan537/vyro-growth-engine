@@ -40,6 +40,7 @@ from vyro_growth.api.operator_ui import (
     OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH,
     OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH,
     OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH,
+    OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH,
     OPERATOR_SUPERVISED_PILOT_PLAN_PATH,
     OPERATOR_UI_STYLES,
     OWNER_HANDOFF_JSON_PATH,
@@ -198,6 +199,7 @@ def _render_related_links() -> str:
     candidates_href = escape(OPERATOR_SUPERVISED_PILOT_CANDIDATES_PATH)
     go_no_go_href = escape(OPERATOR_SUPERVISED_PILOT_GO_NO_GO_PATH)
     first_send_href = escape(OPERATOR_SUPERVISED_PILOT_FIRST_SEND_PREFLIGHT_PATH)
+    control_map_href = escape(OPERATOR_SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_PATH)
     return (
         '    <nav class="filter-nav" aria-label="Linked readiness surfaces">\n'
         f'      <a class="nav-link" href="{dashboard_href}">Dashboard</a>\n'
@@ -227,6 +229,7 @@ def _render_related_links() -> str:
         f'      <a class="nav-link" href="{candidates_href}">Pilot candidates</a>\n'
         f'      <a class="nav-link" href="{go_no_go_href}">Pilot go/no-go</a>\n'
         f'      <a class="nav-link" href="{first_send_href}">First-send preflight</a>\n'
+        f'      <a class="nav-link" href="{control_map_href}">Rehearsal control map</a>\n'
         "    </nav>"
     )
 
