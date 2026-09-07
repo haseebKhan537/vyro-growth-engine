@@ -16,6 +16,7 @@ SAFE_FLAGS = (
     "OPENAI_REPLY_CLASSIFICATION_ENABLED=false",
     "GOOGLE_CALENDAR_LIVE_ENABLED=false",
     "VOICE_LIVE_ENABLED=false",
+    "DECISION_MAKER_LIVE_ENABLED=false",
 )
 
 
@@ -38,6 +39,7 @@ def test_dockerfile_is_production_safe() -> None:
     assert "OUTBOUND_ENABLED=false" in dockerfile
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in dockerfile
     assert "VOICE_LIVE_ENABLED=false" in dockerfile
+    assert "DECISION_MAKER_LIVE_ENABLED=false" in dockerfile
     assert "SMARTLEAD_LIVE_ENABLED=false" in dockerfile
     assert ".env" in dockerignore
     assert "COPY .env" not in dockerfile
@@ -51,6 +53,7 @@ def test_compose_keeps_outbound_and_live_providers_off() -> None:
     assert 'SMARTLEAD_LIVE_ENABLED: "false"' in compose
     assert 'GOOGLE_CALENDAR_LIVE_ENABLED: "false"' in compose
     assert 'VOICE_LIVE_ENABLED: "false"' in compose
+    assert 'DECISION_MAKER_LIVE_ENABLED: "false"' in compose
     assert '"vyro-growth", "worker", "--check"' in compose
     assert '"alembic", "upgrade", "head"' in compose
     assert "/health" in compose
@@ -58,6 +61,7 @@ def test_compose_keeps_outbound_and_live_providers_off() -> None:
     assert "OPENAI_API_KEY:" not in compose
     assert "GOOGLE_CALENDAR_API_KEY:" not in compose
     assert "VOICE_API_KEY:" not in compose
+    assert "DECISION_MAKER_API_KEY:" not in compose
 
 
 def test_ci_validates_compose_without_live_calls() -> None:

@@ -60,6 +60,10 @@ from vyro_growth.services.compliance_evidence_binder import (
     format_compliance_evidence_binder,
 )
 from vyro_growth.services.contact_enrichment import ContactEnrichmentService
+from vyro_growth.services.contact_enrichment_metrics import (
+    ContactEnrichmentMetricsService,
+    format_contact_enrichment_metrics,
+)
 from vyro_growth.services.content_brief import (
     ContentBriefError,
     ContentBriefRunResult,
@@ -240,6 +244,14 @@ def build_parser() -> argparse.ArgumentParser:
         default=50,
         help="Maximum organizations to enrich when no organization id is provided",
     )
+    metrics = subparsers.add_parser(
+        "contact-enrichment-metrics",
+        help=(
+            "Print sanitized contact-enrichment hit-rate counts "
+            "(dry-run validation only; no outbound or live provider calls)"
+        ),
+    )
+    metrics.add_argument("--json", action="store_true", help="Print sanitized JSON")
 
     personalize = subparsers.add_parser(
         "personalize-leads",
@@ -893,6 +905,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "enrich-contacts":
         return _run_enrich_contacts(args)
 
+    if args.command == "contact-enrichment-metrics":
+        return _run_contact_enrichment_metrics(args)
+
     if args.command == "personalize-leads":
         return _run_personalize_leads(parser, args)
 
@@ -1134,6 +1149,14 @@ def _run_enrich_contacts(args: argparse.Namespace) -> int:
             f"status={item.status.value}",
         )
     print(f"enriched={len(contact_results)}")
+    return 0
+
+
+def _run_contact_enrichment_metrics(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        metrics = ContactEnrichmentMetricsService().summarize(db, settings)
+    print(format_contact_enrichment_metrics(metrics, as_json=args.json))
     return 0
 
 

@@ -143,6 +143,31 @@ class Settings(BaseSettings):
     voice_timeout_seconds: float = Field(default=10.0, ge=1.0)
     voice_max_retries: int = Field(default=3, ge=0)
     voice_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
+    decision_maker_live_enabled: bool = Field(
+        default=False,
+        description=(
+            "Explicit opt-in for the live decision-maker/people-search adapter boundary. "
+            "Default false; CI and local development use the deterministic stub and never "
+            "call a paid contact provider. Phase 66 does not perform live HTTP even when "
+            "this flag is true unless a test injects a client."
+        ),
+    )
+    decision_maker_api_key: str = Field(
+        default="",
+        description=(
+            "Live people-search credential placeholder. Unused unless a future "
+            "owner-approved live step."
+        ),
+    )
+    decision_maker_api_base_url: str = Field(
+        default="",
+        description=(
+            "Live people-search API base URL. Unused by default; not required for tests."
+        ),
+    )
+    decision_maker_timeout_seconds: float = Field(default=10.0, ge=1.0)
+    decision_maker_max_retries: int = Field(default=3, ge=0)
+    decision_maker_retry_backoff_seconds: float = Field(default=0.5, ge=0.0)
 
 
 class RuntimeConfigError(ValueError):
@@ -162,6 +187,7 @@ def live_provider_flags(settings: Settings) -> dict[str, bool]:
         "smartlead": settings.smartlead_live_enabled,
         "google_calendar": settings.google_calendar_live_enabled,
         "voice": settings.voice_live_enabled,
+        "decision_maker": settings.decision_maker_live_enabled,
     }
 
 
@@ -178,6 +204,7 @@ def credential_presence_flags(settings: Settings) -> dict[str, bool]:
         "campaign_provider_api_key": bool(settings.smartlead_api_key.strip()),
         "calendar_api_key": bool(settings.google_calendar_api_key.strip()),
         "voice_api_key": bool(settings.voice_api_key.strip()),
+        "decision_maker_api_key": bool(settings.decision_maker_api_key.strip()),
     }
 
 
@@ -203,6 +230,10 @@ def validate_runtime_settings(settings: Settings) -> tuple[str, ...]:
         )
     if settings.voice_live_enabled and not settings.voice_api_key.strip():
         issues.append("VOICE_API_KEY is required when VOICE_LIVE_ENABLED is true")
+    if settings.decision_maker_live_enabled and not settings.decision_maker_api_key.strip():
+        issues.append(
+            "DECISION_MAKER_API_KEY is required when DECISION_MAKER_LIVE_ENABLED is true"
+        )
     return tuple(issues)
 
 

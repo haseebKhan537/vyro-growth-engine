@@ -59,6 +59,7 @@ def test_empty_database_url_fails_closed() -> None:
         ({"smartlead_live_enabled": True}, "SMARTLEAD_API_KEY"),
         ({"google_calendar_live_enabled": True}, "GOOGLE_CALENDAR_API_KEY"),
         ({"voice_live_enabled": True}, "VOICE_API_KEY"),
+        ({"decision_maker_live_enabled": True}, "DECISION_MAKER_API_KEY"),
     ],
 )
 def test_live_flag_without_key_fails_closed(
@@ -96,4 +97,5 @@ def test_default_settings_keep_live_providers_off() -> None:
         "smartlead": False,
         "google_calendar": False,
         "voice": False,
+        "decision_maker": False,
     }

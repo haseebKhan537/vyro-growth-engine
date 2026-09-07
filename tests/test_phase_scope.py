@@ -34,6 +34,8 @@ def test_outbound_remains_disabled_by_default() -> None:
     assert settings.google_calendar_api_key == ""
     assert settings.voice_live_enabled is False
     assert settings.voice_api_key == ""
+    assert settings.decision_maker_live_enabled is False
+    assert settings.decision_maker_api_key == ""
 
 
 def test_env_example_keeps_outbound_disabled() -> None:
@@ -47,6 +49,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert "OPENAI_REPLY_CLASSIFICATION_ENABLED=false" in env_example
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in env_example
     assert "VOICE_LIVE_ENABLED=false" in env_example
+    assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
     assert "sk-" not in env_example
     dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
     compose = Path("docker-compose.yml").read_text(encoding="utf-8")
@@ -54,6 +57,7 @@ def test_env_example_keeps_outbound_disabled() -> None:
     assert 'OUTBOUND_ENABLED: "false"' in compose
     assert "GOOGLE_CALENDAR_LIVE_ENABLED=false" in dockerfile
     assert "VOICE_LIVE_ENABLED=false" in dockerfile
+    assert "DECISION_MAKER_LIVE_ENABLED=false" in dockerfile
 
 
 def test_current_phases_do_not_add_later_phase_integrations() -> None:
@@ -1025,6 +1029,8 @@ def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:
         Path("src/vyro_growth/providers/decision_makers.py"),
         Path("src/vyro_growth/services/contact_enrichment.py"),
         Path("src/vyro_growth/workers/contact_enrichment_handler.py"),
+        Path("src/vyro_growth/services/contact_enrichment_metrics.py"),
+        Path("src/vyro_growth/api/contact_enrichment_metrics.py"),
     ]
     source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
     assert "httpx" not in source
@@ -1032,3 +1038,35 @@ def test_contact_enrichment_does_not_call_paid_or_linkedin_providers() -> None:
     assert "apollo" not in source
     env_example = Path(".env.example").read_text(encoding="utf-8")
     assert "OUTBOUND_ENABLED=false" in env_example
+    assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example
+
+
+def test_default_decision_maker_provider_is_stub() -> None:
+    settings = Settings(
+        decision_maker_live_enabled=True,
+        decision_maker_api_key="placeholder",
+    )
+    from vyro_growth.providers.decision_makers import (
+        StubDecisionMakerEnrichmentProvider,
+        build_decision_maker_provider,
+    )
+
+    provider = build_decision_maker_provider(settings)
+    assert isinstance(provider, StubDecisionMakerEnrichmentProvider)
+
+
+def test_decision_maker_live_adapter_is_guarded_and_unused_by_default() -> None:
+    live_source = Path("src/vyro_growth/providers/decision_makers_live.py").read_text(
+        encoding="utf-8"
+    )
+    guarded_source = Path("src/vyro_growth/providers/guarded.py").read_text(encoding="utf-8")
+    lowered_live = live_source.lower()
+    assert "live = true" in lowered_live
+    assert "from_settings" in lowered_live
+    assert "httpx.client" in lowered_live
+    assert "linkedin" not in lowered_live
+    assert "sales navigator" not in lowered_live
+    assert "GuardedDecisionMakerEnrichmentProvider" in guarded_source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "DECISION_MAKER_LIVE_ENABLED=false" in env_example

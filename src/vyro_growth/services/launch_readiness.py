@@ -59,6 +59,7 @@ REQUIRED_FLAG_NAMES: tuple[str, ...] = (
     "OPENAI_REPLY_CLASSIFICATION_ENABLED",
     "GOOGLE_CALENDAR_LIVE_ENABLED",
     "VOICE_LIVE_ENABLED",
+    "DECISION_MAKER_LIVE_ENABLED",
 )
 REQUIRED_CONFIG_NAMES: tuple[str, ...] = (
     *REQUIRED_FLAG_NAMES,
@@ -614,6 +615,8 @@ def _secret_present(name: SecretName, settings: Settings) -> bool:
             return bool(settings.google_calendar_api_key.strip())
         case SecretName.VOICE_API_KEY:
             return bool(settings.voice_api_key.strip())
+        case SecretName.DECISION_MAKER_API_KEY:
+            return bool(settings.decision_maker_api_key.strip())
         case _:
             return _unreachable(name)
 
@@ -635,6 +638,8 @@ def _secret_required(name: SecretName, settings: Settings) -> bool:
             return settings.google_calendar_live_enabled
         case SecretName.VOICE_API_KEY:
             return settings.voice_live_enabled
+        case SecretName.DECISION_MAKER_API_KEY:
+            return settings.decision_maker_live_enabled
         case _:
             return _unreachable(name)
 
@@ -656,6 +661,10 @@ def _config_flags(settings: Settings) -> tuple[ConfigFlagStatus, ...]:
             enabled=settings.google_calendar_live_enabled,
         ),
         ConfigFlagStatus(name="VOICE_LIVE_ENABLED", enabled=settings.voice_live_enabled),
+        ConfigFlagStatus(
+            name="DECISION_MAKER_LIVE_ENABLED",
+            enabled=settings.decision_maker_live_enabled,
+        ),
     )
 
 

@@ -57,9 +57,11 @@ Do not implement indiscriminate cold AI robocalling. Voice automation is restric
 
 ## Decision-maker contact enrichment
 - Do not call a live paid contact provider in CI or local tests. The stub returns no invented people.
-- Do not scrape LinkedIn or bypass provider terms.
+- `build_decision_maker_provider()` always returns the stub. The guarded live adapter requires `DECISION_MAKER_LIVE_ENABLED=true`, a configured key/base URL, and an injected HTTP client. Phase 66 does not open a default HTTP session.
+- Do not scrape LinkedIn, Sales Navigator, or bypass provider terms.
 - Store professional/business contact fields only. Do not invent names, titles, emails, phones, roles, or confidence. Unknown stays unknown.
 - Drop irrelevant clinical contacts unless the record includes owner/operator evidence.
+- Hit-rate metrics and JSON exports return sanitized counts/rates/status categories only. Never expose emails, phones, websites, NPI numbers, street addresses, practice names, provider names, evidence snippets, message bodies, outreach drafts, API keys, tokens, provider secrets, raw env values, or unsafe provider error text.
 - Contact enrichment is not outreach. `OUTBOUND_ENABLED` remains false by default and operator halt semantics are unchanged.
 
 ## ICP scoring integrity

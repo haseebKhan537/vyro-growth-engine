@@ -205,6 +205,7 @@ def test_ci_workflow_runs_local_only_smoke_gate() -> None:
     assert "SMARTLEAD_LIVE_ENABLED: \"false\"" in workflow
     assert "GOOGLE_CALENDAR_LIVE_ENABLED: \"false\"" in workflow
     assert "VOICE_LIVE_ENABLED: \"false\"" in workflow
+    assert "DECISION_MAKER_LIVE_ENABLED: \"false\"" in workflow
     assert "unset DATABASE_URL" in workflow
     assert "OPENAI_API_KEY" in workflow
     assert "DATABASE_URL:" not in workflow

@@ -235,7 +235,17 @@ Each run writes:
 - an `enrichment_runs` audit row
 - an `activities` audit row
 
-A live paid adapter is not implemented. Tests do not require provider credentials. Expected future env vars (unused): `CONTACT_ENRICHMENT_API_KEY`, `CONTACT_ENRICHMENT_API_BASE_URL`.
+A guarded live people-search adapter exists but is disabled by default and is not selected by `build_decision_maker_provider()`. The first mapping is a generic people-search JSON shape (Apollo-style fields such as `people`, `email_status`, and `phone_numbers`) so later Hunter/Clearbit adapters can reuse the same `DecisionMakerCandidate` parsing. Tests do not require provider credentials. Live HTTP is not opened unless a test injects a client. Env vars: `DECISION_MAKER_LIVE_ENABLED=false`, `DECISION_MAKER_API_KEY`, `DECISION_MAKER_API_BASE_URL`.
+
+Sanitized hit-rate metrics are available without calling providers or exposing contact details:
+
+```bash
+vyro-growth contact-enrichment-metrics --json
+```
+
+Internal JSON: `GET /internal/contact-enrichment/metrics`
+
+This is contact-enrichment validation only. Outbound remains disabled. No email, calls, campaign enrollment, booking, spend, or deploy.
 
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 
