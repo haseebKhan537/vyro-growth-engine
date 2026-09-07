@@ -232,6 +232,7 @@ PLAN_SPECS: dict[ReviewArtifactType, _PlanSpec] = {
             ("no_spend", "This phase does not spend money"),
         ),
     ),
+    # contact_discovery_call is human-in-the-loop only and is excluded from approved plans.
 }
 
 
@@ -491,7 +492,9 @@ def _approved_items(
     approved = tuple(
         item
         for item in items
-        if item.status == ReviewDecisionStatus.APPROVED.value and item.decision is not None
+        if item.status == ReviewDecisionStatus.APPROVED.value
+        and item.decision is not None
+        and item.artifact_type != ReviewArtifactType.CONTACT_DISCOVERY_CALL.value
     )
     return approved, len(items) - len(approved)
 

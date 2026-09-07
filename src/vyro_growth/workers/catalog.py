@@ -18,6 +18,7 @@ from vyro_growth.workers.outbound import (
 )
 from vyro_growth.workers.outreach_enrollment_handler import PLAN_OUTREACH_ENROLLMENTS_JOB
 from vyro_growth.workers.personalization_handler import PERSONALIZE_SCORED_LEADS_JOB
+from vyro_growth.workers.phone_verification_handler import QUEUE_PHONE_VERIFICATION_JOB
 from vyro_growth.workers.reply_classification_handler import CLASSIFY_INBOUND_REPLIES_JOB
 from vyro_growth.workers.scoring_handler import SCORE_DISCOVERED_LEADS_JOB
 from vyro_growth.workers.voice_qualification_handler import PLAN_VOICE_QUALIFICATIONS_JOB
@@ -56,6 +57,11 @@ DEPLOYABLE_JOBS: tuple[WorkerJobSpec, ...] = (
         VERIFY_CONTACT_EMAILS_JOB,
         "verify-emails",
         "Dry-run email verification and pattern inference",
+    ),
+    WorkerJobSpec(
+        QUEUE_PHONE_VERIFICATION_JOB,
+        "queue-phone-verification",
+        "Queue human phone-verification tasks for NO_CONTACT_FOUND",
     ),
     WorkerJobSpec(
         PERSONALIZE_SCORED_LEADS_JOB,

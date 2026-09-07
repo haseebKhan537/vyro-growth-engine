@@ -29,9 +29,7 @@ FUTURE_WATERFALL_STAGES: tuple[str, ...] = (
     "domain_verification",
     "website_fallback",
 )
-FUTURE_HOOKS: tuple[str, ...] = (
-    "human_phone_verification_queue",
-)
+FUTURE_HOOKS: tuple[str, ...] = ()
 
 FULL_NAME_MAX_LENGTH = 255
 TITLE_MAX_LENGTH = 255

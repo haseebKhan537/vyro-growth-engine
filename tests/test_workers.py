@@ -33,6 +33,7 @@ from vyro_growth.workers.outbound import (
 )
 from vyro_growth.workers.outreach_enrollment_handler import PLAN_OUTREACH_ENROLLMENTS_JOB
 from vyro_growth.workers.personalization_handler import PERSONALIZE_SCORED_LEADS_JOB
+from vyro_growth.workers.phone_verification_handler import QUEUE_PHONE_VERIFICATION_JOB
 from vyro_growth.workers.reply_classification_handler import CLASSIFY_INBOUND_REPLIES_JOB
 from vyro_growth.workers.scoring_handler import SCORE_DISCOVERED_LEADS_JOB
 from vyro_growth.workers.voice_qualification_handler import PLAN_VOICE_QUALIFICATIONS_JOB
@@ -374,6 +375,7 @@ def test_deployable_catalog_excludes_outbound_guard_jobs() -> None:
     assert GENERATE_APPROVAL_PACKETS_JOB in names
     assert SCORE_DISCOVERED_LEADS_JOB in names
     assert VERIFY_CONTACT_EMAILS_JOB in names
+    assert QUEUE_PHONE_VERIFICATION_JOB in names
     assert set(undeployed_outbound_job_names()) == {
         SEND_EMAIL_JOB,
         SCHEDULE_MEETING_JOB,

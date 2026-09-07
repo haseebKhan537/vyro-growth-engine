@@ -128,6 +128,29 @@ class ContactFactType(StrEnum):
     DECISION_MAKER_CONTACT = "decision_maker_contact"
     EMAIL_VERIFICATION = "email_verification"
     EMAIL_PATTERN_INFERENCE = "email_pattern_inference"
+    PHONE_VERIFICATION = "phone_verification"
+
+
+class ContactDiscoveryCallStatus(StrEnum):
+    QUEUED = "queued"
+    COMPLETED = "completed"
+    NO_ANSWER = "no_answer"
+    REFUSED = "refused"
+    WRONG_NUMBER = "wrong_number"
+    DECISION_MAKER_IDENTIFIED = "decision_maker_identified"
+    DO_NOT_CONTACT = "do_not_contact"
+
+
+CONTACT_DISCOVERY_CALL_TERMINAL_STATUSES: frozenset[ContactDiscoveryCallStatus] = frozenset(
+    {
+        ContactDiscoveryCallStatus.COMPLETED,
+        ContactDiscoveryCallStatus.NO_ANSWER,
+        ContactDiscoveryCallStatus.REFUSED,
+        ContactDiscoveryCallStatus.WRONG_NUMBER,
+        ContactDiscoveryCallStatus.DECISION_MAKER_IDENTIFIED,
+        ContactDiscoveryCallStatus.DO_NOT_CONTACT,
+    }
+)
 
 
 class PersonalizationReadiness(StrEnum):
@@ -543,6 +566,7 @@ class ReviewArtifactType(StrEnum):
     OPTIMIZER_RECOMMENDATION = "optimizer_recommendation"
     ACQUISITION_CHANNEL_PLAN = "acquisition_channel_plan"
     CONTENT_BRIEF = "content_brief"
+    CONTACT_DISCOVERY_CALL = "contact_discovery_call"
 
 
 class ContentBriefRunStatus(StrEnum):

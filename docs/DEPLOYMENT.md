@@ -92,6 +92,7 @@ Current revision chain (do not skip):
 17. `017_approval_packet_decisions`
 18. `018_live_settings_change_requests`
 19. `019_email_verification`
+20. `020_contact_discovery_calls`
 
 Check status:
 

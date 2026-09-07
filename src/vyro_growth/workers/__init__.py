@@ -60,6 +60,10 @@ from vyro_growth.workers.personalization_handler import (
     PERSONALIZE_SCORED_LEADS_JOB,
     PersonalizeScoredLeadsHandler,
 )
+from vyro_growth.workers.phone_verification_handler import (
+    QUEUE_PHONE_VERIFICATION_JOB,
+    QueuePhoneVerificationHandler,
+)
 from vyro_growth.workers.reply_classification_handler import (
     CLASSIFY_INBOUND_REPLIES_JOB,
     ClassifyInboundRepliesHandler,
@@ -117,6 +121,8 @@ __all__ = [
     "PLAN_VOICE_QUALIFICATIONS_JOB",
     "PlanOutreachEnrollmentsHandler",
     "PlanVoiceQualificationsHandler",
+    "QUEUE_PHONE_VERIFICATION_JOB",
+    "QueuePhoneVerificationHandler",
     "SCHEDULE_MEETING_JOB",
     "SCORE_DISCOVERED_LEADS_JOB",
     "SEND_EMAIL_JOB",

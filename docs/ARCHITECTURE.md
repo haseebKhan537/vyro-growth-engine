@@ -73,6 +73,17 @@ Email verification is dry-run / verification-planning only. It does not send ema
 7. Sanitized funnel metrics (`vyro-growth email-verification-metrics` / `GET /internal/email-verification/metrics`) report verified-email rates and inference outcomes only.
 8. `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
 
+### Phase 70: human phone-verification queue
+Human phone verification is a review/task queue only. It does not place calls, autodial, use AI voice, or route through `VoiceProvider`.
+
+1. Contact enrichment with `contacts_upserted == 0` (`NO_CONTACT_FOUND`) queues a sanitized `contact_discovery_call` task. Operators can also run `vyro-growth queue-phone-verification` or job `queue_phone_verification_tasks`.
+2. The review queue lists the task as human-in-the-loop. Approve/reject writes an audit row only (`executable_later=false`) and never dials.
+3. Operators record outcomes through `vyro-growth record-phone-verification` or `POST /internal/phone-verification/tasks/{task_id}/outcome`. Listings use `vyro-growth list-phone-verification` / `GET /internal/phone-verification/tasks`.
+4. Statuses are `queued`, `completed`, `no_answer`, `refused`, `wrong_number`, `decision_maker_identified`, and `do_not_contact`.
+5. `decision_maker_identified` stores an evidence-backed contact with `source_provider="phone_verification"`. `do_not_contact` creates a durable suppression that blocks later dial/email/org actions.
+6. JSON, CLI, logs, and review-queue copy never include real phones, emails, names, operator notes, evidence snippets, secrets, or provider errors.
+7. `OUTBOUND_ENABLED` remains false by default. Operator halt semantics are unchanged.
+
 ### Phase 5: evidence-grounded personalization
 Personalization is dry-run only. It does not send email, place calls, book meetings, enroll leads, or call live paid providers by default.
 

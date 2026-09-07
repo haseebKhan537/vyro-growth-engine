@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from vyro_growth.config import Settings
 from vyro_growth.domain import (
     BookingPlanStatus,
+    ContactDiscoveryCallStatus,
     ContentBriefApprovalStatus,
     EnrollmentStatus,
     PersonalizationReadiness,
@@ -37,6 +38,7 @@ from vyro_growth.models import (
     BookingPlan,
     CampaignEnrollment,
     ChannelPlan,
+    ContactDiscoveryCall,
     ContentBrief,
     OperatorReviewDecision,
     OptimizerRecommendation,
@@ -171,6 +173,8 @@ class _Candidate:
     summary: str
     created_at: datetime
     extra_labels: tuple[str, ...]
+    executable_later: bool = True
+    fallback_status: str | None = None
 
 
 class ReviewQueueService:
@@ -440,6 +444,7 @@ def _collect_candidates(db: Session) -> list[_Candidate]:
         *_optimizer_candidates(db),
         *_channel_plan_candidates(db),
         *_content_brief_candidates(db),
+        *_contact_discovery_call_candidates(db),
     ]
 
 
@@ -645,6 +650,39 @@ def _content_brief_candidates(db: Session) -> list[_Candidate]:
     return items
 
 
+def _contact_discovery_call_candidates(db: Session) -> list[_Candidate]:
+    rows = db.scalars(select(ContactDiscoveryCall)).all()
+    items: list[_Candidate] = []
+    for row in rows:
+        queued = row.status == ContactDiscoveryCallStatus.QUEUED.value
+        fallback = None if queued else row.status
+        items.append(
+            _Candidate(
+                artifact_type=ReviewArtifactType.CONTACT_DISCOVERY_CALL,
+                artifact_id=row.id,
+                lead_id=row.lead_id,
+                organization_id=row.organization_id,
+                title="Human phone-verification task",
+                summary=(
+                    "Human-in-the-loop contact discovery. No call was placed, "
+                    "autodialed, or routed through VoiceProvider."
+                ),
+                created_at=_created_at(row),
+                extra_labels=(
+                    "human_in_the_loop",
+                    "no_call_placed",
+                    "no_ai_voice",
+                    "no_autodial",
+                    "not_executable",
+                    f"phone_verification_{row.status}",
+                ),
+                executable_later=False,
+                fallback_status=fallback,
+            )
+        )
+    return items
+
+
 def _require_reviewable_candidate(
     db: Session,
     artifact_type: ReviewArtifactType,
@@ -674,6 +712,7 @@ def _artifact_exists(db: Session, artifact_type: ReviewArtifactType, artifact_id
         ReviewArtifactType.OPTIMIZER_RECOMMENDATION: OptimizerRecommendation,
         ReviewArtifactType.ACQUISITION_CHANNEL_PLAN: ChannelPlan,
         ReviewArtifactType.CONTENT_BRIEF: ContentBrief,
+        ReviewArtifactType.CONTACT_DISCOVERY_CALL: ContactDiscoveryCall,
     }[artifact_type]
     return db.get(model, artifact_id) is not None
 
@@ -702,7 +741,9 @@ def _to_item(
             reviewer_notes=decision_row.reviewer_notes,
             decided_at=decision_row.decided_at,
         )
-    executable_later = status in {
+    elif candidate.fallback_status:
+        status = candidate.fallback_status
+    executable_later = candidate.executable_later and status in {
         ReviewItemStatus.PENDING_OPERATOR_REVIEW.value,
         ReviewDecisionStatus.APPROVED.value,
     }

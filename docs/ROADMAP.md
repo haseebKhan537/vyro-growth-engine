@@ -817,7 +817,7 @@ Read-only targeting/timing signal only. Does not apply to jobs, respond to posti
 - Metrics and activity details expose sanitized counts/statuses/codes only
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
-## Phase 69 — Email verification gate and email-pattern inference design (current)
+## Phase 69 — Email verification gate and email-pattern inference design
 Dry-run / verification-planning only. Does not send email, enroll campaigns, call SMTP recipient servers, place calls, book meetings, spend money, publish, deploy, or change live settings.
 - Email verification provider abstraction for Hunter / NeverBounce / ZeroBounce-style verifiers
 - `EMAIL_VERIFICATION_LIVE_ENABLED=false`; API key/base URL unused unless explicitly enabled with an injected HTTP client
@@ -829,8 +829,20 @@ Dry-run / verification-planning only. Does not send email, enroll campaigns, cal
 - No LinkedIn/Sales Navigator automation and no AI voice cold-calling
 - `OUTBOUND_ENABLED=false`; operator halt unchanged
 
+## Phase 70 — Human phone-verification task queue for NO_CONTACT_FOUND (current)
+Human-in-the-loop review/task records only. Does not place calls, autodial, use AI voice, route through `VoiceProvider`, call phone APIs, send email, enroll campaigns, book meetings, spend money, publish, deploy, or change live settings.
+- Adds a `contact_discovery_call` review/task type for organizations where contact enrichment returns `NO_CONTACT_FOUND`
+- Queue sanitized tasks for human operators; CLI `queue-phone-verification` / `list-phone-verification` / `record-phone-verification` and worker job `queue_phone_verification_tasks`
+- Statuses: `queued`, `completed`, `no_answer`, `refused`, `wrong_number`, `decision_maker_identified`, `do_not_contact`
+- Human-entered `decision_maker_identified` results persist as evidence-backed contact facts with `source_provider="phone_verification"`
+- `do_not_contact` outcomes create durable suppression records that the outbound kill-switch honors
+- Review-queue approve/reject is audit-only (`executable_later=false`); no execution/call path exists from this task type
+- Do not route through `VoiceProvider`
+- Outputs expose IDs, status codes, and `has_phone` / `has_email` / `has_operator_notes` flags only — never real phones, emails, names, operator notes, evidence snippets, or secrets
+- No AI voice cold calling
+- `OUTBOUND_ENABLED=false`; operator halt unchanged
+
 Future contact-enrichment work (not in this phase):
-- human phone-verification queue for `NO_CONTACT_FOUND`
 - live sending or campaign enrollment
 - live email-verifier HTTP with an injected owner-approved client
 

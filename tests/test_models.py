@@ -42,6 +42,8 @@ PHASE_ONE_MODELS = (
     models.OwnerApprovalPacketDecision,
     models.LiveSettingsChangeRequest,
     models.LiveSettingsChangeRequestDecision,
+    models.EmailPatternCandidate,
+    models.ContactDiscoveryCall,
 )
 
 

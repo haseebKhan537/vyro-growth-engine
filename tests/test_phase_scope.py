@@ -1158,3 +1158,32 @@ def test_email_verification_live_adapter_is_guarded_and_unused_by_default() -> N
     assert "OUTBOUND_ENABLED=false" in env_example
     assert "EMAIL_VERIFICATION_LIVE_ENABLED=false" in env_example
     assert "EMAIL_VERIFICATION_SMTP_ENABLED=false" in env_example
+
+
+def test_phone_verification_does_not_place_calls_or_use_voice_provider() -> None:
+    paths = [
+        Path("src/vyro_growth/services/phone_verification.py"),
+        Path("src/vyro_growth/api/phone_verification.py"),
+        Path("src/vyro_growth/workers/phone_verification_handler.py"),
+        Path("src/vyro_growth/services/contact_enrichment.py"),
+        Path("src/vyro_growth/services/review_queue.py"),
+        Path("src/vyro_growth/services/execution_planning.py"),
+    ]
+    source = "\n".join(path.read_text(encoding="utf-8") for path in paths).lower()
+    assert "httpx" not in source
+    assert "twilio" not in source
+    assert "vapi" not in source
+    assert "retell" not in source
+    assert "smtplib" not in source
+    assert "place_consent_callback" not in source
+    assert "guardedvoiceprovider" not in source
+    assert "linkedin" not in source
+    assert "sales navigator" not in source
+    service_source = Path("src/vyro_growth/services/phone_verification.py").read_text(
+        encoding="utf-8"
+    )
+    assert "from vyro_growth.providers.voice" not in service_source
+    assert "from vyro_growth.providers.stubs" not in service_source
+    env_example = Path(".env.example").read_text(encoding="utf-8")
+    assert "OUTBOUND_ENABLED=false" in env_example
+    assert "VOICE_LIVE_ENABLED=false" in env_example

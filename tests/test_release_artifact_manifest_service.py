@@ -185,6 +185,7 @@ def test_empty_manifest_is_read_only_without_side_effects(db_session: Session) -
     assert "001_initial_schema.py" in filenames
     assert "018_live_settings_change_requests.py" in filenames
     assert "019_email_verification.py" in filenames
+    assert "020_contact_discovery_calls.py" in filenames
     assert all("@" not in item.revision_id for item in manifest.migration_inventory)
     command_kinds = {item.kind for item in manifest.runtime_command_inventory}
     assert {"api", "worker_check", "smoke_dry_run", "check_config"} <= command_kinds

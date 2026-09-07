@@ -112,6 +112,13 @@ from vyro_growth.services.owner_launch_dossier import (
     format_owner_launch_dossier,
 )
 from vyro_growth.services.personalization import PersonalizationService
+from vyro_growth.services.phone_verification import (
+    PhoneVerificationError,
+    PhoneVerificationOutcomeInput,
+    PhoneVerificationService,
+    format_phone_verification_queue,
+    format_phone_verification_task,
+)
 from vyro_growth.services.provider_setup_checklist import (
     ProviderSetupChecklistService,
     format_provider_setup_checklist,
@@ -286,6 +293,65 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     email_metrics.add_argument("--json", action="store_true", help="Print sanitized JSON")
+
+    phone_queue = subparsers.add_parser(
+        "queue-phone-verification",
+        help=(
+            "Queue human phone-verification tasks for organizations with "
+            "NO_CONTACT_FOUND (does not place calls)"
+        ),
+    )
+    phone_queue.add_argument("--organization-id", help="Organization UUID")
+    phone_queue.add_argument(
+        "--state",
+        help="Limit batch queueing to a two-letter state code",
+    )
+    phone_queue.add_argument("--city", help="Limit batch queueing to a city")
+    phone_queue.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum organizations to inspect when no organization id is provided",
+    )
+    phone_list = subparsers.add_parser(
+        "list-phone-verification",
+        help="List sanitized human phone-verification tasks (no call placement)",
+    )
+    phone_list.add_argument("--status", help="Limit to one task status")
+    phone_list.add_argument(
+        "--include-completed",
+        action="store_true",
+        help="Include tasks that already have a recorded outcome",
+    )
+    phone_list.add_argument("--json", action="store_true", help="Print sanitized JSON")
+    phone_record = subparsers.add_parser(
+        "record-phone-verification",
+        help=(
+            "Record a human phone-verification outcome without placing a call "
+            "or routing through VoiceProvider"
+        ),
+    )
+    phone_record.add_argument("--task-id", required=True, help="Phone verification task UUID")
+    phone_record.add_argument(
+        "--outcome",
+        required=True,
+        choices=(
+            "completed",
+            "no_answer",
+            "refused",
+            "wrong_number",
+            "decision_maker_identified",
+            "do_not_contact",
+        ),
+        help="Human-entered outcome to record",
+    )
+    phone_record.add_argument("--operator", help="Operator label (default: operator)")
+    phone_record.add_argument("--notes", help="Optional sanitized operator notes")
+    phone_record.add_argument("--full-name", help="Human-entered decision-maker name")
+    phone_record.add_argument("--title", help="Human-entered title")
+    phone_record.add_argument("--phone", help="Human-entered phone (stored, never printed)")
+    phone_record.add_argument("--email", help="Human-entered email (stored, never printed)")
+    phone_record.add_argument("--role-category", help="Optional stored role category")
 
     personalize = subparsers.add_parser(
         "personalize-leads",
@@ -948,6 +1014,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "email-verification-metrics":
         return _run_email_verification_metrics(args)
 
+    if args.command == "queue-phone-verification":
+        return _run_queue_phone_verification(args)
+
+    if args.command == "list-phone-verification":
+        return _run_list_phone_verification(args)
+
+    if args.command == "record-phone-verification":
+        return _run_record_phone_verification(args)
+
     if args.command == "personalize-leads":
         return _run_personalize_leads(parser, args)
 
@@ -1187,6 +1262,7 @@ def _run_enrich_contacts(args: argparse.Namespace) -> int:
             f"skipped={item.contacts_skipped}",
             f"provider={item.provider_name}",
             f"status={item.status.value}",
+            f"phone_verification_queued={item.phone_verification_queued}",
         )
     print(f"enriched={len(contact_results)}")
     return 0
@@ -1235,6 +1311,75 @@ def _run_email_verification_metrics(args: argparse.Namespace) -> int:
     with SessionLocal() as db:
         metrics = EmailVerificationMetricsService().summarize(db, settings)
     print(format_email_verification_metrics(metrics, as_json=args.json))
+    return 0
+
+
+def _run_queue_phone_verification(args: argparse.Namespace) -> int:
+    service = PhoneVerificationService()
+    with SessionLocal() as db:
+        try:
+            results = service.queue_missing_contacts(
+                db,
+                organization_id=UUID(args.organization_id) if args.organization_id else None,
+                limit=args.limit,
+                state=args.state,
+                city=args.city,
+                source="cli",
+            )
+        except PhoneVerificationError as exc:
+            print(f"Phone verification error: {exc.message}")
+            return 1
+        except ValueError:
+            print("Phone verification error: organization id must be a UUID")
+            return 1
+    for item in results:
+        print(format_phone_verification_task(item))
+    print(f"queued={len(results)}")
+    return 0
+
+
+def _run_list_phone_verification(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    with SessionLocal() as db:
+        try:
+            result = PhoneVerificationService(settings).list_tasks(
+                db,
+                settings,
+                status=args.status,
+                include_completed=args.include_completed,
+            )
+        except PhoneVerificationError as exc:
+            print(f"Phone verification error: {exc.message}")
+            return 1
+    print(format_phone_verification_queue(result, as_json=args.json))
+    return 0
+
+
+def _run_record_phone_verification(args: argparse.Namespace) -> int:
+    with SessionLocal() as db:
+        try:
+            result = PhoneVerificationService().record_outcome(
+                db,
+                UUID(args.task_id),
+                PhoneVerificationOutcomeInput(
+                    outcome=args.outcome,
+                    operator=args.operator,
+                    notes=args.notes,
+                    full_name=args.full_name,
+                    title=args.title,
+                    phone=args.phone,
+                    email=args.email,
+                    role_category=args.role_category,
+                ),
+                source="cli",
+            )
+        except PhoneVerificationError as exc:
+            print(f"Phone verification error: {exc.message}")
+            return 1
+        except ValueError:
+            print("Phone verification error: task id must be a UUID")
+            return 1
+    print(format_phone_verification_task(result))
     return 0
 
 
