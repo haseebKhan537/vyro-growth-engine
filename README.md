@@ -72,6 +72,7 @@ vyro-growth contact-validation-plan --json
 vyro-growth contact-validation-report --json
 vyro-growth supervised-validation-run-packet --json
 vyro-growth final-safety-audit --json
+vyro-growth live-provider-setup-checklist --json
 vyro-growth launch-readiness --json
 vyro-growth settings-execution-preflight --json
 vyro-growth owner-handoff-packet --json
@@ -406,6 +407,24 @@ curl http://localhost:8000/internal/final-safety-audit \
 ```
 
 The packet shows overall status and generated timestamp, current phase/route/command inventory by name only, migration/schema inventory by revision/filename only, provider/live flag booleans, kill-switch / operator-halt / outbound-disabled proof, test/CI command inventory, blocked/warning/info code rollups, documentation coverage, open issues by number/title only, remaining owner-approval actions with `granted=false`, and safe local git metadata. It states `execution_allowed=false`, `owner_approved=false`, `supervised_validation_run_permitted=false`, and `OUTBOUND_ENABLED=false`. Output is deterministic except timestamps and safe local git metadata. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
+## Phase 76 — Owner live-provider setup checklist
+
+Export a sanitized owner live-provider setup checklist and credential readiness packet for a later supervised 200-practice contact-enrichment validation. This packet reuses `ProviderSetupChecklistService`, `LaunchReadinessService`, `SupervisedValidationRunPacketService`, settings execution preflight, and the compliance evidence binder. It does not verify credentials by calling providers, execute that run, grant approval, send email, enroll campaigns, place calls, autodial, use AI voice, book meetings, create Meet links, launch ads, spend money, publish, deploy, apply settings, lift operator halt, enable outbound, or set live `owner_approved`. It is a planning/review artifact only, not permission to run a supervised validation and not an execution surface.
+
+CLI:
+```bash
+vyro-growth live-provider-setup-checklist --json
+vyro-growth live-provider-setup-checklist
+```
+
+Internal JSON: `GET /internal/live-provider-setup-checklist`
+
+```bash
+curl http://localhost:8000/internal/live-provider-setup-checklist \
+  -H "X-Internal-Api-Key: $INTERNAL_API_KEY"
+```
+
+The packet shows generated timestamp, packet kind, purpose, overall status, a provider account checklist by provider/category only (Apollo, Hunter, email verifier, Smartlead, OpenAI, Google Calendar, voice provider, deployment), required env/config names with present/missing booleans only, owner decisions with `granted=false`, budget/rate-limit placeholder labels plus already configured non-secret rate-limit numbers, compliance prerequisites (suppression, opt-out, no protected-health fields, consent-only voice, no LinkedIn automation, no restricted job-board scraping), validation run constraints (max 200 practices, one target state/specialty, no sending during enrichment validation), operator halt before/status/after and unchanged proof, and non-executable owner next-step labels. It states `execution_allowed=false`, `owner_approved=false`, `validation_permitted=false`, `supervised_validation_run_permitted=false`, and `OUTBOUND_ENABLED=false`. Output is deterministic except timestamps and safe local git metadata. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
 ## Phase 5 — Evidence-grounded personalization (dry-run)
 

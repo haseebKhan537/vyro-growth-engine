@@ -913,6 +913,18 @@ Read-only repository and safety audit before any owner-approved real-world valid
 - Explicit list of actions still requiring owner approval, all `granted=false`
 - Safe local git metadata
 - Packet may describe what remains before real validation, but keeps `owner_approved=false` and `supervised_validation_run_permitted=false`
+## Phase 76 — Owner live-provider setup checklist and credential readiness packet (current)
+Read-only owner live-provider setup checklist and credential readiness packet for a later supervised validation. Export/review only. Does not verify credentials or execute the run.
+- Deterministic CLI/JSON `live-provider-setup-checklist` plus `GET /internal/live-provider-setup-checklist`
+- Reuses existing Phase 49 `ProviderSetupChecklistService`, Phase 27 `LaunchReadinessService`, Phase 73 `SupervisedValidationRunPacketService`, Phase 30 settings preflight, and Phase 35 compliance binder. Does not duplicate source-of-truth readiness calculations
+- Provider account checklist by provider/category only: Apollo, Hunter, email verifier, Smartlead, OpenAI, Google Calendar, voice provider, and deployment
+- Required env/config names with present/missing booleans only, never values
+- Owner decision checklist with `granted=false`
+- Budget/rate-limit fields as placeholder labels, plus already configured non-secret rate-limit numbers when present
+- Compliance prerequisites: suppression, opt-out, no-PHI, consent-only voice, no LinkedIn automation, no restricted job-board scraping
+- Validation run constraints: max 200 practices, one target state/specialty, no sending during enrichment validation
+- Operator halt before/status/after and unchanged proof; `OUTBOUND_ENABLED=false`
+- Packet may describe what the owner would need later, but keeps `owner_approved=false`, `validation_permitted=false`, and `supervised_validation_run_permitted=false`
 - Same `INTERNAL_API_KEY` gate as other internal JSON routes; `Cache-Control: no-store`
 - CI/defaults run against empty/local fixtures with no live provider traffic
 - `OUTBOUND_ENABLED=false`; operator halt unchanged

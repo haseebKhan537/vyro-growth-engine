@@ -100,6 +100,7 @@ def test_empty_command_center_is_zeroed_and_safe(db_session: Session) -> None:
     assert NextActionCode.STAGED_ROLLOUT_PLAN_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.OWNER_LAUNCH_DOSSIER_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE.value in codes
+    assert NextActionCode.LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.REHEARSAL_OUTCOME_REPORT_IS_NOT_GO_LIVE.value in codes
     assert NextActionCode.SUPERVISED_PILOT_PLAN_IS_NOT_GO_LIVE.value in codes

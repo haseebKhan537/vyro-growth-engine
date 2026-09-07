@@ -555,6 +555,9 @@ class NextActionCode(StrEnum):
     SUPERVISED_PILOT_LAUNCH_REHEARSAL_CONTROL_MAP_IS_NOT_GO_LIVE = (
         "supervised_pilot_launch_rehearsal_control_map_is_not_permission_to_go_live"
     )
+    LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE = (
+        "live_provider_setup_checklist_is_not_permission_to_go_live"
+    )
 
 
 class ReviewArtifactType(StrEnum):

@@ -308,6 +308,9 @@ def test_documented_smoke_gate_and_cleared_halt_is_ready_for_owner_review(
     assert NextActionCode.PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE.value in {
         item.next_action_code for item in checklist.next_actions
     }
+    assert NextActionCode.LIVE_PROVIDER_SETUP_CHECKLIST_IS_NOT_GO_LIVE.value in {
+        item.next_action_code for item in checklist.next_actions
+    }
     assert NextActionCode.GO_LIVE_REHEARSAL_CHECKLIST_IS_NOT_GO_LIVE.value in {
         item.next_action_code for item in checklist.next_actions
     }
