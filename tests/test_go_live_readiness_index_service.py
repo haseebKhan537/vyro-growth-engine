@@ -166,6 +166,7 @@ def test_empty_index_is_read_only_and_not_permission_to_go_live(db_session: Sess
     assert "rehearsal-outcome-report" in index.related_commands
     assert "supervised-pilot-plan" in index.related_commands
     assert "supervised-pilot-go-no-go" in index.related_commands
+    assert "supervised-pilot-launch-rehearsal-control-map" in index.related_commands
     assert "/internal/operator-provider-setup-checklist" in index.related_routes
     assert "/internal/provider-setup-checklist" in index.related_routes
     assert "/internal/operator-go-live-rehearsal-checklist" in index.related_routes

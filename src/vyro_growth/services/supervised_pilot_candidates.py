@@ -147,6 +147,7 @@ RELATED_COMMANDS: tuple[str, ...] = (
     CLI_COMMAND,
     "supervised-pilot-go-no-go",
     "supervised-pilot-first-send-preflight",
+    "supervised-pilot-launch-rehearsal-control-map",
     "system-status",
 )
 RELATED_ROUTES: tuple[str, ...] = (
@@ -174,6 +175,8 @@ RELATED_ROUTES: tuple[str, ...] = (
     "/internal/supervised-pilot-go-no-go",
     "/internal/operator-supervised-pilot-first-send-preflight",
     "/internal/supervised-pilot-first-send-preflight",
+    "/internal/operator-supervised-pilot-launch-rehearsal-control-map",
+    "/internal/supervised-pilot-launch-rehearsal-control-map",
 )
 _STATUS_RANK = {
     FindingSeverity.INFO.value: 0,

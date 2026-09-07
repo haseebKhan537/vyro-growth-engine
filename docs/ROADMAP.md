@@ -730,7 +730,7 @@ Internal operator HTML shell of the Phase 59 supervised pilot go/no-go packet. R
 - No apply/execute/lift-halt/enable-outbound/provider/build/publish/deploy/campaign/booking/call/spend/candidate-selection/contact controls
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 
-## Phase 61 — Supervised pilot first-send preflight export (current)
+## Phase 61 — Supervised pilot first-send preflight export
 Sanitized read-only CLI and internal JSON export that consolidates the supervised pilot go/no-go packet, supervised pilot plan, candidate readiness, provider setup checklist, rehearsal outcome, launch readiness / go-live index, review/action readiness queues, owner approval/settings request rollups, and operator halt state into one first-send preflight. Review/export only, no execution.
 - CLI `vyro-growth supervised-pilot-first-send-preflight` with Markdown output and `--json` output
 - Internal JSON `GET /internal/supervised-pilot-first-send-preflight`
@@ -742,6 +742,20 @@ Sanitized read-only CLI and internal JSON export that consolidates the supervise
 - same `INTERNAL_API_KEY` gate as other internal operator routes
 - HTTP responses return `Cache-Control: no-store`
 - This is a first-send preflight/export only, not permission to send, not permission to go live, and not an execution surface
+
+## Phase 63 — Supervised pilot launch rehearsal control map export
+Sanitized read-only CLI and internal JSON export that maps existing readiness surfaces into one supervised-pilot launch rehearsal control map. Control-map/export only, no execution.
+- CLI `vyro-growth supervised-pilot-launch-rehearsal-control-map` with Markdown output and `--json` output
+- Internal JSON `GET /internal/supervised-pilot-launch-rehearsal-control-map`
+- Reuses existing Phase 61 `SupervisedPilotFirstSendPreflightService` as source material and does not recalculate readiness independently
+- Maps operator halt and `OUTBOUND_ENABLED=false` gates, supervised pilot plan/candidates/go-no-go/first-send preflight references, owner approval packet references and remaining approval types, settings change request/preflight references, launch blockers, readiness index, rehearsal checklist, outcome report, provider setup checklist, compliance evidence binder, and release runbook/manifest surfaces
+- Required commands/routes by name only, blocking status rollups and safe counts only, and next safe owner/operator review steps
+- Live-blocking flags using safe metadata only: `read_only=true`, `no_execution=true`, `no_go_live=true`, `no_outbound=true`, `no_provider_calls=true`, `no_spend=true`, `no_first_send=true`, `dry_run_only=true`, `manual_review_only=true`, `execution_allowed=false`, `first_send_allowed=false`, `first_send_attempted=false`, `first_send_executed=0`, `sends_executed=0`, `go_live_permitted=false`, `deployment_allowed=false`, `settings_applied=false`, `halt_changed=false`, `OUTBOUND_ENABLED=false`, `owner_approved=false`, `supervised_pilot_launch_rehearsal_control_map_is_not_go_live=true`, `rehearsal_control_map_is_not_a_script_runner=true`, and `control_map_is_not_execution=true`
+- Does not expose practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, secrets, env values, or unsafe errors
+- Reuses existing sanitization/redaction and internal API auth
+- same `INTERNAL_API_KEY` gate as other internal operator routes
+- HTTP responses return `Cache-Control: no-store`
+- This is a control-map/export only, not a script runner, not permission to send, not permission to go live, and not an execution surface
 
 Future launch work (not in this phase):
 - execute an approved item, packet, or settings request
