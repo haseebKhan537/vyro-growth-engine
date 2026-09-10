@@ -35,6 +35,7 @@ class PipelineCountsResponse(BaseModel):
 
     organizations: int
     leads: int
+    website_inquiries: int
     discovery_runs: int
     website_enrichment_runs: int
     decision_maker_contacts: int
@@ -123,6 +124,7 @@ def _pipeline_to_response(item: PipelineCounts) -> PipelineCountsResponse:
     return PipelineCountsResponse(
         organizations=item.organizations,
         leads=item.leads,
+        website_inquiries=item.website_inquiries,
         discovery_runs=item.discovery_runs,
         website_enrichment_runs=item.website_enrichment_runs,
         decision_maker_contacts=item.decision_maker_contacts,

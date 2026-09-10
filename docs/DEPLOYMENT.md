@@ -11,6 +11,7 @@ Keep these values unless the owner later approves a staged outbound rollout:
 | Setting | Required default |
 |---|---|
 | `OUTBOUND_ENABLED` | `false` |
+| `WEBSITE_INTAKE_ENABLED` | `false` until the website gateway is configured |
 | `OPENAI_PERSONALIZATION_ENABLED` | `false` |
 | `SMARTLEAD_LIVE_ENABLED` | `false` |
 | `OPENAI_REPLY_CLASSIFICATION_ENABLED` | `false` |
@@ -33,6 +34,14 @@ Copy `.env.example` and inject secrets from a deployment secret store. Never com
 ### Required outside development
 
 - `INTERNAL_API_KEY` — shared secret for `/internal/*` HTTP routes. Process start and `vyro-growth check-config` fail closed when this is missing outside `development`.
+
+### Website inquiry intake
+
+- `WEBSITE_INTAKE_ENABLED` — enables only the authenticated inbound website form route.
+- `WEBSITE_INTAKE_API_KEY` — dedicated secret shared with the Hostinger PHP gateway.
+
+Keep intake disabled until the Hostinger gateway has the deployed HTTPS endpoint and
+matching key. This flag does not enable outbound, providers, calling, or booking.
 
 ### Safety flags (keep false)
 
@@ -93,6 +102,7 @@ Current revision chain (do not skip):
 18. `018_live_settings_change_requests`
 19. `019_email_verification`
 20. `020_contact_discovery_calls`
+21. `021_website_inquiries`
 
 Check status:
 
@@ -107,6 +117,7 @@ alembic history
 |---|---|---|
 | `GET /health` | Liveness. Process is up. | None. Does not query the database or providers. |
 | `GET /ready` | Readiness. Safe to receive traffic. | `DATABASE_URL` connectivity plus runtime config validation. |
+| `POST /public/website-inquiries` | Authenticated inbound business inquiry capture. | `WEBSITE_INTAKE_ENABLED`, `WEBSITE_INTAKE_API_KEY`, and the database. |
 
 ```bash
 curl http://localhost:8000/health

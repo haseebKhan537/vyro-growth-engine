@@ -1492,6 +1492,7 @@ def test_cli_main_runs_operator_command_center(
         pipeline=PipelineCounts(
             organizations=3,
             leads=2,
+            website_inquiries=1,
             discovery_runs=1,
             website_enrichment_runs=1,
             decision_maker_contacts=1,

@@ -712,6 +712,9 @@ The supervised pilot first-send owner authorization packet CLI and JSON route ar
 5. Operator halt is read and left unchanged. `OUTBOUND_ENABLED` remains false by default. No live provider is called. This export is an owner-authorization review only, not approval, not permission to send, not permission to go live, and not an execution surface.
 
 ### Event flow
+0. A consented website inquiry reaches Hostinger's PHP gateway, which forwards a strict
+   business-only payload to the authenticated website-intake endpoint. The CRM records
+   it as an interested inbound lead without triggering outbound automation.
 1. Practice discovered.
 2. Practice normalized/deduplicated.
 3. Evidence-backed enrichment completed.
