@@ -51,7 +51,7 @@ def test_settings_change_request_tables_are_registered() -> None:
 def test_migration_018_follows_approval_packet_decisions() -> None:
     config = Config(str(Path("alembic.ini")))
     script = ScriptDirectory.from_config(config)
-    revision = script.get_revision("018_live_settings_change_requests")
+    revision = script.get_revision("018_live_settings_requests")
     assert revision is not None
     assert revision.down_revision == "017_approval_packet_decisions"
     assert script.get_current_head() == "021_website_inquiries"

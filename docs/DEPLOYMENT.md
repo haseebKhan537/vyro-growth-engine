@@ -84,7 +84,7 @@ Current revision chain (do not skip):
 
 1. `001_initial_schema`
 2. `002_discovery_runs`
-3. `003_operator_halt_and_phone_suppression`
+3. `003_operator_halt_phone_suppress`
 4. `004_website_enrichment`
 5. `005_decision_maker_contacts`
 6. `006_personalization_drafts`
@@ -99,7 +99,7 @@ Current revision chain (do not skip):
 15. `015_execution_plans`
 16. `016_approval_packets`
 17. `017_approval_packet_decisions`
-18. `018_live_settings_change_requests`
+18. `018_live_settings_requests`
 19. `019_email_verification`
 20. `020_contact_discovery_calls`
 21. `021_website_inquiries`

@@ -1,6 +1,6 @@
 """Add operator halt control and phone suppressions.
 
-Revision ID: 003_operator_halt_and_phone_suppression
+Revision ID: 003_operator_halt_phone_suppress
 Revises: 002_discovery_runs
 Create Date: 2026-08-30 00:00:00.000000
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "003_operator_halt_and_phone_suppression"
+revision: str = "003_operator_halt_phone_suppress"
 down_revision: str | Sequence[str] | None = "002_discovery_runs"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
