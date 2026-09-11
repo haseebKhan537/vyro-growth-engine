@@ -96,6 +96,40 @@ def test_intake_requires_dedicated_key(
     assert "intake-secret" not in missing.text + invalid.text
 
 
+def test_intake_authenticates_before_parsing_or_reading_large_body(
+    api_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(
+        monkeypatch,
+        Settings(website_intake_enabled=True, website_intake_api_key="intake-secret"),
+    )
+
+    malformed = api_client.post(INTAKE_PATH, content=b"not-json")
+    oversized = api_client.post(INTAKE_PATH, content=b"x" * 25_000)
+
+    assert malformed.status_code == 401
+    assert oversized.status_code == 401
+
+
+def test_intake_limits_authenticated_body_size(
+    api_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_settings(
+        monkeypatch,
+        Settings(website_intake_enabled=True, website_intake_api_key="intake-secret"),
+    )
+
+    response = api_client.post(
+        INTAKE_PATH,
+        content=b"x" * 25_000,
+        headers={"X-Website-Intake-Key": "intake-secret"},
+    )
+
+    assert response.status_code == 413
+
+
 def test_intake_records_interested_lead_and_is_idempotent(
     api_client: TestClient,
     db_session: Session,
@@ -163,6 +197,30 @@ def test_intake_rejects_phi_hint_and_unknown_fields(
     payload = _payload()
     payload["business_context"] = "Patient name: Example Person"
     payload["unexpected"] = "value"
+
+    response = api_client.post(
+        INTAKE_PATH,
+        json=payload,
+        headers={"X-Website-Intake-Key": "intake-secret"},
+    )
+
+    assert response.status_code == 422
+    assert db_session.scalar(select(func.count()).select_from(WebsiteInquiry)) == 0
+
+
+@pytest.mark.parametrize("field", ["practice_name", "contact_name", "business_context"])
+def test_intake_rejects_phi_hints_across_submitted_text(
+    api_client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+) -> None:
+    _patch_settings(
+        monkeypatch,
+        Settings(website_intake_enabled=True, website_intake_api_key="intake-secret"),
+    )
+    payload = _payload()
+    payload[field] = "Patient name: Example Person"
 
     response = api_client.post(
         INTAKE_PATH,
