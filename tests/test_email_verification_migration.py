@@ -45,5 +45,5 @@ def test_migration_019_follows_live_settings_change_requests() -> None:
     script = ScriptDirectory.from_config(config)
     revision = script.get_revision("019_email_verification")
     assert revision is not None
-    assert revision.down_revision == "018_live_settings_change_requests"
+    assert revision.down_revision == "018_live_settings_requests"
     assert script.get_current_head() == "021_website_inquiries"

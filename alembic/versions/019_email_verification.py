@@ -1,7 +1,7 @@
 """Add email verification verdict columns and inferred-email candidates.
 
 Revision ID: 019_email_verification
-Revises: 018_live_settings_change_requests
+Revises: 018_live_settings_requests
 Create Date: 2026-09-07 00:00:00.000000
 
 Production-safe: nullable contact columns with defaults, plus a new table for
@@ -20,7 +20,7 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "019_email_verification"
-down_revision: str | Sequence[str] | None = "018_live_settings_change_requests"
+down_revision: str | Sequence[str] | None = "018_live_settings_requests"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

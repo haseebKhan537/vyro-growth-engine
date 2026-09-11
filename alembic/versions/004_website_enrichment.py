@@ -1,7 +1,7 @@
 """Add official-website enrichment runs and evidence fields.
 
 Revision ID: 004_website_enrichment
-Revises: 003_operator_halt_and_phone_suppression
+Revises: 003_operator_halt_phone_suppress
 Create Date: 2026-08-30 00:00:00.000000
 
 Production-safe: creates a new table and nullable columns only.
@@ -18,7 +18,7 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "004_website_enrichment"
-down_revision: str | Sequence[str] | None = "003_operator_halt_and_phone_suppression"
+down_revision: str | Sequence[str] | None = "003_operator_halt_phone_suppress"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

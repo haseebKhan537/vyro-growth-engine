@@ -1,6 +1,6 @@
 """Add record-only live settings change request queue.
 
-Revision ID: 018_live_settings_change_requests
+Revision ID: 018_live_settings_requests
 Revises: 017_approval_packet_decisions
 Create Date: 2026-08-31 00:00:00.000000
 
@@ -19,7 +19,7 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision: str = "018_live_settings_change_requests"
+revision: str = "018_live_settings_requests"
 down_revision: str | Sequence[str] | None = "017_approval_packet_decisions"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
