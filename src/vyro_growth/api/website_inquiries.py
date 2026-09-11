@@ -82,7 +82,16 @@ class WebsiteInquiryRequest(BaseModel):
             raise ValueError("State must be a two-letter US abbreviation")
         return normalized
 
-    @field_validator("business_context")
+    @field_validator(
+        "practice_name",
+        "contact_name",
+        "business_phone",
+        "specialty",
+        "provider_count",
+        "primary_concern",
+        "preferred_contact",
+        "business_context",
+    )
     @classmethod
     def reject_likely_phi(cls, value: str | None) -> str | None:
         if value and any(hint in value.casefold() for hint in PHI_HINTS):

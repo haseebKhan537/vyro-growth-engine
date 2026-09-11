@@ -6,6 +6,7 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from vyro_growth.api.action_readiness import (
@@ -310,6 +311,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 
 DbSession = Annotated[Session, Depends(get_db)]
+MAX_WEBSITE_INTAKE_BYTES = 24_576
 
 
 @app.get("/health", tags=["system"])
@@ -337,13 +339,22 @@ def _require_website_intake_key(
 
 
 @app.post("/public/website-inquiries", tags=["website"], status_code=202)
-def website_inquiry(
-    request: WebsiteInquiryRequest,
+async def website_inquiry(
+    request: Request,
     db: DbSession,
     x_website_intake_key: Annotated[str | None, Header()] = None,
 ) -> WebsiteInquiryResponse:
     _require_website_intake_key(get_settings(), x_website_intake_key)
-    return capture_website_inquiry(db, request)
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > MAX_WEBSITE_INTAKE_BYTES:
+            raise HTTPException(status_code=413, detail="Website inquiry payload is too large")
+    try:
+        payload = WebsiteInquiryRequest.model_validate_json(bytes(body))
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail="Invalid website inquiry payload") from exc
+    return capture_website_inquiry(db, payload)
 
 
 def _require_internal_key(active_settings: Settings, provided_key: str | None) -> None:

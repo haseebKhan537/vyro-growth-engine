@@ -38,6 +38,7 @@ def test_redacts_sensitive_headers() -> None:
                 "Content-Type": "application/json",
                 "X-Api-Key": "abc123",
                 "X-Internal-Api-Key": "internal-secret",
+                "X-Website-Intake-Key": "website-secret",
             }
         }
     )
@@ -47,6 +48,7 @@ def test_redacts_sensitive_headers() -> None:
     assert headers["Content-Type"] == "application/json"
     assert headers["X-Api-Key"] == "[REDACTED]"
     assert headers["X-Internal-Api-Key"] == "[REDACTED]"
+    assert headers["X-Website-Intake-Key"] == "[REDACTED]"
 
 
 def test_sanitize_operator_text_redacts_contacts_and_secrets() -> None:

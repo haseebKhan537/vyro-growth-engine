@@ -53,6 +53,7 @@ SENSITIVE_HEADERS = {
     "set-cookie",
     "x-api-key",
     "x-internal-api-key",
+    "x-website-intake-key",
     "x-auth-token",
     "proxy-authorization",
 }
