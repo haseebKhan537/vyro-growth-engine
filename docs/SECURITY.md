@@ -666,3 +666,13 @@ Each provider integration should receive only the scopes required for its job. P
 
 ## Separation from billing operations
 Future HIPAA/RCM systems must be separate services/data stores with their own controls, access policies, BAAs, and audit requirements. Do not extend this sales database into a patient billing database.
+
+## Public website intake
+- Website forms reach the CRM only through a server-side gateway; no intake secret is
+  embedded in browser HTML or JavaScript.
+- `WEBSITE_INTAKE_API_KEY` is separate from `INTERNAL_API_KEY`, and the endpoint fails
+  closed unless `WEBSITE_INTAKE_ENABLED=true`.
+- Requests use a strict schema, explicit contact consent, bounded fields, UUID
+  idempotency, and conservative PHI-hint rejection.
+- Website consent permits follow-up about that inquiry. It is not interpreted as consent
+  for AI voice, autodialing, campaign enrollment, or unrelated outbound marketing.

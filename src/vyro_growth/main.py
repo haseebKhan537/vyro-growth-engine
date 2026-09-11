@@ -1,3 +1,4 @@
+import hmac
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -278,6 +279,11 @@ from vyro_growth.api.supervised_validation_run_packet import (
     SupervisedValidationRunPacketResponse,
     build_supervised_validation_run_packet_response,
 )
+from vyro_growth.api.website_inquiries import (
+    WebsiteInquiryRequest,
+    WebsiteInquiryResponse,
+    capture_website_inquiry,
+)
 from vyro_growth.config import Settings, get_settings, require_valid_runtime_settings
 from vyro_growth.database import get_db
 from vyro_growth.observability import configure_logging
@@ -315,6 +321,29 @@ def health() -> HealthPayload:
 def ready(db: DbSession) -> JSONResponse:
     status_code, payload = assess_readiness(get_settings(), db)
     return JSONResponse(status_code=status_code, content=payload)
+
+
+def _require_website_intake_key(
+    active_settings: Settings,
+    provided_key: str | None,
+) -> None:
+    if not active_settings.website_intake_enabled:
+        raise HTTPException(status_code=503, detail="Website inquiry intake is unavailable")
+    configured_key = active_settings.website_intake_api_key.strip()
+    if not configured_key:
+        raise HTTPException(status_code=503, detail="Website inquiry intake is unavailable")
+    if provided_key is None or not hmac.compare_digest(configured_key, provided_key.strip()):
+        raise HTTPException(status_code=401, detail="Invalid or missing website intake key")
+
+
+@app.post("/public/website-inquiries", tags=["website"], status_code=202)
+def website_inquiry(
+    request: WebsiteInquiryRequest,
+    db: DbSession,
+    x_website_intake_key: Annotated[str | None, Header()] = None,
+) -> WebsiteInquiryResponse:
+    _require_website_intake_key(get_settings(), x_website_intake_key)
+    return capture_website_inquiry(db, request)
 
 
 def _require_internal_key(active_settings: Settings, provided_key: str | None) -> None:

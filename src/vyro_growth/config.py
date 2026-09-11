@@ -38,6 +38,20 @@ class Settings(BaseSettings):
             "in those environments."
         ),
     )
+    website_intake_enabled: bool = Field(
+        default=False,
+        description=(
+            "Enables the authenticated, server-to-server website inquiry intake route. "
+            "This records inbound business inquiries only and never triggers outbound actions."
+        ),
+    )
+    website_intake_api_key: str = Field(
+        default="",
+        description=(
+            "Dedicated shared secret for the Hostinger form handler. Keep it separate from "
+            "INTERNAL_API_KEY and never expose it to browser JavaScript."
+        ),
+    )
     website_fetch_timeout_seconds: float = Field(default=8.0, ge=1.0)
     website_fetch_max_bytes: int = Field(default=524_288, ge=1024)
     website_fetch_max_redirects: int = Field(default=3, ge=0)
@@ -250,6 +264,8 @@ def validate_runtime_settings(settings: Settings) -> tuple[str, ...]:
         issues.append("DATABASE_URL is required")
     if not is_development_environment(settings) and not settings.internal_api_key.strip():
         issues.append("INTERNAL_API_KEY is required outside development")
+    if settings.website_intake_enabled and not settings.website_intake_api_key.strip():
+        issues.append("WEBSITE_INTAKE_API_KEY is required when WEBSITE_INTAKE_ENABLED is true")
     if settings.openai_personalization_enabled and not settings.openai_api_key.strip():
         issues.append("OPENAI_API_KEY is required when OPENAI_PERSONALIZATION_ENABLED is true")
     if settings.openai_reply_classification_enabled and not settings.openai_api_key.strip():

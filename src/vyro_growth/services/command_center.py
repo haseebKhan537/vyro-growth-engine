@@ -32,6 +32,7 @@ from vyro_growth.models import (
     ExecutionPlan,
     OptimizerRecommendation,
     OwnerApprovalPacket,
+    WebsiteInquiry,
 )
 from vyro_growth.observability import sanitize_operator_text
 from vyro_growth.services.dashboard import DashboardAnalyticsService, DashboardSummary
@@ -262,6 +263,7 @@ _NEXT_ACTION_LABELS: dict[NextActionCode, str] = {
 class PipelineCounts:
     organizations: int
     leads: int
+    website_inquiries: int
     discovery_runs: int
     website_enrichment_runs: int
     decision_maker_contacts: int
@@ -409,6 +411,7 @@ def _pipeline_counts(db: Session, dashboard: DashboardSummary) -> PipelineCounts
     return PipelineCounts(
         organizations=dashboard.discovery.organizations,
         leads=dashboard.discovery.leads,
+        website_inquiries=_count_rows(db, WebsiteInquiry),
         discovery_runs=dashboard.discovery.discovery_runs,
         website_enrichment_runs=dashboard.website_enrichment.enrichment_runs,
         decision_maker_contacts=dashboard.decision_maker_enrichment.contacts,

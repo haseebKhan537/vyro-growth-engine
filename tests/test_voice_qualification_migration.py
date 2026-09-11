@@ -42,4 +42,4 @@ def test_migration_010_follows_booking_plans() -> None:
     revision = script.get_revision("010_voice_qualification")
     assert revision is not None
     assert revision.down_revision == "009_booking_plans"
-    assert script.get_current_head() == "020_contact_discovery_calls"
+    assert script.get_current_head() == "021_website_inquiries"

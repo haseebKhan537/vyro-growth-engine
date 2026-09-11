@@ -1589,6 +1589,43 @@ Output is a sanitized Markdown or JSON packet with generated timestamp, packet k
 
 JSON is statuses, setting names, codes, timestamps, counts, route names, command names, specialty categories, state abbreviations, generic source names, and flags only: no practice names, provider names, NPI numbers, street addresses, emails, phones, websites, raw evidence snippets, message bodies, outreach drafts, PHI, patient data, API keys, tokens, provider secrets, env secret values, or unsafe raw error text. `OUTBOUND_ENABLED` remains false by default. Operator halt is read and left unchanged.
 
+## Phase 78 - Website inquiry intake bridge
+
+The public website can submit consented business inquiries to
+`POST /public/website-inquiries` through its server-side Hostinger PHP handler. The
+browser never receives a CRM secret. The request must include a matching
+`X-Website-Intake-Key` header, and the route remains unavailable unless
+`WEBSITE_INTAKE_ENABLED=true` with `WEBSITE_INTAKE_API_KEY` configured.
+
+Accepted submissions create or reuse an organization and contact, then create an
+`interested` inbound lead, website-channel inbound message, open conversation,
+auditable consent record, and sanitized activity. The client-supplied UUID makes retries
+idempotent. The endpoint rejects unknown fields, missing consent, unsupported forms and
+source pages, oversized values, and common indicators that PHI was entered.
+
+This is an inbound, record-only path. It does not send email, enroll a campaign, invoke a
+provider, place a call, infer voice consent, book a meeting, change operator halt, or
+enable outbound. Titan notification and receipt email remain the responsibility of the
+Hostinger form handler.
+
+Example server-to-server request:
+
+```bash
+curl -X POST https://growth.example.com/public/website-inquiries \
+  -H "Content-Type: application/json" \
+  -H "X-Website-Intake-Key: $WEBSITE_INTAKE_API_KEY" \
+  -d '{
+    "submission_id": "74ba04ff-37c0-4c61-a018-51e2f2c3a22a",
+    "form_name": "Homepage inquiry",
+    "source_page": "/",
+    "practice_name": "Example Practice",
+    "contact_name": "Example Contact",
+    "work_email": "contact@example.org",
+    "contact_consent": true,
+    "consent_text_version": "2026-09-10"
+  }'
+```
+
 The export also links to `GET /internal/operator-supervised-pilot-candidates`.
 
 ## Phase 58 — Operator supervised pilot candidate readiness UI (read-only)

@@ -185,6 +185,31 @@ class Lead(TimestampMixin, Base):
     organization: Mapped[Organization] = relationship(back_populates="leads")
 
 
+class WebsiteInquiry(TimestampMixin, Base):
+    """A consented business inquiry received through the public Vyro website."""
+
+    __tablename__ = "website_inquiries"
+    __table_args__ = (
+        UniqueConstraint("submission_id", name="uq_website_inquiries_submission_id"),
+    )
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    submission_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), index=True)
+    organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    contact_id: Mapped[UUID] = mapped_column(ForeignKey("contacts.id"), index=True)
+    lead_id: Mapped[UUID] = mapped_column(ForeignKey("leads.id"), index=True)
+    message_id: Mapped[UUID] = mapped_column(ForeignKey("outreach_messages.id"), index=True)
+    form_name: Mapped[str] = mapped_column(String(64), index=True)
+    source_page: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(32), default="new", index=True)
+    provider_count: Mapped[str | None] = mapped_column(String(32))
+    primary_concern: Mapped[str | None] = mapped_column(String(120), index=True)
+    preferred_contact: Mapped[str | None] = mapped_column(String(32))
+    business_context: Mapped[str | None] = mapped_column(Text)
+    contact_consent: Mapped[bool] = mapped_column(Boolean, default=True)
+    consent_text_version: Mapped[str] = mapped_column(String(32))
+    consented_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class LeadScore(TimestampMixin, Base):
     __tablename__ = "lead_scores"
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)

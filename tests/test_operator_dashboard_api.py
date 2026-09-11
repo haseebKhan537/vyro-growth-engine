@@ -104,6 +104,7 @@ def _empty_summary(**overrides: object) -> CommandCenterResponse:
         "pipeline": PipelineCountsResponse(
             organizations=0,
             leads=0,
+            website_inquiries=0,
             discovery_runs=0,
             website_enrichment_runs=0,
             decision_maker_contacts=0,
@@ -208,6 +209,7 @@ def test_renderer_populated_section_filter_hides_other_panels() -> None:
             pipeline=PipelineCountsResponse(
                 organizations=4,
                 leads=3,
+                website_inquiries=2,
                 discovery_runs=1,
                 website_enrichment_runs=0,
                 decision_maker_contacts=0,
@@ -230,6 +232,8 @@ def test_renderer_populated_section_filter_hides_other_panels() -> None:
     assert "Pipeline counts" in html
     assert "Organizations" in html
     assert ">4<" in html
+    assert "Website inquiries" in html
+    assert ">2<" in html
     assert 'id="findings"' not in html
     assert 'id="next-actions"' not in html
     assert 'id="packets"' not in html

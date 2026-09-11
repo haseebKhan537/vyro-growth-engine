@@ -102,6 +102,7 @@ _SECTION_LABELS: dict[DashboardSection, str] = {
 _PIPELINE_FIELDS: tuple[tuple[str, str], ...] = (
     ("organizations", "Organizations"),
     ("leads", "Leads"),
+    ("website_inquiries", "Website inquiries"),
     ("discovery_runs", "Discovery runs"),
     ("website_enrichment_runs", "Website enrichment"),
     ("decision_maker_contacts", "Decision-maker contacts"),

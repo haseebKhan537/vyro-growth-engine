@@ -44,4 +44,4 @@ def test_migration_011_follows_voice_qualification() -> None:
     revision = script.get_revision("011_optimizer_recommendations")
     assert revision is not None
     assert revision.down_revision == "010_voice_qualification"
-    assert script.get_current_head() == "020_contact_discovery_calls"
+    assert script.get_current_head() == "021_website_inquiries"

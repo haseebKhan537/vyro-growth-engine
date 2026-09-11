@@ -45,4 +45,4 @@ def test_migration_020_follows_email_verification() -> None:
     revision = script.get_revision("020_contact_discovery_calls")
     assert revision is not None
     assert revision.down_revision == "019_email_verification"
-    assert script.get_current_head() == "020_contact_discovery_calls"
+    assert script.get_current_head() == "021_website_inquiries"
